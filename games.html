@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>BEN REYNOLDS | GAME PROJECTS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav><a href="index.html">BIO</a><a href="videos.html">HIGH SCHOOL VIDEOS</a><a href="games.html">GAME PROJECTS</a>
+    </nav>
+
+    <div class="controls">
+        <div class="search-box">
+            <input type="text" id="portfolio-search" placeholder="Search projects...">
+        </div>
+
+        <div class="filter-group">
+            <span class="filter-label">SORT BY:</span>
+            <select id="sort-select">
+                <option value="date" selected>Date</option>
+                <option value="name">Name</option>
+            </select>
+            <select id="order-select">
+                <option value="desc" selected>Descending</option>
+                <option value="asc">Ascending</option>
+            </select>
+        </div>
+    </div>
+
+    <h2>GAME PROJECTS</h2>
+    <div class="portfolio-grid" id="portfolio-grid">
+
+        <div class="portfolio-card" data-name="The Secret of Craig Hill" data-date="2025-01-01"
+            data-info="A silly horror game I worked on in Unreal Engine 5 featuring my video production teacher. I handled all the programming, audio, and most of level design for this project."
+            data-tools="Unreal Engine 5, C++, Blueprints" data-youtube="YOUTUBE_ID_HERE"
+            data-gallery="images/game_01.png, images/game_02.png, images/game_03.png">
+            <div class="card-thumb"><img src="images/game_thumb.png"></div>
+            <div class="card-content">
+                <h4>The Secret of Craig Hill</h4>
+                <p>January 2025</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="no-results" style="display: none;">
+        <div class="no-results-content">
+            <h3>No projects found</h3>
+            <p>Try searching for different keywords or software.</p>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Project Details</h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div id="modal-split-body" class="modal-body-split">
+                <div class="modal-media-pane">
+                    <div id="media-container">
+                        <iframe id="modal-video" src="" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                    <div id="modal-gallery" class="screenshot-gallery"></div>
+                </div>
+                <div class="modal-info-pane">
+                    <span id="modal-tools" class="software-tag"></span>
+                    <p id="modal-date" style="color: #6a737d; font-size: 0.85rem; margin-bottom: 10px;"></p>
+                    <p id="modal-description"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

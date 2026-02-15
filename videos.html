@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>BEN REYNOLDS | VIDEOS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav><a href="index.html">BIO</a><a href="videos.html">HIGH SCHOOL VIDEOS</a><a href="games.html">GAME PROJECTS</a>
+    </nav>
+
+    <div class="controls">
+        <div class="search-box">
+            <input type="text" id="portfolio-search" placeholder="Search projects...">
+        </div>
+
+        <div class="filter-group">
+            <span class="filter-label">SORT BY:</span>
+            <select id="sort-select">
+                <option value="date" selected>Date</option>
+                <option value="name">Name</option>
+            </select>
+            <select id="order-select">
+                <option value="desc" selected>Descending</option>
+                <option value="asc">Ascending</option>
+            </select>
+        </div>
+    </div>
+
+    <h2>VIDEO PROJECTS</h2>
+    <div class="portfolio-grid" id="portfolio-grid">
+
+        <div class="portfolio-card" data-name="Two Highschoolers Fight Using Toothbrushes" data-date="2024-05-30"
+            data-info="Seth and I's first video using After Effects. We experimented with many different effects."
+            data-tools="Premiere Pro, After Effects" data-youtube="1-UaMcezN9c"
+            data-gallery="images/Toothbrush_01.png, images/Toothbrush_02.png, images/Toothbrush_03.png">
+            <div class="card-thumb"><img src="images/Toothbrush_02.png"></div>
+            <div class="card-content">
+                <h4>Two Highschoolers Fight Using Toothbrushes</h4>
+                <p>May 2024</p>
+            </div>
+        </div>
+
+        <div class="portfolio-card" data-name="House of Horrors" data-date="2025-04-01"
+            data-info="A video using an Unreal Engine 5 game I was working on at the time."
+            data-tools="Premiere Pro, Unreal Engine 5" data-youtube="n16hGIjFj5g"
+            data-gallery="images/Horrors_01.png, images/Horrors_02.png, images/Horrors_03.png">
+            <div class="card-thumb"><img src="images/Horrors_02.png"></div>
+            <div class="card-content">
+                <h4>House of Horrors</h4>
+                <p>April 2025</p>
+            </div>
+        </div>
+
+        <div class="portfolio-card" data-name="House of Pain - Jump Around" data-date="2025-01-25"
+            data-info="A 90's themed music video using Unreal Engine 5. Had a ton of fun editing and shooting this one."
+            data-tools="Premiere Pro, After Effects, Photoshop, Unreal Engine 5" data-youtube="qXDePSHjFlc"
+            data-gallery="images/Jump_01.png, images/Jump_02.png, images/Jump_03.png">
+            <div class="card-thumb"><img src="images/Jump_02.png"></div>
+            <div class="card-content">
+                <h4>House of Pain - Jump Around</h4>
+                <p>January 2025</p>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="no-results" style="display: none;">
+        <div class="no-results-content">
+            <h3>No projects found</h3>
+            <p>Try searching for different keywords or software.</p>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Project Details</h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div id="modal-split-body" class="modal-body-split">
+                <div class="modal-media-pane">
+                    <div id="media-container">
+                        <iframe id="modal-video" src="" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                    <div id="modal-gallery" class="screenshot-gallery"></div>
+                </div>
+                <div class="modal-info-pane">
+                    <span id="modal-tools" class="software-tag"></span>
+                    <p id="modal-date" style="color: #6a737d; font-size: 0.85rem; margin-bottom: 10px;"></p>
+                    <p id="modal-description"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
