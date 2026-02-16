@@ -9,17 +9,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const noResults = document.getElementById("no-results");
     const grid = document.getElementById("portfolio-grid");
 
-    // --- SEARCH LOGIC ---
     function filterCards() {
         const query = searchInput.value.toLowerCase();
         const cards = grid.querySelectorAll('.portfolio-card');
         let visibleCount = 0;
-        
+
         cards.forEach(card => {
-            const content = card.innerText.toLowerCase() + 
-                            card.getAttribute('data-tools').toLowerCase() + 
-                            card.getAttribute('data-info').toLowerCase();
-            
+            const content = card.innerText.toLowerCase() +
+                card.getAttribute('data-tools').toLowerCase() +
+                card.getAttribute('data-info').toLowerCase();
+
             if (content.includes(query)) {
                 card.style.display = "block";
                 visibleCount++;
@@ -33,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (searchInput) searchInput.addEventListener('input', filterCards);
 
-    // --- SORTING LOGIC ---
     function sortCards() {
         if (!grid) return;
         const cards = Array.from(grid.querySelectorAll('.portfolio-card'));
@@ -42,9 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
         cards.sort((a, b) => {
             let valA = a.getAttribute(`data-${sortBy}`).toLowerCase();
             let valB = b.getAttribute(`data-${sortBy}`).toLowerCase();
-            if (sortBy === 'date') { 
-                valA = new Date(valA.replace(/-/g, '\/')); 
-                valB = new Date(valB.replace(/-/g, '\/')); 
+            if (sortBy === 'date') {
+                valA = new Date(valA.replace(/-/g, '\/'));
+                valB = new Date(valB.replace(/-/g, '\/'));
             }
             return order === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
         });
@@ -54,41 +52,79 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sortSelect) sortSelect.addEventListener('change', sortCards);
     if (orderSelect) orderSelect.addEventListener('change', sortCards);
 
-    // --- DRAG ENGINE ---
-    let isDown = false, startX, scrollLeft, preventClick = false; 
+    document.querySelectorAll('.skill-item').forEach(skill => {
+        skill.addEventListener('click', () => {
+            const title = skill.querySelector('span:nth-child(2)').innerText;
+            const description = skill.getAttribute('data-info');
+
+            document.getElementById("modal-title-main").innerText = title;
+            document.getElementById("bio-description").innerText = description;
+            modal.style.display = "flex";
+        });
+    });
+
+    let isDown = false, startX, scrollLeft, preventClick = false, hasDragged = false;
     function initGalleryDrag(slider) {
         slider.addEventListener('mousedown', (e) => {
-            isDown = true; preventClick = false; 
+            isDown = true; 
+            preventClick = false;
+            hasDragged = false;
             startX = e.pageX - slider.offsetLeft;
             scrollLeft = slider.scrollLeft;
-            slider.style.scrollSnapType = 'none'; 
+            slider.style.scrollSnapType = 'none';
             slider.style.cursor = 'grabbing';
         });
-        slider.addEventListener('mouseleave', () => { isDown = false; slider.style.scrollSnapType = 'x mandatory'; });
-        slider.addEventListener('mouseup', () => { isDown = false; slider.style.cursor = 'grab'; setTimeout(() => { slider.style.scrollSnapType = 'x mandatory'; }, 50); });
+        slider.addEventListener('mouseleave', () => { 
+            isDown = false; 
+            slider.style.scrollSnapType = 'x mandatory';
+            // Re-enable pointer events on gallery items
+            if (hasDragged) {
+                slider.querySelectorAll('img, .video-thumb-btn').forEach(item => {
+                    item.style.pointerEvents = 'auto';
+                });
+            }
+        });
+        slider.addEventListener('mouseup', () => { 
+            isDown = false; 
+            slider.style.cursor = 'grab'; 
+            if (hasDragged) {
+                slider.querySelectorAll('img, .video-thumb-btn').forEach(item => {
+                    item.style.pointerEvents = 'auto';
+                });
+            }
+            setTimeout(() => { slider.style.scrollSnapType = 'x mandatory'; }, 50); 
+        });
         slider.addEventListener('mousemove', (e) => {
             if (!isDown) return;
             const x = e.pageX - slider.offsetLeft;
-            if (Math.abs(x - startX) > 5) { preventClick = true; }
-            slider.scrollLeft = scrollLeft - (x - startX) * 2;
+            const distance = Math.abs(x - startX);
+            
+            if (distance > 5) {
+                if (!hasDragged) {
+                    hasDragged = true;
+                    preventClick = true;
+                    slider.querySelectorAll('img, .video-thumb-btn').forEach(item => {
+                        item.style.pointerEvents = 'none';
+                    });
+                }
+                slider.scrollLeft = scrollLeft - (x - startX) * 2;
+            }
         });
     }
 
-    // --- MODAL POPULATION ---
     document.querySelectorAll('.portfolio-card').forEach(card => {
         card.addEventListener('click', () => {
             const youtubeID = card.getAttribute('data-youtube');
             const galleryData = card.getAttribute('data-gallery');
             const dateStr = card.getAttribute('data-date');
-            
+
             document.getElementById("modal-title").innerText = card.querySelector('h4').innerText;
             document.getElementById("modal-description").innerText = card.getAttribute('data-info');
-            document.getElementById("modal-tools").innerText = "Software: " + card.getAttribute('data-tools');
-            
-            const dateObj = new Date(dateStr.replace(/-/g, '\/')); 
+            document.getElementById("modal-tools").innerText = "Tools: " + card.getAttribute('data-tools');
+
+            const dateObj = new Date(dateStr.replace(/-/g, '\/'));
             document.getElementById("modal-date").innerText = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-            // Video logic
             if (youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE") {
                 showVideo(youtubeID);
             } else {
@@ -97,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const gallery = document.getElementById("modal-gallery");
-            if(gallery) {
+            if (gallery) {
                 gallery.innerHTML = "";
                 if (youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE") {
                     const videoBtn = document.createElement('div');
@@ -107,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     gallery.appendChild(videoBtn);
                 }
 
-                if(galleryData) {
+                if (galleryData) {
                     galleryData.split(',').forEach(src => {
                         const img = document.createElement('img');
                         img.src = src.trim();
@@ -123,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function showVideo(id) {
-        if(document.getElementById("big-image-view")) document.getElementById("big-image-view").remove();
+        if (document.getElementById("big-image-view")) document.getElementById("big-image-view").remove();
         videoFrame.style.display = "block";
         videoFrame.src = `https://www.youtube.com/embed/${id}`;
     }
@@ -131,8 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function showImage(src) {
         videoFrame.style.display = "none";
         videoFrame.src = "";
-        if(document.getElementById("big-image-view")) document.getElementById("big-image-view").remove();
-        if(!src) return;
+        if (document.getElementById("big-image-view")) document.getElementById("big-image-view").remove();
+        if (!src) return;
         const big = document.createElement('img');
         big.id = "big-image-view";
         big.src = src;
@@ -142,10 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetModal = () => {
         modal.style.display = "none";
         videoFrame.src = "";
-        if(document.getElementById("big-image-view")) document.getElementById("big-image-view").remove();
+        if (document.getElementById("big-image-view")) document.getElementById("big-image-view").remove();
     };
 
     closeBtn.onclick = resetModal;
-    window.onclick = (e) => { if(e.target == modal) resetModal(); };
+    window.onclick = (e) => { if (e.target == modal) resetModal(); };
     sortCards();
 });

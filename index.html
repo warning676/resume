@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>BEN REYNOLDS | BIO</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <nav>
         <a href="index.html">BIO</a>
@@ -13,33 +15,75 @@
     </nav>
 
     <h1>BEN REYNOLDS</h1>
-    <p>Computer Science Student @ SNHU</p>
+    <p>A website showcasing my various projects in game development and video production, along with my education and skills.</p>
+
+    <section id="education">
+        <h2>EDUCATION</h2>
+        <h3>Southern New Hampshire University (SNHU)</h3>
+        <p><strong>Degree:</strong> Bachelor of Science in Computer Science</p>
+        <p><strong>Focus:</strong> Software Engineering</p>
+        <p><strong>Started:</strong> September 2025</p>
+        <p><strong>Status:</strong> Currently Enrolled</p>
+    </section>
 
     <section id="skills">
         <h2>TECHNICAL PROFICIENCY</h2>
-        
+
         <h3>Programming Languages</h3>
         <div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>
-        <div class="grid-structure skill-item" data-info="Studying C++ optimization."><img src="images/icon-cpp.png" class="skill-icon"><span>C++</span><span class="level">Beginner</span><span class="last-used">Feb 2026</span></div>
-        <div class="grid-structure skill-item" data-info="General automation."><img src="images/icon-python.png" class="skill-icon"><span>Python</span><span class="level">Intermediate</span><span class="last-used">Oct 2025</span></div>
-        <div class="grid-structure skill-item" data-info="SNHU Curriculum."><img src="images/icon-java.png" class="skill-icon"><span>Java</span><span class="level">Intermediate</span><span class="last-used">Dec 2025</span></div>
-        <div class="grid-structure skill-item" data-info="Frontend development."><img src="images/icon-web.png" class="skill-icon"><span>HTML / CSS / JS</span><span class="level">Intermediate</span><span class="last-used">May 2024</span></div>
+        <div class="grid-structure skill-item" data-info="In the early stages of learning currently."><img src="images/icon-cpp.png"
+                class="skill-icon"><span>C++</span><span class="level">Beginner</span><span class="last-used">Feb
+                2026</span></div>
+        <div class="grid-structure skill-item" data-info="Haven't used this language in quite a while."><img src="images/icon-python.png"
+                class="skill-icon"><span>Python</span><span class="level">Beginner</span><span class="last-used">Oct
+                2025</span></div>
+        <div class="grid-structure skill-item" data-info="Used this language in high school and now at SNHU."><img src="images/icon-java.png"
+                class="skill-icon"><span>Java</span><span class="level">Intermediate</span><span class="last-used">Dec
+                2025</span></div>
+        <div class="grid-structure skill-item" data-info="Went through a CodeCamp course. Haven't used in quite a while."><img src="images/icon-web.png"
+                class="skill-icon"><span>HTML / CSS / JS</span><span class="level">Intermediate</span><span
+                class="last-used">May 2024</span></div>
 
         <h3>Game Engines</h3>
         <div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>
-        <div class="grid-structure skill-item" data-info="Primary engine for 3D."><img src="images/icon-ue5.png" class="skill-icon"><span>Unreal Engine 5</span><span class="level">Intermediate</span><span class="last-used">Feb 2026</span></div>
-        <div class="grid-structure skill-item" data-info="Mobile/2D projects."><img src="images/icon-unity.png" class="skill-icon"><span>Unity</span><span class="level">Beginner</span><span class="last-used">Feb 2026</span></div>
+        <div class="grid-structure skill-item" data-info="My primary game engine as of right now."><img src="images/icon-ue5.png"
+                class="skill-icon"><span>Unreal Engine 5</span><span class="level">Intermediate</span><span
+                class="last-used">Feb 2026</span></div>
+        <div class="grid-structure skill-item" data-info="Currently learning, possibly switching from Unreal Engine 5 to this game engine."><img src="images/icon-unity.png"
+                class="skill-icon"><span>Unity</span><span class="level">Beginner</span><span class="last-used">Feb
+                2026</span></div>
 
         <h3>Creative Tools</h3>
         <div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>
-        <div class="grid-structure skill-item" data-info="VFX powerhouse."><img src="images/icon-ae.png" class="skill-icon"><span>Adobe After Effects</span><span class="level">Advanced</span><span class="last-used">June 2025</span></div>
-        <div class="grid-structure skill-item" data-info="Video assembly."><img src="images/icon-pr.png" class="skill-icon"><span>Adobe Premiere Pro</span><span class="level">Advanced</span><span class="last-used">June 2025</span></div>
+        <div class="grid-structure skill-item" data-info="VFX software I use for rotoscoping and advanced effects in my videos."><img src="images/icon-ae.png"
+                class="skill-icon"><span>Adobe After Effects</span><span class="level">Advanced</span><span
+                class="last-used">June 2025</span></div>
+        <div class="grid-structure skill-item" data-info="Video editing software I use to cut and edit my videos."><img src="images/icon-pr.png"
+                class="skill-icon"><span>Adobe Premiere Pro</span><span class="level">Advanced</span><span
+                class="last-used">June 2025</span></div>
+        <div class="grid-structure skill-item" data-info="Picture editing software I sometimes use for my projects."><img src="images/icon-ps.png"
+                class="skill-icon"><span>Adobe Photoshop</span><span class="level">Intermediate</span><span
+                class="last-used">June 2025</span></div>
+        <div class="grid-structure skill-item" data-info="3D modeling software, currently learning."><img src="images/icon-bl.png"
+                class="skill-icon"><span>Blender</span><span class="level">Beginner</span><span
+                class="last-used">Feb 2026</span></div>
     </section>
 
-    <div id="infoModal" class="modal"><div class="modal-content">
-        <div class="modal-header"><h2 id="modal-title-main">Details</h2><span class="close-button">&times;</span></div>
-        <div id="modal-bio-body" style="padding: 30px;"><p id="bio-description"></p></div>
-    </div></div>
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title-main">Details</h2><span class="close-button">&times;</span>
+            </div>
+            <div id="modal-bio-body" style="padding: 30px;">
+                <p id="bio-description"></p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="page-footer">
+        <p>Last Updated: February 16, 2026</p>
+    </footer>
     <script src="script.js"></script>
 </body>
+
 </html>
