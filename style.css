@@ -607,6 +607,7 @@ footer[data-include="footer.html"] {
 }
 
 #skills {
+    min-height: 600px;
     visibility: hidden;
 }
 
@@ -648,4 +649,54 @@ footer[data-include="footer.html"] {
     max-width: none;
     line-height: 1.4;
     color: #8b949e;
+}
+
+.certified-label {
+    background-color: rgba(63, 185, 80, 0.15);
+    color: #3fb950;
+    border: 1px solid rgba(63, 185, 80, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    margin-left: 8px;
+    vertical-align: middle;
+    letter-spacing: 0.5px;
+}
+
+.certified-text {
+    color: #3fb950 !important;
+    font-weight: 600;
+}
+
+.cert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: rgba(63, 185, 80, 0.1);
+    border: 1px solid rgba(63, 185, 80, 0.3);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.grid-certified-badge {
+    background-color: rgba(63, 185, 80, 0.1);
+    color: #3fb950;
+    border: 1px solid rgba(63, 185, 80, 0.3);
+    font-size: 0.55rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-right: 8px;
+    font-weight: 800;
+    vertical-align: middle;
+    display: inline-block;
+    letter-spacing: 0.5px;
+    cursor: help;
+}
+
+#modal-skill-cert-name {
+    color: #3fb950 !important;
+    font-weight: bold;
+    font-size: 0.9rem;
 }

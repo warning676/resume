@@ -65,24 +65,27 @@
             </div>
             <div class="modal-body-split">
                 <div class="modal-info-pane" style="padding: 20px;">
-                    <p id="bio-description" style="margin-bottom: 25px; font-size: 1rem; color: #e1e4e8;"></p>
+                    <p id="bio-description" style="margin-bottom: 25px; font-size: 1rem; line-height: 1.6; color: #e1e4e8;"></p>
                     <hr style="border: 0; border-top: 1px solid #1f2428; margin-bottom: 20px;">
                     <div style="display: flex; flex-wrap: wrap; gap: 30px;">
                         <div>
-                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Last Used</small>
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem; font-weight: bold; margin-bottom: 4px;">Last Used</small>
                             <strong id="modal-skill-last" style="color: #ffffff;">-</strong>
                         </div>
                         <div>
-                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Proficiency</small>
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem; font-weight: bold; margin-bottom: 4px;">Proficiency</small>
                             <strong id="modal-skill-level" style="color: #58a6ff;">-</strong>
                         </div>
                         <div>
-                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Category</small>
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem; font-weight: bold; margin-bottom: 4px;">Category</small>
                             <strong id="modal-skill-type" style="color: #ffffff;">-</strong>
                         </div>
-                        <div id="modal-skill-cert-container">
-                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Certification</small>
-                            <strong id="modal-skill-cert-name" style="color: #3fb950;">-</strong>
+                        <div id="modal-skill-cert-container" style="display: none;">
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem; font-weight: bold; margin-bottom: 4px;">Certification</small>
+                            <div class="cert-badge">
+                                <span class="cert-dot"></span>
+                                <strong id="modal-skill-cert-name">-</strong>
+                            </div>
                         </div>
                     </div>
                 </div>

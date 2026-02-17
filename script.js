@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    includeHTML();
     const modal = document.getElementById("infoModal");
     const closeBtn = document.querySelector(".close-button");
     const videoFrame = document.getElementById("modal-video");
@@ -12,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const noResults = document.getElementById("no-results");
     const grid = document.getElementById("portfolio-grid");
     const modalBody = document.querySelector(".modal-body-split");
+
+    includeHTML();
 
     async function includeHTML() {
         const elements = document.querySelectorAll('[data-include]');
@@ -65,7 +66,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.addEventListener('DOMContentLoaded', includeHTML);
+    function checkURLParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialSearch = urlParams.get('search');
+
+        if (initialSearch && searchInput) {
+            searchInput.value = decodeURIComponent(initialSearch);
+
+            if (grid) filterCards();
+            if (skillsList) filterSkills();
+
+            searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
 
     function formatFullDate(dateString) {
         if (!dateString) return "";
@@ -77,25 +90,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const showSkeletons = (container, count, className) => {
+    const showSkeletons = (container, count) => {
         if (!container) return;
-        const isAchievementsPage = window.location.pathname.includes('achievements.html');
-        const isTechnicalPage = window.location.pathname.includes('technical.html');
         const isPortfolioGrid = container.id === 'portfolio-grid';
+        const isSkillsGrid = container.id === 'skills-list';
 
         container.style.visibility = 'visible';
         container.style.display = isPortfolioGrid ? 'grid' : 'block';
 
-        let headerHTML = '';
-        if (isAchievementsPage) {
-            headerHTML = '<div class="grid-structure grid-header"><span>Software</span><span>Certification Status</span><span>Last Used</span></div>';
-        } else if (isTechnicalPage) {
-            headerHTML = '<div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>';
+        if (isSkillsGrid) {
+            container.innerHTML = '<div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>';
+        } else {
+            container.innerHTML = '';
         }
-        container.innerHTML = headerHTML;
 
         let skeletonContent = '';
-        if (isAchievementsPage || isTechnicalPage) {
+        if (isSkillsGrid) {
             skeletonContent = `
                 <div class="grid-structure skill-item skeleton-item">
                     <div class="skeleton-element" style="width: 32px; height: 32px; border-radius: 4px; background: #1f2428;"></div>
@@ -105,8 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="skeleton-element" style="width: 90px; height: 14px; border-radius: 4px; background: #1f2428;"></div>
                     <div class="skeleton-element" style="width: 70px; height: 14px; border-radius: 4px; background: #1f2428;"></div>
-                </div>
-            `;
+                </div>`;
         } else if (isPortfolioGrid) {
             skeletonContent = `
                 <div class="portfolio-card skeleton-item">
@@ -115,8 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="skeleton-element" style="width: 80%; height: 18px; margin-bottom: 10px; border-radius: 4px; background: #1f2428;"></div>
                         <div class="skeleton-element" style="width: 40%; height: 14px; border-radius: 4px; background: #1f2428;"></div>
                     </div>
-                </div>
-            `;
+                </div>`;
         }
         for (let i = 0; i < count; i++) {
             container.insertAdjacentHTML('beforeend', skeletonContent);
@@ -128,45 +136,46 @@ document.addEventListener('DOMContentLoaded', () => {
         return scores[level] || 0;
     }
 
-    fetch('projects.json')
-        .then(response => response.json())
-        .then(data => {
-            if (grid) {
-                const pageType = window.location.pathname.includes('videos.html') ? 'videos' : 'games';
-                const projectData = data[pageType] || [];
-                showSkeletons(grid, projectData.length, 'skeleton-card');
-                setTimeout(() => renderProjects(projectData), 300);
-            }
-            if (skillsList) {
-                const isAchievements = window.location.pathname.includes('achievements.html');
-                const skillData = data.skills || [];
-                const dynamicCount = isAchievements ? skillData.filter(s => s.certified === true).length : skillData.length;
-                showSkeletons(skillsList, dynamicCount, 'skeleton-skill');
-                setTimeout(() => renderSkills(skillData), 400);
-            }
-        })
-        .catch(err => console.error("Error loading data:", err));
+    const runFiltering = () => {
+        if (searchInput) {
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    };
+
+    window.addEventListener('popstate', () => {
+        const newParams = new URLSearchParams(window.location.search);
+        const newSearch = newParams.get('search');
+        if (searchInput) {
+            searchInput.value = newSearch ? decodeURIComponent(newSearch) : '';
+            runFiltering();
+        }
+    });
 
     fetch('projects.json')
         .then(response => response.json())
         .then(data => {
             const dateElement = document.getElementById("last-updated-date");
-            if (dateElement && data.lastUpdated) {
-                dateElement.innerText = data.lastUpdated;
-            }
+            if (dateElement && data.lastUpdated) dateElement.innerText = data.lastUpdated;
 
             if (grid) {
                 const pageType = window.location.pathname.includes('videos.html') ? 'videos' : 'games';
                 const projectData = data[pageType] || [];
-                showSkeletons(grid, projectData.length, 'skeleton-card');
-                setTimeout(() => renderProjects(projectData), 300);
+                showSkeletons(grid, projectData.length);
+                setTimeout(() => {
+                    renderProjects(projectData);
+                    checkURLParams();
+                }, 300);
             }
+
             if (skillsList) {
                 const isAchievements = window.location.pathname.includes('achievements.html');
                 const skillData = data.skills || [];
                 const dynamicCount = isAchievements ? skillData.filter(s => s.certified === true).length : skillData.length;
-                showSkeletons(skillsList, dynamicCount, 'skeleton-skill');
-                setTimeout(() => renderSkills(skillData), 400);
+                showSkeletons(skillsList, dynamicCount);
+                setTimeout(() => {
+                    renderSkills(skillData);
+                    checkURLParams();
+                }, 400);
             }
         })
         .catch(err => console.error("Error loading data:", err));
@@ -200,37 +209,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSkills(skills) {
         if (!skillsList || !skills) return;
         const isAchievementsPage = window.location.pathname.includes('achievements.html');
-        const headerNode = skillsList.querySelector('.grid-header');
-        let headerHTML = headerNode ? headerNode.outerHTML : '<div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>';
-        if (isAchievementsPage) {
-            headerHTML = '<div class="grid-structure grid-header"><span>Software</span><span>Certification Status</span><span>Last Used</span></div>';
-        }
-        skillsList.innerHTML = headerHTML;
+
+        skillsList.innerHTML = '<div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>';
+
         skills.forEach(skill => {
             if (isAchievementsPage && !skill.certified) return;
+
             const item = document.createElement('div');
             item.className = 'grid-structure skill-item';
             item.setAttribute('data-type', skill.type);
             item.setAttribute('data-name', skill.name);
-            const listLevelDisplay = isAchievementsPage ? 'Certified Professional' : skill.level;
+
+            const certName = skill.certName || "Certified Professional";
+            const certifiedBadge = skill.certified ? `<span class="grid-certified-badge" title="${certName}">CERTIFIED</span>` : '';
+
             item.innerHTML = `
-            <img src="${skill.icon}" class="skill-icon">
-            <span class="skill-meta">
-                <span class="skill-name">${skill.name}</span>
-                <span class="type-badge">${skill.badge}</span>
-            </span>
-            <span class="level">${listLevelDisplay}</span>
-            <span class="last-used">${skill.lastUsed}</span>`;
+                <img src="${skill.icon}" class="skill-icon">
+                <span class="skill-meta">
+                    <span class="skill-name">${certifiedBadge}${skill.name}</span>
+                    <span class="type-badge">${skill.badge}</span>
+                </span>
+                <span class="level">${skill.level}</span>
+                <span class="last-used">${skill.lastUsed}</span>`;
+
             item.addEventListener('click', () => {
                 const titleMain = document.getElementById('modal-title-main');
-                const titleAlt = document.getElementById('modal-title');
                 if (titleMain) titleMain.innerText = skill.name.toUpperCase();
-                else if (titleAlt) titleAlt.innerText = skill.name.toUpperCase();
 
                 const bioDesc = document.getElementById('bio-description');
-                const modDesc = document.getElementById('modal-description');
                 if (bioDesc) bioDesc.innerText = skill.info;
-                else if (modDesc) modDesc.innerText = skill.info;
 
                 const modalIcon = document.getElementById('modal-skill-icon');
                 if (modalIcon) { modalIcon.src = skill.icon; modalIcon.alt = skill.name; }
@@ -247,17 +254,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const certContainer = document.getElementById('modal-skill-cert-container');
                 const certNameDisplay = document.getElementById('modal-skill-cert-name');
                 if (certContainer) {
-                    if (skill.certified && skill.certName) {
+                    if (skill.certified) {
                         certContainer.style.display = 'block';
-                        if (certNameDisplay) certNameDisplay.innerText = skill.certName;
+                        if (certNameDisplay) certNameDisplay.innerText = skill.certName || "Certified Professional";
                     } else {
                         certContainer.style.display = 'none';
                     }
                 }
 
                 if (modalBody) modalBody.scrollTop = 0;
-                const modalContent = document.querySelector(".modal-content");
-                if (modalContent) modalContent.scrollTop = 0;
                 if (modal) modal.style.display = 'flex';
             });
             skillsList.appendChild(item);
@@ -350,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const handleMouseDown = (e) => {
-            // Only initiate drag logic if the gallery is actually scrollable
             if (slider.scrollWidth <= slider.clientWidth) {
                 isDown = false;
                 preventClick = false;
@@ -438,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (hasVideo) {
                 const vBtn = document.createElement('div');
                 vBtn.className = "video-thumb-btn"; vBtn.innerHTML = "<span>▶ VIDEO</span>";
-                vBtn.addEventListener('click', (e) => {
+                vBtn.addEventListener('click', () => {
                     if (!preventClick) { centerItemInGallery(gallery, vBtn); showVideo(youtubeID); }
                 });
                 gallery.appendChild(vBtn);
@@ -448,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const img = document.createElement('img');
                 img.src = src;
                 img.setAttribute('draggable', 'false');
-                img.addEventListener('click', (e) => {
+                img.addEventListener('click', () => {
                     if (!preventClick) { centerItemInGallery(gallery, img); showImage(src); }
                 });
                 gallery.appendChild(img);
@@ -456,9 +460,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             initGalleryDrag(gallery);
         }
-
-        const closeBtn = document.querySelector(".close-button");
-        if (closeBtn) closeBtn.onclick = resetModal;
 
         if (modal) {
             modal.style.display = "flex";
@@ -495,5 +496,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (closeBtn) closeBtn.onclick = resetModal;
-    window.onclick = (e) => { if (e.target == modal) resetModal(); };
+
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            resetModal();
+        }
+    };
 });
