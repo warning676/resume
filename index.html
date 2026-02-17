@@ -1,49 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>BEN REYNOLDS | BIO</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <nav>
-        <a href="index.html" class="active">Bio</a>
-        <a href="achievements.html">Achievements</a>
-        <a href="technical.html">Technical</a>
-        <a href="videos.html">Videos</a>
-        <a href="games.html">Games</a>
-    </nav>
+    <header data-include="nav.html"></header>
 
-    <h1>BEN REYNOLDS</h1>
-    <p>A website showcasing my various projects in game development and video production, along with my education and
-        skills.</p>
+    <div class="controls" style="display:none;"></div>
 
-    <section id="education">
-        <h2>EDUCATION</h2>
-        <h3>Southern New Hampshire University (SNHU)</h3>
-        <p><strong>Degree:</strong> Bachelor of Science in Computer Science</p>
-        <p><strong>Focus:</strong> Software Engineering</p>
-        <p><strong>Started:</strong> September 2025</p>
-        <p><strong>Status:</strong> Currently Enrolled</p>
-    </section>
-
-    <div id="infoModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title-main">Details</h2><span class="close-button">&times;</span>
-            </div>
-            <div id="modal-bio-body" style="padding: 30px;">
-                <p id="bio-description"></p>
-            </div>
-        </div>
+    <div class="page-intro">
+        <h2>BIO</h2>
+        <p>A website showcasing my various projects in game development and video production, along with my education and skills.</p>
+        <p>This website is a work in progress and will be updated regularly with older projects being added each update.</p>
     </div>
 
-    <footer class="page-footer">
-        <p>Last Updated: <span id="last-updated-date">February 16, 2026</span></p>
-    </footer>
+    <section id="education">
+        <h2 style="margin-top: 25px;">EDUCATION</h2>
+        
+        <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428;">
+            <div class="achievement-info">
+                <span class="software-tag">SNHU</span>
+                <h3>Southern New Hampshire University</h3>
+                <p>Bachelor of Science in Computer Science</p>
+                <div style="font-size: 0.9rem; color: #8b949e; margin-top: 10px;">
+                    <span style="margin-right: 25px;"><strong>Started:</strong> September, 2025</span>
+                    <span style="margin-right: 25px;"><strong>Status:</strong> Currently Enrolled</span>
+                    <span style="margin-right: 25px;"><strong>Focus:</strong> Software Engineering</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428; margin-top: 12px;">
+            <div class="achievement-info">
+                <span class="software-tag">ERHS</span>
+                <h3>Emerald Ridge High School</h3>
+                <p>High School Diploma</p>
+                <div style="font-size: 0.9rem; color: #8b949e; margin-top: 10px;">
+                    <span style="margin-right: 25px;"><strong>Started:</strong> September, 2022</span>
+                    <span style="margin-right: 25px;"><strong>Ended:</strong> June, 2025</span>
+                    <span><strong>Status:</strong> Graduated</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer data-include="footer.html"></footer>
+
     <script src="script.js"></script>
 </body>
-
 </html>

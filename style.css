@@ -9,7 +9,7 @@ body {
     font-family: -apple-system, system-ui, sans-serif;
     max-width: 950px;
     margin: 0 auto;
-    padding: 20px 20px 100px 20px;
+    padding: 15px 40px;
     line-height: 1.6;
     color: #e1e4e8;
     background-color: #050505;
@@ -18,16 +18,56 @@ body {
     flex-direction: column;
 }
 
-nav {
+header[data-include="nav.html"] {
     position: sticky;
     top: 0;
     background-color: #050505;
-    padding: 15px 0;
-    border-bottom: 1px solid #1f2428;
     z-index: 1000;
+    border-bottom: 1px solid #1f2428;
+    margin-bottom: 20px;
+    min-height: 60px;
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    max-width: 950px;
+    margin: 0 auto;
+}
+
+.nav-brand {
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: #ffffff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.nav-links {
     display: flex;
     gap: 20px;
-    margin-bottom: 30px;
+}
+
+.nav-links a {
+    color: #58a6ff;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.nav-links a.active {
+    color: #ffffff;
+    border-bottom: 2px solid #58a6ff;
 }
 
 nav a {
@@ -43,7 +83,22 @@ nav a.active {
     border-bottom: 2px solid #58a6ff;
 }
 
+h2 {
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+hr {
+    margin: 15px 0 !important;
+}
+
 .controls {
+    margin-top: 25px;
     display: grid;
     grid-template-columns: 1fr 260px;
     align-items: center;
@@ -276,10 +331,10 @@ html::-webkit-scrollbar-thumb:hover {
     background-color: #050505;
     border: 1px solid #30363d;
     width: 95%;
-    max-width: 1050px;
+    max-width: 1250px;
     border-radius: 12px;
     position: relative;
-    max-height: 90vh;
+    max-height: 95vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -315,21 +370,23 @@ html::-webkit-scrollbar-thumb:hover {
 
 .modal-body-split {
     display: grid;
-    grid-template-columns: 1.3fr 1fr;
+    grid-template-columns: 1.5fr 1fr;
     overflow-y: auto;
     flex: 1;
 }
 
 .modal-media-pane {
-    padding: 25px;
+    padding: 30px;
     border-right: 1px solid #1f2428;
     display: flex;
     flex-direction: column;
+    background-color: #000;
     overflow: hidden;
 }
 
 .modal-info-pane {
     padding: 40px 35px;
+    max-width: 500px;
 }
 
 #media-container {
@@ -459,7 +516,7 @@ html::-webkit-scrollbar-thumb:hover {
     color: #58a6ff;
 }
 
-.page-footer {
+footer[data-include="footer.html"] {
     position: fixed;
     bottom: 0;
     left: 0;
@@ -471,6 +528,7 @@ html::-webkit-scrollbar-thumb:hover {
     color: #6a737d;
     font-size: 0.75rem;
     z-index: 1000;
+    display: block;
 }
 
 .page-footer p {
@@ -490,6 +548,38 @@ html::-webkit-scrollbar-thumb:hover {
 .skeleton-skill {
     height: 50px;
     margin-bottom: 2px;
+}
+
+.skeleton-element {
+    background-color: #1f2428;
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-element::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.04), 
+        transparent
+    );
+    animation: shimmer-effect 1.6s infinite;
+}
+
+@keyframes shimmer-effect {
+    100% { transform: translateX(100%); }
+}
+
+.portfolio-card.skeleton-item .card-thumb {
+    background: #161b22;
+    aspect-ratio: 16 / 9;
 }
 
 @media (max-width: 720px) {
@@ -523,4 +613,39 @@ html::-webkit-scrollbar-thumb:hover {
 #skills-list,
 .portfolio-grid {
     min-height: 0;
+}
+
+.achievement-card {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    padding: 30px;
+    border-radius: 6px;
+    margin-top: 20px;
+    transition: border-color 0.3s ease;
+}
+
+.achievement-info h3 {
+    margin: 15px 0 5px 0;
+    color: #ffffff;
+    font-size: 1.4rem;
+}
+
+.achievement-info p {
+    color: #8b949e;
+    font-size: 1rem;
+}
+
+.page-intro h2 {
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    color: #ffffff;
+    margin-top: 0;
+}
+
+.page-intro p {
+    margin: 0;
+    max-width: none;
+    line-height: 1.4;
+    color: #8b949e;
 }

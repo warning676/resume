@@ -1,26 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>BEN REYNOLDS | VIDEOS</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <nav>
-        <a href="index.html">Bio</a>
-        <a href="achievements.html">Achievements</a>
-        <a href="technical.html">Technical</a>
-        <a href="videos.html" class="active">Videos</a>
-        <a href="games.html">Games</a>
-    </nav>
+    <header data-include="nav.html"></header>
+
+    <div class="page-intro">
+        <h2>HIGH SCHOOL VIDEO PROJECTS</h2>
+        <p>A collection of videos I created with a good friend during high school. These were all made using footage we shot ourselves and edited in Adobe Premiere Pro and After Effects and some using Unreal Engine 5.</p>
+    </div>
 
     <div class="controls">
         <div class="search-box">
             <input type="text" id="portfolio-search" placeholder="Search projects...">
         </div>
-
         <div class="filter-controls">
             <div class="filter-group">
                 <label for="sort-select">SORT BY:</label>
@@ -35,12 +31,8 @@
             </div>
         </div>
     </div>
-
-    <h2>HIGH SCHOOL VIDEO PROJECTS</h2>
-    <p>A collection of videos I created with a good friend during high school. These were all made using footage we shot ourselves and edited in Adobe Premiere Pro and After Effects and some using Unreal Engine 5.</p>
     
-    <div class="portfolio-grid" id="portfolio-grid">
-        </div>
+    <div class="portfolio-grid" id="portfolio-grid"></div>
 
     <div id="no-results" style="display: none;">
         <div class="no-results-content">
@@ -70,11 +62,9 @@
             </div>
         </div>
     </div>
+    
+    <footer data-include="footer.html"></footer>
 
-    <footer class="page-footer">
-        <p>Last Updated: <span id="last-updated-date">February 16, 2026</span></p>
-    </footer>
     <script src="script.js"></script>
 </body>
-
 </html>

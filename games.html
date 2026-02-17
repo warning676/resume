@@ -1,26 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>BEN REYNOLDS | GAME PROJECTS</title>
+    <title>BEN REYNOLDS | GAMES</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <nav>
-        <a href="index.html">Bio</a>
-        <a href="achievements.html">Achievements</a>
-        <a href="technical.html">Technical</a>
-        <a href="videos.html">Videos</a>
-        <a href="games.html" class="active">Games</a>
-    </nav>
+    <header data-include="nav.html"></header>
+
+    <div class="page-intro">
+        <h2>GAME PROJECTS</h2>
+        <p>A collection of game projects I have worked on over the years, primarily using Unreal Engine 5. These will typically be smaller in scope than a full game, and may only showcase a single level or mechanic, but the skills I learned while making them has proven valuable.</p>
+    </div>
 
     <div class="controls">
         <div class="search-box">
             <input type="text" id="portfolio-search" placeholder="Search projects...">
         </div>
-
         <div class="filter-controls">
             <div class="filter-group">
                 <label for="sort-select">SORT BY:</label>
@@ -35,12 +31,8 @@
             </div>
         </div>
     </div>
-
-    <h2>GAME PROJECTS</h2>
-    <p>A collection of game projects I have worked on over the years, primarily using Unreal Engine 5. These will typically be smaller in scope than a full game, and may only showcase a single level or mechanic, but the skills I have learned while making them has proven valuable.</p>
     
-    <div class="portfolio-grid" id="portfolio-grid">
-        </div>
+    <div class="portfolio-grid" id="portfolio-grid"></div>
 
     <div id="no-results" style="display: none;">
         <div class="no-results-content">
@@ -70,11 +62,9 @@
             </div>
         </div>
     </div>
+    
+    <footer data-include="footer.html"></footer>
 
-    <footer class="page-footer">
-        <p>Last Updated: <span id="last-updated-date">February 16, 2026</span></p>
-    </footer>
     <script src="script.js"></script>
 </body>
-
 </html>

@@ -2,33 +2,94 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Achievements | Portfolio</title>
+    <title>BEN REYNOLDS | ACHIEVEMENTS</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <header data-include="nav.html"></header>
 
-    <nav>
-        <a href="index.html">Bio</a>
-        <a href="achievements.html" class="active">Achievements</a>
-        <a href="technical.html">Technical</a>
-        <a href="videos.html">Videos</a>
-        <a href="games.html">Games</a>
-    </nav>
+    <div class="controls" style="display:none;"></div>
 
-    <main>
-        <section id="achievements">
-            <h1>ACHIEVEMENTS</h1>
-            <p style="color: #8b949e; font-style: italic; margin-top: 20px;">
-                Coming soon...
-            </p>
-        </section>
-    </main>
+    <div class="page-intro">
+        <h2>ACADEMIC HONORS & NOMINATIONS</h2>
+        <p>My various achievements throughout my education.</p>
+    </div>
 
-    <footer class="page-footer">
-        <p>Last Updated: <span id="last-updated-date">February 16, 2026</span></p>
-    </footer>
+    <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428;">
+        <div class="achievement-info">
+            <span class="software-tag">SNHU</span>
+            <h3>President’s List & Honor Roll</h3>
+            <p>Southern New Hampshire University</p>
 
+            <div style="font-size: 0.85rem; margin-top: 12px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <span style="color: #8b949e;"><strong>Links:</strong></span>
+                <a href="https://snhu.meritpages.com/stories/SNHU-President-s-List-Announced/176577616" target="_blank"
+                    style="color: #58a6ff; text-decoration: none;">President's List</a>
+                <a href="https://snhu.meritpages.com/stories/SNHU-Announces-Honor-Roll-for-2025-C-5-Sep-Oct-/171240816"
+                    target="_blank" style="color: #58a6ff; text-decoration: none;">Honor Roll (Sep-Oct)</a>
+                <a href="https://snhu.meritpages.com/stories/SNHU-Announces-Honor-Roll-for-2025-C-6-Oct-Dec-/176700754"
+                    target="_blank" style="color: #58a6ff; text-decoration: none;">Honor Roll (Oct-Dec)</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428;">
+        <div class="achievement-info">
+            <span class="software-tag">ERHS</span>
+            <h3>Student of the Year Nomination</h3>
+            <p>Emerald Ridge High School</p>
+        </div>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #1f2428;">
+
+    <div class="page-intro" style="border-bottom: none; margin-bottom: 5px;">
+        <h2>ADOBE CERTIFICATIONS</h2>
+        <p style="color: #8b949e;">5x Adobe Certified Professional in Visual & Video Design</p>
+    </div>
+
+    <div id="skills">
+        <div id="skills-list"></div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <img id="modal-skill-icon" src="" alt="" style="width: 32px; height: 32px; object-fit: contain;">
+                    <h2 id="modal-title-main">Skill Details</h2>
+                </div>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body-split">
+                <div class="modal-info-pane" style="padding: 20px;">
+                    <p id="bio-description" style="margin-bottom: 25px; font-size: 1rem; color: #e1e4e8;"></p>
+                    <hr style="border: 0; border-top: 1px solid #1f2428; margin-bottom: 20px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 30px;">
+                        <div>
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Last Used</small>
+                            <strong id="modal-skill-last" style="color: #ffffff;">-</strong>
+                        </div>
+                        <div>
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Proficiency</small>
+                            <strong id="modal-skill-level" style="color: #58a6ff;">-</strong>
+                        </div>
+                        <div>
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Category</small>
+                            <strong id="modal-skill-type" style="color: #ffffff;">-</strong>
+                        </div>
+                        <div id="modal-skill-cert-container">
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Certification</small>
+                            <strong id="modal-skill-cert-name" style="color: #3fb950;">-</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer data-include="footer.html"></footer>
+    
     <script src="script.js"></script>
 </body>
 </html>
