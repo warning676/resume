@@ -1,16 +1,21 @@
 html {
     overflow-y: scroll;
     scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: #30363d transparent;
 }
 
 body {
     font-family: -apple-system, system-ui, sans-serif;
     max-width: 950px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 20px 20px 100px 20px;
     line-height: 1.6;
     color: #e1e4e8;
     background-color: #050505;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 nav {
@@ -33,6 +38,11 @@ nav a {
     text-transform: uppercase;
 }
 
+nav a.active {
+    color: #ffffff;
+    border-bottom: 2px solid #58a6ff;
+}
+
 .controls {
     display: grid;
     grid-template-columns: 1fr 260px;
@@ -44,47 +54,25 @@ nav a {
 
 .search-box {
     width: 100%;
-    min-width: 0;
-}
-
-.search-box input {
-    min-width: 0;
-}
-
-.search-box {
     max-width: 300px;
-}
-
-.search-box input {
-    width: 100%;
-    max-width: 300px;
-    box-sizing: border-box;
 }
 
 #portfolio-search {
     width: 100%;
-    background: #0d1117;
+    background: #050505;
     border: 1px solid #30363d;
     padding: 8px 16px;
     border-radius: 6px;
     color: #e1e4e8;
     font-size: 0.9rem;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
 }
 
 #portfolio-search:focus {
     border-color: #58a6ff;
     box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
     outline: none;
-    background: #161b22;
-}
-
-.filter-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 0 0 auto;
-    min-width: 120px;
 }
 
 .filter-controls {
@@ -95,41 +83,11 @@ nav a {
     min-width: 160px;
 }
 
-@media (max-width: 720px) {
-    .controls {
-        grid-template-columns: 1fr;
-        align-items: stretch;
-    }
-
-    .filter-controls {
-        flex-direction: column;
-        width: 100%;
-        gap: 8px;
-    }
-
-    .filter-controls .filter-group {
-        justify-self: stretch;
-        width: 100%;
-    }
-}
-
-.type-badge {
-    display: inline-block;
-    margin-left: 8px;
-    color: #8b949e;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-}
-
-.skill-meta {
-    display: inline-flex;
+.filter-group {
+    display: flex;
     align-items: center;
-    gap: 10px;
-}
-
-.skill-name {
-    white-space: nowrap;
+    gap: 8px;
+    flex: 0 0 auto;
 }
 
 .filter-group label {
@@ -137,27 +95,17 @@ nav a {
     color: #8b949e;
     text-transform: uppercase;
     font-weight: bold;
-    margin-right: 4px;
-}
-
-.filter-label {
-    font-size: 0.7rem;
-    color: #8b949e;
-    text-transform: uppercase;
-    font-weight: bold;
-    margin-right: 6px;
 }
 
 .filter-group select {
-    background: #0d1117;
+    background: #050505;
     color: #e1e4e8;
     border: 1px solid #30363d;
     padding: 7px 10px;
     border-radius: 6px;
     font-size: 0.85rem;
     cursor: pointer;
-    transition: border-color 0.2s;
-    min-width: 72px;
+    transition: border-color 0.2s ease;
 }
 
 .filter-group select:hover {
@@ -169,10 +117,30 @@ nav a {
     border-color: #58a6ff;
 }
 
+html::-webkit-scrollbar {
+    width: 10px;
+}
+
+html::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+    background-color: #30363d;
+    border-radius: 10px;
+    border: 2px solid #050505;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+    background-color: #484f58;
+}
+
 #no-results {
-    padding: 100px 20px;
+    padding: 60px 20px;
     text-align: center;
     color: #8b949e;
+    width: 100%;
+    display: none;
 }
 
 .no-results-content h3 {
@@ -185,27 +153,18 @@ nav a {
     grid-template-columns: 40px 1fr 180px 120px;
     gap: 15px;
     align-items: center;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .grid-header {
+    padding: 0 15px 5px 15px;
     font-size: 0.65rem;
     font-weight: bold;
     color: #6a737d;
     border-bottom: 1px solid #30363d;
-    padding-bottom: 5px;
     margin-top: 20px;
     margin-bottom: 10px;
-}
-
-.grid-header span {
-    cursor: default;
-    user-select: none;
-}
-
-.grid-header .arrow {
-    margin-left: 6px;
-    color: #8b949e;
-    font-size: 0.85em;
 }
 
 .grid-header span:first-child {
@@ -213,9 +172,11 @@ nav a {
 }
 
 .skill-item {
-    padding: 10px 0;
+    padding: 0 15px;
     border-bottom: 1px solid #161b22;
     cursor: pointer;
+    height: 55px;
+    transition: background-color 0.2s ease;
 }
 
 .skill-item:hover {
@@ -228,62 +189,74 @@ nav a {
     object-fit: contain;
 }
 
-.portfolio-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 25px;
-    visibility: hidden;
+.skill-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
 }
 
-#skills {
-    visibility: hidden;
+.type-badge {
+    color: #8b949e;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.portfolio-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 15px;
+    width: 100%;
+    visibility: visible;
 }
 
 .portfolio-card {
-    background: #0d1117;
-    border: 1px solid #30363d;
-    border-radius: 8px;
+    background: #050505;
+    border: 1px solid #1f2428;
+    border-radius: 6px;
     overflow: hidden;
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: auto;
+    transition: all 0.2s ease;
 }
 
 .portfolio-card:hover {
+    background-color: #0d1117;
     border-color: #58a6ff;
 }
 
 .card-thumb {
     width: 100%;
     aspect-ratio: 16 / 9;
-    background: #000;
+    background-color: #161b22;
     overflow: hidden;
-    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .card-thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
 }
 
 .card-content {
     padding: 15px;
-    flex-grow: 1;
 }
 
 .card-content h4 {
     margin: 0;
     color: #ffffff;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
 }
 
 .card-content p {
-    margin: 8px 0 0;
+    margin: 4px 0 0;
     color: #8b949e;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
 }
 
 .modal {
@@ -294,13 +267,13 @@ nav a {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.92);
+    background-color: rgba(0, 0, 0, 0.95);
     align-items: center;
     justify-content: center;
 }
 
 .modal-content {
-    background-color: #0d1117;
+    background-color: #050505;
     border: 1px solid #30363d;
     width: 95%;
     max-width: 1050px;
@@ -309,6 +282,7 @@ nav a {
     max-height: 90vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .modal-header {
@@ -321,22 +295,22 @@ nav a {
 
 .modal-header h2 {
     margin: 0;
-    font-size: 1rem;
-    letter-spacing: 0.8px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
     color: #ffffff;
 }
 
-.modal-info-pane #bio-description {
-    color: #c9d1d9;
-    line-height: 1.5;
-}
-
 .close-button {
     color: #8b949e;
-    font-size: 32px;
+    font-size: 24px;
     cursor: pointer;
-    line-height: 0.8;
+    transition: color 0.2s;
+}
+
+.close-button:hover {
+    color: #ffffff;
 }
 
 .modal-body-split {
@@ -344,20 +318,18 @@ nav a {
     grid-template-columns: 1.3fr 1fr;
     overflow-y: auto;
     flex: 1;
-    min-height: 0;
 }
 
 .modal-media-pane {
     padding: 25px;
-    background: #050505;
-    border-right: 1px solid #30363d;
-    overflow: hidden;
+    border-right: 1px solid #1f2428;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .modal-info-pane {
-    padding: 35px;
+    padding: 40px 35px;
 }
 
 #media-container {
@@ -386,14 +358,14 @@ nav a {
     margin-top: 20px;
     overflow-x: auto;
     overflow-y: hidden;
-    max-height: 100px;
-    padding-bottom: 12px;
+    height: 110px;
+    padding: 5px 0;
     scrollbar-width: thin;
     scrollbar-color: #30363d transparent;
-    scroll-snap-type: x mandatory;
     cursor: grab;
-    user-select: none;
-    -webkit-overflow-scrolling: touch;
+    user-select: none; 
+    -webkit-user-select: none;
+    align-items: center;
 }
 
 .screenshot-gallery:active {
@@ -404,10 +376,6 @@ nav a {
     height: 6px;
 }
 
-.screenshot-gallery::-webkit-scrollbar-track {
-    background: transparent;
-}
-
 .screenshot-gallery::-webkit-scrollbar-thumb {
     background-color: #30363d;
     border-radius: 10px;
@@ -415,19 +383,19 @@ nav a {
 
 .screenshot-gallery img,
 .video-thumb-btn {
-    flex: 0 0 calc(33.333% - 8px);
-    min-width: calc(33.333% - 8px);
-    height: 80px;
+    flex: 0 0 140px;
+    height: 75px;
     object-fit: cover;
     border-radius: 4px;
     border: 1px solid #30363d;
-    cursor: pointer;
-    flex-shrink: 0;
     -webkit-user-drag: none;
-    user-drag: none;
-    user-select: none;
-    -webkit-user-select: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s ease;
+    cursor: pointer;
+}
+
+.screenshot-gallery:active img, 
+.screenshot-gallery:active .video-thumb-btn {
+    pointer-events: none;
 }
 
 .screenshot-gallery img:hover,
@@ -447,11 +415,12 @@ nav a {
 
 .software-tag {
     color: #58a6ff;
-    font-weight: bold;
+    font-weight: 800;
     margin-bottom: 10px;
     display: block;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 #modal-date {
@@ -460,45 +429,15 @@ nav a {
     letter-spacing: 0.5px;
     text-transform: uppercase;
     font-size: 0.8rem;
-    margin-bottom: 15px;
+    margin-bottom: 25px;
     display: block;
 }
 
-.screenshot-gallery img,
-.card-thumb img {
-    position: relative;
-    background-color: #161b22;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #444;
-    font-size: 0.6rem;
-    font-weight: bold;
-    text-align: center;
-}
-
-.screenshot-gallery img::before,
-.card-thumb img::before {
-    content: "NO IMAGE";
-    display: block;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    z-index: 1;
-}
-
-.screenshot-gallery img::after,
-.card-thumb img::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #0d1117;
+#modal-description,
+#bio-description {
+    color: #e1e4e8;
+    line-height: 1.6;
+    font-size: 0.95rem;
 }
 
 #education {
@@ -521,26 +460,46 @@ nav a {
 }
 
 .page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #050505;
+    border-top: 1px solid #1f2428;
     text-align: center;
-    padding: 40px 20px;
-    margin-top: 60px;
-    border-top: 1px solid #30363d;
+    padding: 10px 0;
     color: #6a737d;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
+    z-index: 1000;
 }
 
 .page-footer p {
-    margin: 0;
+    margin: 0 auto;
+    max-width: 950px;
 }
 
-@media (max-width: 700px) {
+.skeleton {
+    background-color: #161b22;
+    border-radius: 6px;
+}
+
+.skeleton-card {
+    height: 250px;
+}
+
+.skeleton-skill {
+    height: 50px;
+    margin-bottom: 2px;
+}
+
+@media (max-width: 720px) {
     .controls {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
     }
 
-    .search-box {
-        flex: 1 1 auto;
+    .filter-controls {
+        flex-direction: column;
+        width: 100%;
     }
 
     .modal-body-split {
@@ -549,6 +508,19 @@ nav a {
 
     .modal-media-pane {
         border-right: none;
-        border-bottom: 1px solid #30363d;
+        border-bottom: 1px solid #1f2428;
     }
+
+    .portfolio-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+#skills {
+    visibility: hidden;
+}
+
+#skills-list,
+.portfolio-grid {
+    min-height: 0;
 }

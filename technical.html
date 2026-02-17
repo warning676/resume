@@ -9,10 +9,11 @@
 
 <body>
     <nav>
-        <a href="index.html">BIO</a>
-        <a href="technical.html">TECHNICAL</a>
-        <a href="videos.html">HIGH SCHOOL VIDEOS</a>
-        <a href="games.html">GAME PROJECTS</a>
+        <a href="index.html">Bio</a>
+        <a href="achievements.html">Achievements</a>
+        <a href="technical.html" class="active">Technical</a>
+        <a href="videos.html">Videos</a>
+        <a href="games.html">Games</a>
     </nav>
 
     <div class="controls">
@@ -25,6 +26,7 @@
                 <label for="sort-select">SORT BY:</label>
                 <select id="sort-select">
                     <option value="last-used" selected>Last Used</option>
+                    <option value="name">Name</option>
                     <option value="proficiency">Proficiency</option>
                 </select>
                 <select id="order-select">
@@ -34,126 +36,75 @@
             </div>
 
             <div class="filter-group">
-                <label for="type-select">TYPE:</label>
+                <label for="type-select">CATEGORY:</label> 
                 <select id="type-select">
                     <option value="all" selected>All</option>
                     <option value="language">Programming Languages</option>
                     <option value="engine">Game Engines</option>
                     <option value="tool">Creative Tools</option>
+                    <option value="ide">Development Environments</option>
                 </select>
             </div>
         </div>
     </div>
 
     <h2>TECHNICAL PROFICIENCY</h2>
-    <p>A list of my technical skills, including programming languages, game engines, and creative tools. Each skill is
-        categorized and includes information about my proficiency level and when I last used it.</p>
+    <p>A list of my technical skills, including programming languages, game engines, and creative tools. Each skill is categorized and includes information about my proficiency level and when I last used it.</p>
+    
     <div id="skills">
         <div id="skills-list">
-            <div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span>
-            </div>
-
-            <div class="grid-structure skill-item" data-type="language"
-                data-info="In the early stages of learning currently.">
-                <img src="images/icon-cpp.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">C++</span><span
-                        class="type-badge">Programming</span></span>
-                <span class="level">Beginner</span>
-                <span class="last-used">Feb 2026</span>
-            </div>
-            <div class="grid-structure skill-item" data-type="language"
-                data-info="Haven't used this language in quite a while.">
-                <img src="images/icon-python.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">Python</span><span
-                        class="type-badge">Programming</span></span>
-                <span class="level">Beginner</span>
-                <span class="last-used">Oct 2025</span>
-            </div>
-            <div class="grid-structure skill-item" data-type="language"
-                data-info="Used this language in high school and now at SNHU.">
-                <img src="images/icon-java.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">Java</span><span
-                        class="type-badge">Programming</span></span>
-                <span class="level">Intermediate</span>
-                <span class="last-used">Dec 2025</span>
-            </div>
-            <div class="grid-structure skill-item" data-type="language"
-                data-info="Went through a CodeCamp course. Haven't used in quite a while.">
-                <img src="images/icon-web.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">HTML / CSS / JS</span><span
-                        class="type-badge">Programming</span></span>
-                <span class="level">Intermediate</span>
-                <span class="last-used">May 2024</span>
-            </div>
-
-            <div class="grid-structure skill-item" data-type="engine"
-                data-info="My primary game engine as of right now.">
-                <img src="images/icon-ue5.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">Unreal Engine 5</span><span class="type-badge">Game
-                        Engine</span></span>
-                <span class="level">Intermediate</span>
-                <span class="last-used">Feb 2026</span>
-            </div>
-            <div class="grid-structure skill-item" data-type="engine"
-                data-info="Currently learning, possibly switching from Unreal Engine 5 to this game engine.">
-                <img src="images/icon-unity.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">Unity</span><span class="type-badge">Game
-                        Engine</span></span>
-                <span class="level">Beginner</span>
-                <span class="last-used">Feb 2026</span>
-            </div>
-
-            <div class="grid-structure skill-item" data-type="tool"
-                data-info="VFX software I use for rotoscoping and advanced effects in my videos.">
-                <img src="images/icon-ae.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">Adobe After Effects</span><span
-                        class="type-badge">Creative Tool</span></span>
-                <span class="level">Advanced</span>
-                <span class="last-used">June 2025</span>
-            </div>
-            <div class="grid-structure skill-item" data-type="tool"
-                data-info="Video editing software I use to cut and edit my videos.">
-                <img src="images/icon-pr.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">Adobe Premiere Pro</span><span
-                        class="type-badge">Creative Tool</span></span>
-                <span class="level">Advanced</span>
-                <span class="last-used">June 2025</span>
-            </div>
-            <div class="grid-structure skill-item" data-type="tool"
-                data-info="Picture editing software I sometimes use for my projects.">
-                <img src="images/icon-ps.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">Adobe Photoshop</span><span
-                        class="type-badge">Creative Tool</span></span>
-                <span class="level">Intermediate</span>
-                <span class="last-used">June 2025</span>
-            </div>
-            <div class="grid-structure skill-item" data-type="tool"
-                data-info="3D modeling software, currently learning.">
-                <img src="images/icon-bl.png" class="skill-icon">
-                <span class="skill-meta"><span class="skill-name">Blender</span><span class="type-badge">Creative
-                        Tool</span></span>
-                <span class="level">Beginner</span>
-                <span class="last-used">Feb 2026</span>
+            <div class="grid-structure grid-header">
+                <span>Skill</span>
+                <span>Proficiency</span>
+                <span>Last Used</span>
             </div>
         </div>
     </div>
 
+    <div id="no-results" style="display: none;">
+        <div class="no-results-content">
+            <h3>No skills found</h3>
+            <p>Try searching for different keywords or categories.</p>
+        </div>
+    </div>
+
     <footer class="page-footer">
-        <p>Last Updated: February 16, 2026</p>
+        <p>Last Updated: <span id="last-updated-date">February 16, 2026</span></p>
     </footer>
 
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modal-title-main">Skill Details</h2>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <img id="modal-skill-icon" src="" alt="" style="width: 32px; height: 32px; object-fit: contain;">
+                    <h2 id="modal-title-main">Skill Details</h2>
+                </div>
                 <span class="close-button">&times;</span>
             </div>
-            <div class="modal-info-pane" style="padding:20px;">
-                <p id="bio-description"></p>
+            
+            <div class="modal-body-split">
+                <div class="modal-info-pane" style="padding: 20px;">
+                    <p id="bio-description" style="margin-bottom: 25px; font-size: 1rem; color: #e1e4e8;"></p>
+                    <hr style="border: 0; border-top: 1px solid #1f2428; margin-bottom: 20px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 30px;">
+                         <div>
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Last Used</small>
+                            <strong id="modal-skill-last" style="color: #ffffff;">-</strong>
+                        </div>
+                        <div>
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Proficiency</small>
+                            <strong id="modal-skill-level" style="color: #58a6ff;">-</strong>
+                        </div>
+                        <div>
+                            <small style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem;">Category</small>
+                            <strong id="modal-skill-type" style="color: #ffffff;">-</strong>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
-
 </html>

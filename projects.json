@@ -1,0 +1,208 @@
+{
+  "videos": [
+    {
+      "name": "Toothbrush Chronicles: Super Hill",
+      "date": "2025-05-31",
+      "displayDate": "May 2025",
+      "info": "A sequel to our original toothbrush video, this one had a much bigger scope and was a lot of fun to make. We used Unreal Engine 5 to create the environments, effects, and used MetaHumans for the characters.",
+      "tools": "Premiere Pro, After Effects, Photoshop, Unreal Engine 5",
+      "youtube": "KdGH6zSjoBA",
+      "gallery": [
+        "images/Super_01.png",
+        "images/Super_02.png",
+        "images/Super_03.png",
+        "images/Super_04.png",
+        "images/Super_05.png",
+        "images/Super_06.png"
+      ]
+    },
+    {
+      "name": "House of Horrors",
+      "date": "2025-04-01",
+      "displayDate": "April 2025",
+      "info": "A video using an Unreal Engine 5 game I was working on at the time.",
+      "tools": "Premiere Pro, Unreal Engine 5",
+      "youtube": "n16hGIjFj5g",
+      "gallery": [
+        "images/Horrors_01.png",
+        "images/Horrors_02.png",
+        "images/Horrors_03.png"
+      ]
+    },
+    {
+      "name": "House of Pain - Jump Around",
+      "date": "2025-01-25",
+      "displayDate": "January 2025",
+      "info": "A 90's themed music video using Unreal Engine 5. Had a ton of fun editing and shooting this one.",
+      "tools": "Premiere Pro, After Effects, Photoshop, Unreal Engine 5",
+      "youtube": "qXDePSHjFlc",
+      "gallery": [
+        "images/Jump_02.png",
+        "images/Jump_01.png",
+        "images/Jump_03.png"
+      ]
+    },
+    {
+      "name": "Two Highschoolers Fight Using Toothbrushes",
+      "date": "2024-05-30",
+      "displayDate": "May 2024",
+      "info": "Seth and I's first video using After Effects. We experimented with many different effects.",
+      "tools": "Premiere Pro, After Effects",
+      "youtube": "1-UaMcezN9c",
+      "gallery": [
+        "images/Toothbrush_02.png",
+        "images/Toothbrush_01.png",
+        "images/Toothbrush_03.png"
+      ]
+    },
+    {
+      "name": "Hill-lucinations",
+      "date": "2024-11-14",
+      "displayDate": "Nov 2024",
+      "info": "First video I shot using log. I wanted to experiement with the color grading and using 3D models in After Effects.",
+      "tools": "Premiere Pro, After Effects",
+      "youtube": "SyMaYSVeTHM",
+      "gallery": [
+        "images/Hill_01.png",
+        "images/Hill_02.png",
+        "images/Hill_03.png",
+        "images/Hill_04.png",
+        "images/Hill_05.png",
+        "images/Hill_06.png"
+      ]
+    }
+  ],
+  "games": [
+    {
+      "name": "The Secret of Craig Hill Remake",
+      "date": "2026-01-20",
+      "displayDate": "January 2026",
+      "info": "An updated version of the original game with improved visuals and practices. I'm just using this project as a learning experience to see how much I can improve on the original with the skills I've learned since then.",
+      "tools": "Unreal Engine 5, Blueprints",
+      "youtube": "YOUTUBE_ID_HERE",
+      "gallery": []
+    },
+    {
+      "name": "The Secret of Craig Hill",
+      "date": "2025-01-01",
+      "displayDate": "January 2025",
+      "info": "A horror game I worked on in Unreal Engine 5 featuring my video production teacher. I handled all the programming, audio, and most of level design for this project.",
+      "tools": "Unreal Engine 5, Blueprints",
+      "youtube": "YOUTUBE_ID_HERE",
+      "gallery": [
+        "images/Secret_01.png",
+        "images/Secret_02.png"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "C++",
+      "type": "language",
+      "badge": "Programming",
+      "level": "Beginner",
+      "lastUsed": "Feb 2026",
+      "icon": "images/icon-cpp.png",
+      "info": "In the early stages of learning currently."
+    },
+    {
+      "name": "Python",
+      "type": "language",
+      "badge": "Programming",
+      "level": "Beginner",
+      "lastUsed": "Oct 2025",
+      "icon": "images/icon-python.png",
+      "info": "Haven't used this language in quite a while."
+    },
+    {
+      "name": "Java",
+      "type": "language",
+      "badge": "Programming",
+      "level": "Intermediate",
+      "lastUsed": "Dec 2025",
+      "icon": "images/icon-java.png",
+      "info": "Used this language in high school and now at SNHU."
+    },
+    {
+      "name": "HTML / CSS / JS",
+      "type": "language",
+      "badge": "Programming",
+      "level": "Intermediate",
+      "lastUsed": "May 2024",
+      "icon": "images/icon-web.png",
+      "info": "Went through a CodeCamp course. Haven't used in quite a while."
+    },
+    {
+      "name": "Unreal Engine 5",
+      "type": "engine",
+      "badge": "Game Engine",
+      "level": "Intermediate",
+      "lastUsed": "Feb 2026",
+      "icon": "images/icon-ue5.png",
+      "info": "My primary game engine as of right now."
+    },
+    {
+      "name": "Unity",
+      "type": "engine",
+      "badge": "Game Engine",
+      "level": "Beginner",
+      "lastUsed": "Feb 2026",
+      "icon": "images/icon-unity.png",
+      "info": "Currently learning, possibly switching from Unreal Engine 5 to this game engine."
+    },
+    {
+      "name": "Adobe After Effects",
+      "type": "tool",
+      "badge": "Creative Tool",
+      "level": "Advanced",
+      "lastUsed": "June 2025",
+      "icon": "images/icon-ae.png",
+      "info": "VFX software I use for rotoscoping and advanced effects in my videos."
+    },
+    {
+      "name": "Adobe Premiere Pro",
+      "type": "tool",
+      "badge": "Creative Tool",
+      "level": "Advanced",
+      "lastUsed": "June 2025",
+      "icon": "images/icon-pr.png",
+      "info": "Video editing software I use to cut and edit my videos."
+    },
+    {
+      "name": "Adobe Photoshop",
+      "type": "tool",
+      "badge": "Creative Tool",
+      "level": "Intermediate",
+      "lastUsed": "June 2025",
+      "icon": "images/icon-ps.png",
+      "info": "Picture editing software I sometimes use for my projects."
+    },
+    {
+      "name": "Blender",
+      "type": "tool",
+      "badge": "Creative Tool",
+      "level": "Beginner",
+      "lastUsed": "Feb 2026",
+      "icon": "images/icon-bl.png",
+      "info": "3D modeling software, currently learning."
+    },
+    {
+      "name": "Visual Studio Code",
+      "type": "ide",
+      "badge": "Integrated Development Environment",
+      "level": "Beginner",
+      "lastUsed": "Feb 2026",
+      "icon": "images/icon-vsc.png",
+      "info": "Code editor, currently learning."
+    },
+    {
+      "name": "Visual Studio",
+      "type": "ide",
+      "badge": "Integrated Development Environment",
+      "level": "Beginner",
+      "lastUsed": "Feb 2026",
+      "icon": "images/icon-vs.png",
+      "info": "Advanced code editor, currently learning."
+    }
+  ]
+}

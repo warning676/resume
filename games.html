@@ -8,8 +8,12 @@
 </head>
 
 <body>
-    <nav><a href="index.html">BIO</a><a href="technical.html">TECHNICAL</a><a href="videos.html">HIGH SCHOOL
-            VIDEOS</a><a href="games.html">GAME PROJECTS</a>
+    <nav>
+        <a href="index.html">Bio</a>
+        <a href="achievements.html">Achievements</a>
+        <a href="technical.html">Technical</a>
+        <a href="videos.html">Videos</a>
+        <a href="games.html" class="active">Games</a>
     </nav>
 
     <div class="controls">
@@ -19,7 +23,7 @@
 
         <div class="filter-controls">
             <div class="filter-group">
-                <span class="filter-label">SORT BY:</span>
+                <label for="sort-select">SORT BY:</label>
                 <select id="sort-select">
                     <option value="date" selected>Date</option>
                     <option value="name">Name</option>
@@ -33,31 +37,10 @@
     </div>
 
     <h2>GAME PROJECTS</h2>
-    <p>A collection of game projects I have worked on over the years, primarily using Unreal Engine 5. These will
-        typically be smaller in scope than a full game, and may only showcase a single level or mechanic, but the skills
-        I have learned while making them has proven valuable.</p>
+    <p>A collection of game projects I have worked on over the years, primarily using Unreal Engine 5. These will typically be smaller in scope than a full game, and may only showcase a single level or mechanic, but the skills I have learned while making them has proven valuable.</p>
+    
     <div class="portfolio-grid" id="portfolio-grid">
-
-        <div class="portfolio-card" data-name="The Secret of Craig Hill" data-date="2025-01-01"
-            data-info="A horror game I worked on in Unreal Engine 5 featuring my video production teacher. I handled all the programming, audio, and most of level design for this project."
-            data-tools="Unreal Engine 5, Blueprints" data-youtube="YOUTUBE_ID_HERE" data-gallery="">
-            <div class="card-thumb"><img src=""></div>
-            <div class="card-content">
-                <h4>The Secret of Craig Hill</h4>
-                <p>January 2025</p>
-            </div>
         </div>
-
-        <div class="portfolio-card" data-name="The Secret of Craig Hill Remake" data-date="2026-01-20"
-            data-info="An updated version of the original game with improved visuals and practices. I'm just using this project as a learning experience to see how much I can improve on the original with the skills I've learned since then."
-            data-tools="Unreal Engine 5, Blueprints" data-youtube="YOUTUBE_ID_HERE" data-gallery="">
-            <div class="card-thumb"><img src=""></div>
-            <div class="card-content">
-                <h4>The Secret of Craig Hill Remake</h4>
-                <p>January 2026</p>
-            </div>
-        </div>
-    </div>
 
     <div id="no-results" style="display: none;">
         <div class="no-results-content">
@@ -89,7 +72,7 @@
     </div>
 
     <footer class="page-footer">
-        <p>Last Updated: February 16, 2026</p>
+        <p>Last Updated: <span id="last-updated-date">February 16, 2026</span></p>
     </footer>
     <script src="script.js"></script>
 </body>
