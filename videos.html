@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>BEN REYNOLDS | VIDEOS</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <header data-include="nav.html"></header>
 
     <div class="page-intro">
         <h2>HIGH SCHOOL VIDEO PROJECTS</h2>
-        <p>A collection of videos I created with a good friend during high school. These were all made using footage we shot ourselves and edited in Adobe Premiere Pro and After Effects and some using Unreal Engine 5.</p>
+        <p>A collection of videos I created with a good friend during high school. These were all made using footage we
+            shot ourselves and edited in Adobe Premiere Pro and After Effects and some using Unreal Engine 5.</p>
     </div>
 
     <div class="controls">
@@ -31,7 +34,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="portfolio-grid" id="portfolio-grid"></div>
 
     <div id="no-results" style="display: none;">
@@ -43,6 +46,9 @@
 
     <div id="infoModal" class="modal">
         <div class="modal-content">
+            <button id="modal-prev" class="modal-nav-btn prev" aria-label="Previous project">&#10094;</button>
+            <button id="modal-next" class="modal-nav-btn next" aria-label="Next project">&#10095;</button>
+
             <div class="modal-header">
                 <h2 id="modal-title">Project Details</h2>
                 <span class="close-button">&times;</span>
@@ -62,9 +68,10 @@
             </div>
         </div>
     </div>
-    
+
     <footer data-include="footer.html"></footer>
 
     <script src="script.js"></script>
 </body>
+
 </html>

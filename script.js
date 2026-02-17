@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const noResults = document.getElementById("no-results");
     const grid = document.getElementById("portfolio-grid");
     const modalBody = document.querySelector(".modal-body-split");
+    const prevBtn = document.getElementById("modal-prev");
+    const nextBtn = document.getElementById("modal-next");
+    let currentProjectCard = null;
 
     includeHTML();
 
@@ -46,6 +49,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 link.classList.add('active');
             }
         });
+    }
+
+    function navigateProject(direction) {
+        if (!currentProjectCard) return;
+
+        const allCards = Array.from(grid.querySelectorAll('.portfolio-card'));
+        const visibleCards = allCards.filter(c => c.style.display !== 'none');
+        
+        const currentIndex = visibleCards.indexOf(currentProjectCard);
+        let nextIndex = currentIndex + direction;
+
+        if (nextIndex >= 0 && nextIndex < visibleCards.length) {
+            openProjectModal(visibleCards[nextIndex]);
+        }
     }
 
     async function fetchLastUpdated() {
@@ -402,6 +419,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openProjectModal(card) {
+        currentProjectCard = card;
+
+        const visibleCards = Array.from(grid.querySelectorAll('.portfolio-card'))
+                                  .filter(c => c.style.display !== 'none');
+        const currentIndex = visibleCards.indexOf(card);
+
+        if (prevBtn) prevBtn.style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
+        if (nextBtn) nextBtn.style.visibility = currentIndex === visibleCards.length - 1 ? 'hidden' : 'visible';
+
         if (modalBody) modalBody.scrollTop = 0;
         const modalContent = document.querySelector(".modal-content");
         if (modalContent) modalContent.scrollTop = 0;
@@ -438,7 +464,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (gallery) {
             preventClick = false;
-
             if (hasVideo) {
                 const vBtn = document.createElement('div');
                 vBtn.className = "video-thumb-btn"; vBtn.innerHTML = "<span>▶ VIDEO</span>";
@@ -447,7 +472,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 gallery.appendChild(vBtn);
             }
-
             images.forEach(src => {
                 const img = document.createElement('img');
                 img.src = src;
@@ -457,7 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 gallery.appendChild(img);
             });
-
             initGalleryDrag(gallery);
         }
 
@@ -466,6 +489,24 @@ document.addEventListener('DOMContentLoaded', () => {
             window.onclick = (e) => { if (e.target == modal) resetModal(); };
         }
     }
+
+    if (prevBtn) prevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigateProject(-1);
+    });
+
+    if (nextBtn) nextBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigateProject(1);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (modal && modal.style.display === 'flex') {
+            if (e.key === 'ArrowLeft') navigateProject(-1);
+            if (e.key === 'ArrowRight') navigateProject(1);
+            if (e.key === 'Escape') resetModal();
+        }
+    });
 
     function centerItemInGallery(container, item) {
         const cRect = container.getBoundingClientRect();
