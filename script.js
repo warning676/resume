@@ -1066,8 +1066,16 @@ document.addEventListener('DOMContentLoaded', () => {
         cards.forEach(card => portfolioGrid.appendChild(card));
     }
 
-    let isDown = false, startX, scrollLeft, preventClick = false, hasDragged = false;
+
     function initGalleryDrag(slider) {
+        if (slider.hasAttribute('data-drag-init')) return;
+        slider.setAttribute('data-drag-init', 'true');
+
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        let hasDragged = false;
+
         const checkCursor = () => {
             slider.style.cursor = slider.scrollWidth > slider.clientWidth ? 'grab' : 'default';
         };
@@ -1075,32 +1083,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const handleMouseDown = (e) => {
             if (slider.scrollWidth <= slider.clientWidth) return;
             isDown = true;
-            preventClick = false;
             hasDragged = false;
-            startX = e.pageX - slider.offsetLeft;
+            startX = (e.clientX || e.pageX) - slider.getBoundingClientRect().left;
             scrollLeft = slider.scrollLeft;
             slider.style.cursor = 'grabbing';
+            slider.style.userSelect = 'none';
         };
 
         const handleMouseMove = (e) => {
             if (!isDown) return;
-            const x = e.pageX - slider.offsetLeft;
+            const x = (e.clientX || e.pageX) - slider.getBoundingClientRect().left;
             const walk = (x - startX) * 2;
             if (Math.abs(walk) > 5) {
-                e.preventDefault();
                 if (!hasDragged) {
                     hasDragged = true;
-                    preventClick = true;
                     slider.querySelectorAll('img, .video-thumb-btn').forEach(item => item.style.pointerEvents = 'none');
                 }
                 slider.scrollLeft = scrollLeft - walk;
             }
         };
 
-        const stopDragging = () => {
+        const stopDragging = (e) => {
             if (!isDown) return;
             isDown = false;
             checkCursor();
+            slider.style.userSelect = '';
             slider.querySelectorAll('img, .video-thumb-btn, .gallery-skeleton').forEach(item => item.style.pointerEvents = 'auto');
 
             if (hasDragged) {
@@ -1123,19 +1130,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
 
-                    if (closestItem && !closestItem.classList.contains('selected')) {
-                        closestItem.click();
-                    } else if (closestItem) {
-                        centerItemInGallery(slider, closestItem);
+                    if (closestItem) {
+                        if (!closestItem.classList.contains('selected')) {
+                            closestItem.click();
+                        } else {
+                            centerItemInGallery(slider, closestItem);
+                        }
                     }
                 }
             }
         };
 
         slider.addEventListener('mousedown', handleMouseDown);
-        slider.addEventListener('mousemove', handleMouseMove);
-        slider.addEventListener('mouseleave', stopDragging);
-        slider.addEventListener('mouseup', stopDragging);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', stopDragging);
+        slider.addEventListener('mouseleave', () => { if (isDown) stopDragging(); });
+        slider.addEventListener('dragstart', (e) => e.preventDefault());
 
         checkCursor();
         setTimeout(checkCursor, 100);
