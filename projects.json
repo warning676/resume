@@ -2,9 +2,11 @@
   "videos": [
     {
       "name": "Toothbrush Chronicles: Super Hill",
+      "type": "film-festival",
+      "badge": "Film Festival",
       "date": "2025-05-31",
       "info": "A sequel to our original toothbrush video, this one had a much bigger scope and was a lot of fun to make. We used Unreal Engine 5 to create the environments, effects, and used MetaHumans for the characters.",
-      "tools": "Premiere Pro, After Effects, Photoshop, Unreal Engine 5",
+      "tools": "Adobe Premiere Pro, Adobe After Effects, Adobe Photoshop, Unreal Engine 5",
       "youtube": "KdGH6zSjoBA",
       "gallery": [
         "images/videos/Super_01.png",
@@ -17,9 +19,11 @@
     },
     {
       "name": "House of Horrors",
+      "type": "film-festival",
+      "badge": "Film Festival",
       "date": "2025-04-01",
       "info": "A video using an Unreal Engine 5 game I was working on at the time.",
-      "tools": "Premiere Pro, Unreal Engine 5",
+      "tools": "Adobe Premiere Pro, Unreal Engine 5",
       "youtube": "n16hGIjFj5g",
       "gallery": [
         "images/videos/Horrors_01.png",
@@ -29,9 +33,11 @@
     },
     {
       "name": "House of Pain - Jump Around",
+      "type": "film-festival",
+      "badge": "Film Festival",
       "date": "2025-01-25",
       "info": "A 90's themed music video using Unreal Engine 5. Had a ton of fun editing and shooting this one.",
-      "tools": "Premiere Pro, After Effects, Photoshop, Unreal Engine 5",
+      "tools": "Adobe Premiere Pro, Adobe After Effects, Adobe Photoshop, Unreal Engine 5",
       "youtube": "qXDePSHjFlc",
       "gallery": [
         "images/videos/Jump_02.png",
@@ -41,9 +47,11 @@
     },
     {
       "name": "Two Highschoolers Fight Using Toothbrushes",
+      "type": "film-festival",
+      "badge": "Film Festival",
       "date": "2024-05-30",
       "info": "Seth and I's first video using After Effects. We experimented with many different effects.",
-      "tools": "Premiere Pro, After Effects",
+      "tools": "Adobe Premiere Pro, Adobe After Effects",
       "youtube": "1-UaMcezN9c",
       "gallery": [
         "images/videos/Toothbrush_02.png",
@@ -53,9 +61,11 @@
     },
     {
       "name": "Hill-lucinations",
+      "type": "assignment",
+      "badge": "Assignment",
       "date": "2024-11-14",
       "info": "First video I shot using log. I wanted to experiement with the color grading and using 3D models in After Effects.",
-      "tools": "Premiere Pro, After Effects",
+      "tools": "Adobe Premiere Pro",
       "youtube": "SyMaYSVeTHM",
       "gallery": [
         "images/videos/Hill_01.png",
@@ -68,9 +78,11 @@
     },
     {
       "name": "Emerald Vision: A Very Devious Christmas",
+      "type": "film-festival",
+      "badge": "Film Festival",
       "date": "2024-12-18",
       "info": "Our second installment of Emerald Vision (school TV program), this one had a bigger scope than our first episode. I used Unreal Engine 5 to create the environments and effects.",
-      "tools": "Premiere Pro, After Effects, Photoshop, Unreal Engine 5",
+      "tools": "Adobe Premiere Pro, Adobe After Effects, Adobe Photoshop, Unreal Engine 5",
       "youtube": "-yTMd0Ur_bI",
       "gallery": [
         "images/videos/EV2_01.png",
@@ -83,9 +95,11 @@
     },
     {
       "name": "Emerald Vision: Devious Edition",
+      "type": "film-festival",
+      "badge": "Film Festival",
       "date": "2024-10-16",
       "info": "Our first intallment of Emerald Vision (school TV program). We created an entire episode ourselves without a team in a relatively short period of time.",
-      "tools": "Premiere Pro, After Effects, Photoshop, Illustrator",
+      "tools": "Adobe Premiere Pro, Adobe After Effects, Adobe Photoshop, Adobe Illustrator",
       "youtube": "4z15MirOQoc",
       "gallery": [
         "images/videos/EV1_02.png",
@@ -100,6 +114,8 @@
   "games": [
     {
       "name": "The Secret of Craig Hill Remake",
+      "type": "prototype",
+      "badge": "Prototype",
       "date": "2026-01-20",
       "info": "An updated version of the original game with improved visuals and practices. I'm just using this project as a learning experience to see how much I can improve on the original with the skills I've learned since then. This game is not finished.",
       "tools": "Unreal Engine 5, Blueprints",
@@ -116,6 +132,8 @@
     },
     {
       "name": "The Secret of Craig Hill",
+      "type": "prototype",
+      "badge": "Prototype",
       "date": "2025-01-10",
       "info": "A horror game I worked on in Unreal Engine 5 featuring my video production teacher. I handled all the programming, audio, and most of level design for this project. This game is not finished.",
       "tools": "Unreal Engine 5, Blueprints",
@@ -162,6 +180,15 @@
       "lastUsed": "May 2024",
       "icon": "images/icons/icon-web.png",
       "info": "Went through a CodeCamp course. Haven't used in quite a while."
+    },
+    {
+      "name": "Visual Studio Code",
+      "type": "ide",
+      "badge": "Integrated Development Environment",
+      "level": "Intermediate",
+      "lastUsed": "Feb 2026",
+      "icon": "images/icons/icon-vsc.png",
+      "info": "My primary code editor for most projects."
     },
     {
       "name": "Unreal Engine 5",
@@ -212,7 +239,7 @@
       "icon": "images/icons/icon-ps.png",
       "info": "Picture editing software I sometimes use for my projects.",
       "certified": true,
-      "certName": "Adobe Certified Professional in Photoshop" 
+      "certName": "Adobe Certified Professional in Photoshop"
     },
     {
       "name": "Adobe Illustrator",
@@ -262,6 +289,15 @@
       "lastUsed": "Feb 2026",
       "icon": "images/icons/icon-vs.png",
       "info": "Advanced code editor, currently learning."
+    },
+    {
+      "name": "Blueprints",
+      "type": "language",
+      "badge": "Visual Scripting",
+      "level": "Intermediate",
+      "lastUsed": "Feb 2026",
+      "icon": "images/icons/icon-ue5.png",
+      "info": "Visual scripting system in Unreal Engine 5 used for gameplay logic and mechanics."
     }
   ]
 }
