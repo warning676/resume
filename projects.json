@@ -182,15 +182,6 @@
       "info": "Went through a CodeCamp course. Haven't used in quite a while."
     },
     {
-      "name": "Visual Studio Code",
-      "type": "ide",
-      "badge": "Integrated Development Environment",
-      "level": "Intermediate",
-      "lastUsed": "Feb 2026",
-      "icon": "images/icons/icon-vsc.png",
-      "info": "My primary code editor for most projects."
-    },
-    {
       "name": "Unreal Engine 5",
       "type": "engine",
       "badge": "Game Engine",
