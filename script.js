@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextBtn = document.getElementById("modal-next");
     const sortSelect = document.getElementById("sort-select");
     const orderSelect = document.getElementById("order-select");
-    const searchInput = document.getElementById("portfolio-search");
+    let searchInput = document.getElementById("portfolio-search");
     const typeSelect = document.getElementById('type-select');
     const skillsList = document.getElementById('skills-list');
     const achievementsList = document.getElementById('achievements-list');
@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedTools = ['all'];
     let selectedSort = isSkillsPage ? 'lastUsed' : 'date';
     let selectedOrder = 'desc';
-    let searchQuery = '';
+    const urlParams = new URLSearchParams(window.location.search);
+    let searchQuery = urlParams.get('search') ? decodeURIComponent(urlParams.get('search')) : '';
     let currentItemCard = null;
     let currentGalleryIndex = 0;
     let allData = null;
@@ -288,7 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         if (skillMatch) {
                             tag.classList.add('clickable-tool');
-                            tag.title = `View details for ${tool}`;
                             tag.addEventListener('click', (e) => {
                                 e.stopPropagation();
                                 const tools = toolsStr.split(',').map(s => s.trim());
@@ -511,13 +511,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const initialSearch = urlParams.get('search');
 
-        if (initialSearch && searchInput) {
-            searchInput.value = decodeURIComponent(initialSearch);
+        if (initialSearch) {
+            searchQuery = decodeURIComponent(initialSearch);
+            if (searchInput) {
+                searchInput.value = searchQuery;
+                searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
 
             if (portfolioGrid) filterCards();
             if (skillsList) filterSkills();
-
-            searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }
 
@@ -881,6 +883,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
     });
 
+    window.addEventListener('scroll', () => {
+        document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
+    }, { passive: true });
+
     function renderSingleSelect(container, options, initialValue, onChange) {
         if (!container) return;
         const wasOpen = container.classList.contains('open');
@@ -921,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.appendChild(dropdown);
     }
 
-    function renderSearchBox(container, initialValue, onInput) {
+    function renderSearchBox(container, initialValue, placeholder, onInput) {
         if (!container) return;
         container.innerHTML = '';
         const searchWrap = document.createElement('div');
@@ -929,8 +935,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const input = document.createElement('input');
         input.type = 'text';
+        input.id = 'portfolio-search';
         input.className = 'custom-input';
-        input.placeholder = 'Search projects...';
+        input.placeholder = placeholder || 'Search...';
         input.value = initialValue;
 
         input.addEventListener('input', (e) => {
@@ -939,20 +946,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         searchWrap.appendChild(input);
         container.appendChild(searchWrap);
+
+        searchInput = input;
     }
 
     function initControlSkeletons() {
-        if (searchContainer) searchContainer.innerHTML = '<div class="control-skeleton"></div>';
-        if (sortSelectContainer) sortSelectContainer.innerHTML = '<div class="control-skeleton"></div>';
-        if (orderSelectContainer) orderSelectContainer.innerHTML = '<div class="control-skeleton"></div>';
-        if (typeSelectContainer) typeSelectContainer.innerHTML = '<div class="control-skeleton" style="width: 140px;"></div>';
-        if (toolSelectContainer) toolSelectContainer.innerHTML = '<div class="control-skeleton" style="width: 140px;"></div>';
+        if (searchContainer) searchContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px;"></div>';
+        if (sortSelectContainer) sortSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px;"></div>';
+        if (orderSelectContainer) orderSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px;"></div>';
+        if (typeSelectContainer) typeSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px; width: 140px;"></div>';
+        if (toolSelectContainer) toolSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px; width: 140px;"></div>';
     }
 
     initControlSkeletons();
 
     function renderStaticControls() {
-        renderSearchBox(searchContainer, searchQuery, (val) => {
+        const placeholder = isSkillsPage ? 'Search skills...' : 'Search projects...';
+        renderSearchBox(searchContainer, searchQuery, placeholder, (val) => {
             searchQuery = val;
             if (isSkillsPage) filterSkills();
             else filterCards();
