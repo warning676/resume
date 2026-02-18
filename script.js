@@ -3,17 +3,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.querySelector(".close-button");
     const videoFrame = document.getElementById("modal-video");
     const mediaContainer = document.getElementById("media-container");
+    const prevBtn = document.getElementById("modal-prev");
+    const nextBtn = document.getElementById("modal-next");
     const sortSelect = document.getElementById("sort-select");
     const orderSelect = document.getElementById("order-select");
     const searchInput = document.getElementById("portfolio-search");
     const typeSelect = document.getElementById('type-select');
     const skillsList = document.getElementById('skills-list');
+    const achievementsList = document.getElementById('achievements-list');
+    const portfolioGrid = document.getElementById("portfolio-grid");
     const noResults = document.getElementById("no-results");
-    const grid = document.getElementById("portfolio-grid");
-    const modalBody = document.querySelector(".modal-body-split");
-    const prevBtn = document.getElementById("modal-prev");
-    const nextBtn = document.getElementById("modal-next");
-    let currentProjectCard = null;
+
+    let currentItemCard = null;
+    let currentGalleryIndex = 0;
+    let isSkillsPage = !!skillsList;
+    let isAchievementsPage = !!achievementsList;
+    let isPortfolioPage = !!portfolioGrid;
 
     includeHTML();
 
@@ -51,19 +56,264 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function navigateProject(direction) {
-        if (!currentProjectCard) return;
+    function navigateItem(direction) {
+        if (!currentItemCard) return;
 
-        const allCards = Array.from(grid.querySelectorAll('.portfolio-card'));
-        const visibleCards = allCards.filter(c => c.style.display !== 'none');
-        
-        const currentIndex = visibleCards.indexOf(currentProjectCard);
-        let nextIndex = currentIndex + direction;
+        let container;
+        let itemSelector;
 
-        if (nextIndex >= 0 && nextIndex < visibleCards.length) {
-            openProjectModal(visibleCards[nextIndex]);
-        }
+        if (isSkillsPage) {
+            container = skillsList;
+            itemSelector = '.skill-item';
+        } else if (isPortfolioPage) {
+            container = portfolioGrid;
+            itemSelector = '.portfolio-card';
+        } else if (isAchievementsPage) {
+            container = achievementsList;
+            itemSelector = '.achievement-card';
+        } else return;
+
+        const allItems = Array.from(container.querySelectorAll(itemSelector));
+        const visibleItems = allItems.filter(item => item.style.display !== 'none');
+
+        if (visibleItems.length <= 1) return;
+
+        const currentIndex = visibleItems.indexOf(currentItemCard);
+        let nextIndex = (currentIndex + direction + visibleItems.length) % visibleItems.length;
+
+        currentItemCard = visibleItems[nextIndex];
+        openModalForItem(currentItemCard);
     }
+
+    function openModalForItem(card) {
+        currentItemCard = card;
+        currentGalleryIndex = 0;
+
+        const modalBody = document.querySelector(".modal-body-split");
+        const modalContent = document.querySelector(".modal-content");
+        if (modalBody) modalBody.scrollTop = 0;
+        if (modalContent) modalContent.scrollTop = 0;
+
+        const container = isSkillsPage ? skillsList : portfolioGrid;
+        const itemSelector = isSkillsPage ? '.skill-item' : '.portfolio-card';
+
+        const visibleItems = Array.from(container.querySelectorAll(itemSelector))
+            .filter(item => item.style.display !== 'none');
+
+        if (prevBtn) prevBtn.style.visibility = visibleItems.length > 1 ? 'visible' : 'hidden';
+        if (nextBtn) nextBtn.style.visibility = visibleItems.length > 1 ? 'visible' : 'hidden';
+
+        let gallery = document.getElementById("modal-gallery");
+
+        if (gallery && gallery.parentElement.classList.contains('gallery-container-wrapper')) {
+            const wrapper = gallery.parentElement;
+            wrapper.parentNode.insertBefore(gallery, wrapper);
+            wrapper.remove();
+        }
+
+        if (gallery) {
+            gallery.innerHTML = '';
+            gallery.scrollLeft = 0;
+        }
+
+        if (isSkillsPage) {
+            const titleMain = document.getElementById('modal-title-main');
+            if (titleMain) {
+                titleMain.innerText = card.dataset.name.toUpperCase().trim();
+            }
+
+            const bioDesc = document.getElementById('bio-description');
+            if (bioDesc) bioDesc.innerText = card.dataset.info || "No description available.";
+
+            const modalIcon = document.getElementById('modal-skill-icon');
+            if (modalIcon) {
+                modalIcon.src = card.querySelector('img').src;
+                modalIcon.alt = card.dataset.name;
+            }
+
+            const sType = document.getElementById('modal-skill-type');
+            if (sType) sType.innerText = card.querySelector('.type-badge').innerText;
+
+            const sLevel = document.getElementById('modal-skill-level');
+            if (sLevel) sLevel.innerText = card.querySelector('.level').innerText;
+
+            const sLast = document.getElementById('modal-skill-last');
+            if (sLast) sLast.innerText = card.querySelector('.last-used').innerText;
+
+            const certContainer = document.getElementById('modal-skill-cert-container');
+            const certName = document.getElementById('modal-skill-cert-name');
+            if (certContainer && certName) {
+                const isCertified = card.dataset.certified === "true";
+                if (isCertified && card.dataset.certName) {
+                    certContainer.style.display = "block";
+                    certName.innerText = card.dataset.certName;
+                } else {
+                    certContainer.style.display = "none";
+                    certName.innerText = "-";
+                }
+            }
+
+            if (videoFrame) videoFrame.style.display = 'none';
+            const bigImg = document.getElementById("big-image-view");
+            if (bigImg) bigImg.remove();
+        } else {
+            const youtubeID = card.getAttribute('data-youtube');
+            const galleryData = card.getAttribute('data-gallery');
+            const rawDate = card.getAttribute('data-date');
+            const tools = card.getAttribute('data-tools');
+            const info = card.getAttribute('data-info');
+
+            const modalTitle = document.getElementById("modal-title");
+            if (modalTitle) modalTitle.innerText = card.querySelector('h4').innerText.toUpperCase();
+
+            const modalTools = document.getElementById("modal-tools");
+            if (modalTools) modalTools.innerText = "TOOLS: " + (tools ? tools.toUpperCase() : "NONE");
+
+            const modalDesc = document.getElementById("modal-description");
+            if (modalDesc) modalDesc.innerText = info;
+
+            const modalDate = document.getElementById("modal-date");
+            if (modalDate) modalDate.innerText = formatFullDate(rawDate).toUpperCase();
+
+            const hasVideo = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
+            const images = galleryData ? galleryData.split(',').map(s => s.trim()).filter(s => s !== "") : [];
+
+            if (hasVideo) showVideo(youtubeID);
+            else if (images.length > 0) showImage(images[0]);
+
+            if (gallery) {
+                const galleryWrapper = document.createElement('div');
+                galleryWrapper.className = 'gallery-container-wrapper';
+                gallery.parentNode.insertBefore(galleryWrapper, gallery);
+
+                const gPrev = document.createElement('button');
+                gPrev.className = 'gallery-nav-btn prev';
+                gPrev.innerHTML = '&#10094;';
+
+                const gNext = document.createElement('button');
+                gNext.className = 'gallery-nav-btn next';
+                gNext.innerHTML = '&#10095;';
+
+                galleryWrapper.appendChild(gPrev);
+                galleryWrapper.appendChild(gallery);
+                galleryWrapper.appendChild(gNext);
+
+                const updateSelection = (index) => {
+                    const items = gallery.querySelectorAll('img, .video-thumb-btn');
+                    items.forEach((el, i) => {
+                        if (i === index) el.classList.add('selected');
+                        else el.classList.remove('selected');
+                    });
+                };
+
+                if (hasVideo) {
+                    const vBtn = document.createElement('div');
+                    vBtn.className = "video-thumb-btn selected";
+                    vBtn.innerHTML = "<span>▶ VIDEO</span>";
+                    vBtn.addEventListener('click', () => {
+                        currentGalleryIndex = 0;
+                        updateSelection(0);
+                        centerItemInGallery(gallery, vBtn);
+                        showVideo(youtubeID);
+                        updateGalleryButtons(gallery, gPrev, gNext);
+                    });
+                    gallery.appendChild(vBtn);
+                }
+
+                images.forEach((src, idx) => {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.setAttribute('draggable', 'false');
+                    const myIndex = hasVideo ? idx + 1 : idx;
+                    if (!hasVideo && idx === 0) img.classList.add('selected');
+
+                    img.addEventListener('click', () => {
+                        currentGalleryIndex = myIndex;
+                        updateSelection(myIndex);
+                        centerItemInGallery(gallery, img);
+                        showImage(src);
+                        updateGalleryButtons(gallery, gPrev, gNext);
+                    });
+                    gallery.appendChild(img);
+                });
+
+                initGalleryDrag(gallery);
+
+                if (gallery.children.length > 1) {
+                    gPrev.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        navigateGallery(gallery, -1, gPrev, gNext);
+                    });
+                    gNext.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        navigateGallery(gallery, 1, gPrev, gNext);
+                    });
+                    updateGalleryButtons(gallery, gPrev, gNext);
+                } else {
+                    gPrev.style.display = 'none';
+                    gNext.style.display = 'none';
+                }
+            }
+        }
+        if (modal) modal.style.display = "flex";
+    }
+
+    function navigateGallery(gallery, direction, gPrev, gNext) {
+        const items = Array.from(gallery.children).filter(child => !child.classList.contains('gallery-nav-btn'));
+        if (items.length === 0) return;
+
+        let newIndex = currentGalleryIndex + direction;
+
+        if (newIndex >= items.length) {
+            newIndex = 0;
+        } else if (newIndex < 0) {
+            newIndex = items.length - 1;
+        }
+
+        currentGalleryIndex = newIndex;
+        const targetItem = items[currentGalleryIndex];
+        targetItem.click();
+        centerItemInGallery(gallery, targetItem);
+        updateGalleryButtons(gallery, gPrev, gNext);
+    }
+
+    function updateGalleryButtons(gallery, gPrev, gNext) {
+        if (!gPrev || !gNext) return;
+        const items = Array.from(gallery.children).filter(child => !child.classList.contains('gallery-nav-btn'));
+        const shouldShow = items.length > 1;
+        gPrev.style.visibility = shouldShow ? 'visible' : 'hidden';
+        gNext.style.visibility = shouldShow ? 'visible' : 'hidden';
+    }
+
+    function debounce(func, delay) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigateItem(-1);
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigateItem(1);
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (modal && modal.style.display === 'flex') {
+            if (e.key === 'ArrowLeft') navigateItem(-1);
+            if (e.key === 'ArrowRight') navigateItem(1);
+            if (e.key === 'Escape') resetModal();
+        }
+    });
 
     async function fetchLastUpdated() {
         const dateElement = document.getElementById('last-updated-date');
@@ -90,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (initialSearch && searchInput) {
             searchInput.value = decodeURIComponent(initialSearch);
 
-            if (grid) filterCards();
+            if (portfolioGrid) filterCards();
             if (skillsList) filterSkills();
 
             searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -174,10 +424,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateElement = document.getElementById("last-updated-date");
             if (dateElement && data.lastUpdated) dateElement.innerText = data.lastUpdated;
 
-            if (grid) {
+            if (portfolioGrid) {
                 const pageType = window.location.pathname.includes('videos.html') ? 'videos' : 'games';
                 const projectData = data[pageType] || [];
-                showSkeletons(grid, projectData.length);
+                showSkeletons(portfolioGrid, projectData.length);
                 setTimeout(() => {
                     renderProjects(projectData);
                     checkURLParams();
@@ -185,8 +435,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (skillsList) {
-                const isAchievements = window.location.pathname.includes('achievements.html');
                 const skillData = data.skills || [];
+                const isAchievements = window.location.pathname.includes('achievements.html');
                 const dynamicCount = isAchievements ? skillData.filter(s => s.certified === true).length : skillData.length;
                 showSkeletons(skillsList, dynamicCount);
                 setTimeout(() => {
@@ -198,8 +448,8 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(err => console.error("Error loading data:", err));
 
     function renderProjects(projects) {
-        if (!grid || !projects) return;
-        grid.innerHTML = '';
+        if (!portfolioGrid || !projects) return;
+        portfolioGrid.innerHTML = '';
         projects.forEach(project => {
             const card = document.createElement('div');
             card.className = 'portfolio-card';
@@ -207,9 +457,9 @@ document.addEventListener('DOMContentLoaded', () => {
             card.setAttribute('data-date', project.date);
             card.setAttribute('data-info', project.info);
             card.setAttribute('data-tools', project.tools);
-            card.setAttribute('data-youtube', project.youtube);
-            card.setAttribute('data-gallery', project.gallery.join(', '));
-            const thumbSrc = project.gallery.length > 0 ? project.gallery[0] : '';
+            card.setAttribute('data-youtube', project.youtube || '');
+            card.setAttribute('data-gallery', project.gallery ? project.gallery.join(', ') : '');
+            const thumbSrc = project.gallery?.[0] || '';
             const displayDate = formatFullDate(project.date);
             card.innerHTML = `
                 <div class="card-thumb"><img src="${thumbSrc}" alt="${project.name}"></div>
@@ -217,8 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h4>${project.name}</h4>
                     <p>${displayDate}</p>
                 </div>`;
-            card.addEventListener('click', () => openProjectModal(card));
-            grid.appendChild(card);
+            card.addEventListener('click', () => openModalForItem(card));
+            portfolioGrid.appendChild(card);
         });
         sortCards();
     }
@@ -234,11 +484,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const item = document.createElement('div');
             item.className = 'grid-structure skill-item';
-            item.setAttribute('data-type', skill.type);
+            item.setAttribute('data-type', skill.type || '');
             item.setAttribute('data-name', skill.name);
+            item.setAttribute('data-info', skill.info || '');
+            item.setAttribute('data-certified', skill.certified ? "true" : "false");
+            item.setAttribute('data-cert-name', skill.certName || "");
 
-            const certName = skill.certName || "Certified Professional";
-            const certifiedBadge = skill.certified ? `<span class="grid-certified-badge" title="${certName}">CERTIFIED</span>` : '';
+            const certifiedBadge = skill.certified ? `<span class="grid-certified-badge">CERTIFIED</span>` : '';
 
             item.innerHTML = `
                 <img src="${skill.icon}" class="skill-icon">
@@ -249,52 +501,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="level">${skill.level}</span>
                 <span class="last-used">${skill.lastUsed}</span>`;
 
-            item.addEventListener('click', () => {
-                const titleMain = document.getElementById('modal-title-main');
-                if (titleMain) titleMain.innerText = skill.name.toUpperCase();
-
-                const bioDesc = document.getElementById('bio-description');
-                if (bioDesc) bioDesc.innerText = skill.info;
-
-                const modalIcon = document.getElementById('modal-skill-icon');
-                if (modalIcon) { modalIcon.src = skill.icon; modalIcon.alt = skill.name; }
-
-                const sType = document.getElementById('modal-skill-type');
-                if (sType) sType.innerText = skill.badge;
-
-                const sLevel = document.getElementById('modal-skill-level');
-                if (sLevel) sLevel.innerText = skill.level;
-
-                const sLast = document.getElementById('modal-skill-last');
-                if (sLast) sLast.innerText = skill.lastUsed;
-
-                const certContainer = document.getElementById('modal-skill-cert-container');
-                const certNameDisplay = document.getElementById('modal-skill-cert-name');
-                if (certContainer) {
-                    if (skill.certified) {
-                        certContainer.style.display = 'block';
-                        if (certNameDisplay) certNameDisplay.innerText = skill.certName || "Certified Professional";
-                    } else {
-                        certContainer.style.display = 'none';
-                    }
-                }
-
-                if (modalBody) modalBody.scrollTop = 0;
-                if (modal) modal.style.display = 'flex';
-            });
+            item.addEventListener('click', () => openModalForItem(item));
             skillsList.appendChild(item);
         });
+
         if (!isAchievementsPage) sortSkills();
     }
 
     function filterCards() {
-        if (!grid) return;
-        const query = searchInput.value.toLowerCase();
+        if (!portfolioGrid) return;
+        const query = (searchInput?.value || '').toLowerCase();
         let visibleCount = 0;
-        grid.querySelectorAll('.portfolio-card').forEach(card => {
-            const content = card.innerText.toLowerCase() + card.getAttribute('data-tools').toLowerCase() + card.getAttribute('data-info').toLowerCase();
-            if (content.includes(query)) { card.style.display = "block"; visibleCount++; }
-            else { card.style.display = "none"; }
+        portfolioGrid.querySelectorAll('.portfolio-card').forEach(card => {
+            const content = card.innerText.toLowerCase() +
+                (card.getAttribute('data-tools') || '').toLowerCase() +
+                (card.getAttribute('data-info') || '').toLowerCase();
+            if (content.includes(query)) {
+                card.style.display = "block";
+                visibleCount++;
+            } else {
+                card.style.display = "none";
+            }
         });
         if (noResults) noResults.style.display = visibleCount === 0 ? "block" : "none";
     }
@@ -308,8 +535,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const text = (item.innerText || '').toLowerCase();
             const matchesQuery = query === '' || text.includes(query);
             const matchesType = type === 'all' || item.dataset.type === type;
-            if (matchesQuery && matchesType) { item.style.display = ''; visibleCount++; }
-            else { item.style.display = 'none'; }
+            if (matchesQuery && matchesType) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
         });
         if (noResults) noResults.style.display = visibleCount === 0 ? 'block' : 'none';
     }
@@ -321,15 +552,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const items = Array.from(skillsList.querySelectorAll('.skill-item'));
         items.sort((a, b) => {
             let valA, valB;
-            const nameA = a.querySelector('.skill-name').innerText.toLowerCase();
-            const nameB = b.querySelector('.skill-name').innerText.toLowerCase();
-            if (sortBy === 'name') { valA = nameA; valB = nameB; }
-            else if (sortBy === 'proficiency') {
+            const nameA = a.dataset.name.toLowerCase().trim();
+            const nameB = b.dataset.name.toLowerCase().trim();
+            if (sortBy === 'name') {
+                valA = nameA; valB = nameB;
+            } else if (sortBy === 'proficiency') {
                 valA = getProficiencyValue(a.querySelector('.level').innerText);
                 valB = getProficiencyValue(b.querySelector('.level').innerText);
             } else {
-                valA = new Date(a.querySelector('.last-used').innerText).getTime();
-                valB = new Date(b.querySelector('.last-used').innerText).getTime();
+                valA = new Date(a.querySelector('.last-used').innerText).getTime() || 0;
+                valB = new Date(b.querySelector('.last-used').innerText).getTime() || 0;
             }
             if (valA === valB) return nameA.localeCompare(nameB);
             return order === 'desc' ? (valA > valB ? -1 : 1) : (valA < valB ? -1 : 1);
@@ -338,32 +570,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function sortCards() {
-        if (!grid) return;
+        if (!portfolioGrid || !sortSelect) return;
         const sortBy = sortSelect?.value || 'date';
         const order = orderSelect?.value || 'desc';
-        const cards = Array.from(grid.querySelectorAll('.portfolio-card'));
+        const cards = Array.from(portfolioGrid.querySelectorAll('.portfolio-card'));
         cards.sort((a, b) => {
             let valA, valB;
-            if (sortBy === 'name') { valA = a.getAttribute('data-name').toLowerCase(); valB = b.getAttribute('data-name').toLowerCase(); }
-            else { valA = new Date(a.getAttribute('data-date').replace(/-/g, '\/')).getTime(); valB = new Date(b.getAttribute('data-date').replace(/-/g, '\/')).getTime(); }
-            return order === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+            if (sortBy === 'name') {
+                valA = a.getAttribute('data-name').toLowerCase();
+                valB = b.getAttribute('data-name').toLowerCase();
+            } else {
+                valA = new Date(a.getAttribute('data-date').replace(/-/g, '\/')).getTime();
+                valB = new Date(b.getAttribute('data-date').replace(/-/g, '\/')).getTime();
+            }
+            return order === 'asc' ? (valA - valB) : (valB - valA);
         });
-        cards.forEach(card => grid.appendChild(card));
+        cards.forEach(card => portfolioGrid.appendChild(card));
     }
 
     if (searchInput) {
-        if (grid) searchInput.addEventListener('input', filterCards);
-        else if (skillsList) searchInput.addEventListener('input', filterSkills);
+        searchInput.addEventListener('input', isSkillsPage ? filterSkills : filterCards);
     }
     if (sortSelect) {
-        if (grid) sortSelect.addEventListener('change', sortCards);
-        else if (skillsList) sortSelect.addEventListener('change', sortSkills);
+        sortSelect.addEventListener('change', isSkillsPage ? sortSkills : sortCards);
     }
     if (orderSelect) {
-        if (grid) orderSelect.addEventListener('change', sortCards);
-        else if (skillsList) orderSelect.addEventListener('change', sortSkills);
+        orderSelect.addEventListener('change', isSkillsPage ? sortSkills : sortCards);
     }
-    if (typeSelect && skillsList) typeSelect.addEventListener('change', filterSkills);
+    if (typeSelect && skillsList) {
+        typeSelect.addEventListener('change', filterSkills);
+    }
 
     let isDown = false, startX, scrollLeft, preventClick = false, hasDragged = false;
     function initGalleryDrag(slider) {
@@ -372,12 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const handleMouseDown = (e) => {
-            if (slider.scrollWidth <= slider.clientWidth) {
-                isDown = false;
-                preventClick = false;
-                return;
-            }
-
+            if (slider.scrollWidth <= slider.clientWidth) return;
             isDown = true;
             preventClick = false;
             hasDragged = false;
@@ -388,10 +619,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const handleMouseMove = (e) => {
             if (!isDown) return;
-
             const x = e.pageX - slider.offsetLeft;
             const walk = (x - startX) * 2;
-
             if (Math.abs(walk) > 5) {
                 e.preventDefault();
                 if (!hasDragged) {
@@ -418,96 +647,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(checkCursor, 100);
     }
 
-    function openProjectModal(card) {
-        currentProjectCard = card;
-
-        const visibleCards = Array.from(grid.querySelectorAll('.portfolio-card'))
-                                  .filter(c => c.style.display !== 'none');
-        const currentIndex = visibleCards.indexOf(card);
-
-        if (prevBtn) prevBtn.style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
-        if (nextBtn) nextBtn.style.visibility = currentIndex === visibleCards.length - 1 ? 'hidden' : 'visible';
-
-        if (modalBody) modalBody.scrollTop = 0;
-        const modalContent = document.querySelector(".modal-content");
-        if (modalContent) modalContent.scrollTop = 0;
-
-        let gallery = document.getElementById("modal-gallery");
-        if (gallery) {
-            const newGallery = gallery.cloneNode(false);
-            gallery.parentNode.replaceChild(newGallery, gallery);
-            gallery = newGallery;
-            gallery.scrollLeft = 0;
-        }
-
-        const youtubeID = card.getAttribute('data-youtube');
-        const galleryData = card.getAttribute('data-gallery');
-        const rawDate = card.getAttribute('data-date');
-        const tools = card.getAttribute('data-tools');
-        const info = card.getAttribute('data-info');
-
-        const modalTitle = document.getElementById("modal-title");
-        if (modalTitle) modalTitle.innerText = card.querySelector('h4').innerText.toUpperCase();
-        const modalTools = document.getElementById("modal-tools");
-        if (modalTools) modalTools.innerText = "TOOLS: " + (tools ? tools.toUpperCase() : "NONE");
-        const modalDesc = document.getElementById("modal-description");
-        if (modalDesc) modalDesc.innerText = info;
-        const modalDate = document.getElementById("modal-date");
-        if (modalDate) modalDate.innerText = formatFullDate(rawDate).toUpperCase();
-
-        const hasVideo = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
-        const images = galleryData ? galleryData.split(',').map(s => s.trim()).filter(s => s !== "") : [];
-
-        if (hasVideo) showVideo(youtubeID);
-        else if (images.length > 0) showImage(images[0]);
-        else { const ex = document.getElementById("big-image-view"); if (ex) ex.remove(); }
-
-        if (gallery) {
-            preventClick = false;
-            if (hasVideo) {
-                const vBtn = document.createElement('div');
-                vBtn.className = "video-thumb-btn"; vBtn.innerHTML = "<span>▶ VIDEO</span>";
-                vBtn.addEventListener('click', () => {
-                    if (!preventClick) { centerItemInGallery(gallery, vBtn); showVideo(youtubeID); }
-                });
-                gallery.appendChild(vBtn);
-            }
-            images.forEach(src => {
-                const img = document.createElement('img');
-                img.src = src;
-                img.setAttribute('draggable', 'false');
-                img.addEventListener('click', () => {
-                    if (!preventClick) { centerItemInGallery(gallery, img); showImage(src); }
-                });
-                gallery.appendChild(img);
-            });
-            initGalleryDrag(gallery);
-        }
-
-        if (modal) {
-            modal.style.display = "flex";
-            window.onclick = (e) => { if (e.target == modal) resetModal(); };
-        }
-    }
-
-    if (prevBtn) prevBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        navigateProject(-1);
-    });
-
-    if (nextBtn) nextBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        navigateProject(1);
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (modal && modal.style.display === 'flex') {
-            if (e.key === 'ArrowLeft') navigateProject(-1);
-            if (e.key === 'ArrowRight') navigateProject(1);
-            if (e.key === 'Escape') resetModal();
-        }
-    });
-
     function centerItemInGallery(container, item) {
         const cRect = container.getBoundingClientRect();
         const iRect = item.getBoundingClientRect();
@@ -517,13 +656,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showVideo(id) {
         const ex = document.getElementById("big-image-view"); if (ex) ex.remove();
-        if (videoFrame) { videoFrame.style.display = "block"; videoFrame.src = `https://www.youtube.com/embed/${id}`; }
+        if (videoFrame) {
+            videoFrame.style.display = "block";
+            videoFrame.src = `https://www.youtube.com/embed/${id}`;
+        }
     }
 
     function showImage(src) {
         if (videoFrame) { videoFrame.style.display = "none"; videoFrame.src = ""; }
         const ex = document.getElementById("big-image-view"); if (ex) ex.remove();
-        const big = document.createElement('img'); big.id = "big-image-view"; big.src = src;
+        const big = document.createElement('img');
+        big.id = "big-image-view";
+        big.src = src;
         if (mediaContainer) mediaContainer.appendChild(big);
     }
 
@@ -531,15 +675,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.style.display = "none";
         if (videoFrame) videoFrame.src = "";
         const ex = document.getElementById("big-image-view"); if (ex) ex.remove();
-        if (modalBody) modalBody.scrollTop = 0;
-        const mc = document.querySelector(".modal-content"); if (mc) mc.scrollTop = 0;
+        if (document.querySelector(".modal-body-split")) document.querySelector(".modal-body-split").scrollTop = 0;
+        if (document.querySelector(".modal-content")) document.querySelector(".modal-content").scrollTop = 0;
         const gal = document.getElementById("modal-gallery"); if (gal) gal.scrollLeft = 0;
+        currentItemCard = null;
     };
 
     if (closeBtn) closeBtn.onclick = resetModal;
 
     window.onclick = function (event) {
-        if (event.target == modal) {
+        if (event.target === modal) {
             resetModal();
         }
     };
