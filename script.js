@@ -594,11 +594,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    fetch('projects.json')
-        .then(response => {
-            if (!response.ok) throw new Error("Could not fetch projects.json");
-            return response.json();
-        })
+    async function loadAllData() {
+        const spreadsheetId = '12V7XnylQtfLmT1ux5Va-DPhKc201m3fht9JstupnHdk';
+        const sheets = ['videos', 'games', 'skills'];
+        const data = {};
+
+        try {
+            for (const sheet of sheets) {
+                const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheet}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Could not fetch ${sheet} sheet`);
+                const text = await response.text();
+                data[sheet] = parseGVizResponse(text);
+            }
+            return data;
+        } catch (err) {
+            console.error("Error loading spreadsheet data:", err);
+            throw err;
+        }
+    }
+
+    function parseGVizResponse(text) {
+        const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+        if (!match) return [];
+        const obj = JSON.parse(match[1]);
+        const table = obj.table;
+        const cols = table.cols.map(c => c.label);
+
+        return table.rows.map(row => {
+            const item = {};
+            row.c.forEach((cell, i) => {
+                const label = cols[i];
+                if (!label) return;
+
+                let val = cell ? cell.v : null;
+
+                if (label === 'gallery' && val) {
+                    val = val.split(',').map(s => s.trim());
+                } else if (label === 'date' || label === 'lastUsed') {
+                    val = (cell && cell.f) ? cell.f : val;
+                } else if (label === 'certified' && cell) {
+                    val = cell.v === true || cell.f === "TRUE";
+                }
+
+                item[label] = val;
+            });
+            return item;
+        });
+    }
+
+    loadAllData()
         .then(data => {
             allData = data;
             const dateElement = document.getElementById("last-updated-date");
@@ -612,11 +657,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (document.title.toLowerCase().includes('game')) pageType = 'games';
 
                 let projectData = data[pageType] || [];
-
-                if (projectData.length === 0) {
-                    if (pageType === 'videos' && data.games && data.games.length > 0) {
-                    }
-                }
 
                 showSkeletons(portfolioGrid, projectData.length);
 
