@@ -58,10 +58,25 @@
     background-color: #0d1117;
 }
 
+.skill-icon-wrap {
+    width: 28px;
+    height: 28px;
+    position: relative;
+    display: inline-block;
+}
+
+.skill-icon-skeleton {
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+}
+
 .skill-icon {
     width: 28px;
     height: 28px;
     object-fit: contain;
+    position: relative;
+    display: block;
 }
 
 .skill-meta {
@@ -81,4 +96,27 @@
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.6px;
+}
+
+.tool-icon-wrap {
+    width: 14px;
+    height: 14px;
+    position: relative;
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.tool-icon-skeleton {
+    position: absolute;
+    inset: 0;
+    border-radius: 3px;
+}
+
+.tool-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    position: relative;
+    display: block;
 }

@@ -44,6 +44,21 @@ class FilterManager {
         if (!t) return true;
         const joined = contentTokens.join(' ');
         if (joined.includes(t)) return true;
+        if (t.length <= 2) {
+            for (const ct of contentTokens) if (ct === t) return true;
+            const abbrs = new Set();
+            const len = contentTokens.length;
+            for (let w = 1; w <= Math.min(3, len); w++) {
+                for (let start = 0; start + w <= len; start++) {
+                    const slice = contentTokens.slice(start, start + w);
+                    const ab = slice.map(s => s.charAt(0)).join('');
+                    if (ab) abbrs.add(ab);
+                }
+            }
+            for (const a of abbrs) if (a === t) return true;
+            return false;
+        }
+
         if (t.length <= 3) {
             const abbrs = new Set();
             const len = contentTokens.length;
@@ -58,41 +73,26 @@ class FilterManager {
                 if (a === t) return true;
                 if (this.levenshtein(a, t) <= 1) return true;
             }
-                if (t.length <= 2) {
-                    for (const ct of contentTokens) if (ct === t) return true;
-                    const abbrs = new Set();
-                    const len = contentTokens.length;
-                    for (let w = 1; w <= Math.min(3, len); w++) {
-                        for (let start = 0; start + w <= len; start++) {
-                            const slice = contentTokens.slice(start, start + w);
-                            const ab = slice.map(s => s.charAt(0)).join('');
-                            if (ab) abbrs.add(ab);
-                        }
-                    }
-                    for (const a of abbrs) if (a === t) return true;
-                    return false;
-                }
-
-                const termTokens = t.split(/\s+/);
-                for (const tt of termTokens) {
-                    let matched = false;
-                    for (const ct of contentTokens) {
-                        if (!ct) continue;
-                        if (ct.includes(tt)) { matched = true; break; }
-                        if (tt.length >= 3 && Math.abs(ct.length - tt.length) <= 1 && this.levenshtein(ct, tt) <= 1) { matched = true; break; }
-                    }
-                    if (!matched) return false;
-                }
-                return true;
-            s.searchInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
+
+        const termTokens = t.split(/\s+/);
+        for (const tt of termTokens) {
+            let matched = false;
+            for (const ct of contentTokens) {
+                if (!ct) continue;
+                if (ct.includes(tt)) { matched = true; break; }
+                if (tt.length >= 3 && Math.abs(ct.length - tt.length) <= 1 && this.levenshtein(ct, tt) <= 1) { matched = true; break; }
+            }
+            if (!matched) return false;
+        }
+        return true;
     }
 
     filterCards() {
         const s = this.s;
         if (!s.portfolioGrid) return;
-        const query = s.searchQuery.toLowerCase();
-        const expanded = this.expandQueryTerms(query);
+        const query = this.normalizeText(s.searchQuery);
+        const queryTokens = query.split(/\s+/).filter(t => t);
         let visibleCount = 0;
         s.portfolioGrid.querySelectorAll('.portfolio-card').forEach(card => {
             const cardType = card.getAttribute('data-type') || '';
@@ -105,7 +105,14 @@ class FilterManager {
             const contentRaw = (card.innerText || '') + ' ' + cardTools + ' ' + (card.getAttribute('data-info') || '');
             const content = this.normalizeText(contentRaw);
             const contentTokens = content.split(/\s+/);
-            const matchesQuery = expanded.length === 0 || expanded.some(term => this.fuzzyTermMatch(contentTokens, term));
+            let matchesQuery = true;
+            if (queryTokens.length === 1) {
+                matchesQuery = this.fuzzyTermMatch(contentTokens, queryTokens[0]);
+            } else if (queryTokens.length > 1) {
+                const required = queryTokens.filter(t => t.length >= 3);
+                const termsToCheck = required.length > 0 ? required : queryTokens;
+                matchesQuery = termsToCheck.every(term => this.fuzzyTermMatch(contentTokens, term));
+            }
 
             if (matchesType && matchesTool && matchesQuery) {
                 card.style.display = "block";
@@ -120,15 +127,22 @@ class FilterManager {
     filterSkills() {
         const s = this.s;
         if (!s.skillsList) return;
-        const query = s.searchQuery.toLowerCase();
-        const expanded = this.expandQueryTerms(query);
+        const query = this.normalizeText(s.searchQuery);
+        const queryTokens = query.split(/\s+/).filter(t => t);
         let visibleCount = 0;
         s.skillsList.querySelectorAll('.skill-item').forEach(item => {
             const info = item.getAttribute('data-info') || '';
             const textRaw = (item.innerText || '') + ' ' + info;
             const text = this.normalizeText(textRaw);
             const textTokens = text.split(/\s+/).filter(t => t);
-            const matchesQuery = expanded.length === 0 || expanded.some(term => this.fuzzyTermMatch(textTokens, term));
+            let matchesQuery = true;
+            if (queryTokens.length === 1) {
+                matchesQuery = this.fuzzyTermMatch(textTokens, queryTokens[0]);
+            } else if (queryTokens.length > 1) {
+                const required = queryTokens.filter(t => t.length >= 3);
+                const termsToCheck = required.length > 0 ? required : queryTokens;
+                matchesQuery = termsToCheck.every(term => this.fuzzyTermMatch(textTokens, term));
+            }
             const matchesType = s.selectedCategories.includes('all') || s.selectedCategories.includes(item.dataset.type);
             if (matchesQuery && matchesType) {
                 item.style.display = '';

@@ -1,6 +1,7 @@
 class ModalManager {
     constructor(state) {
         this.s = state;
+        this.galleryLoadId = 0;
     }
 
     fixImagePath(path) {
@@ -18,6 +19,65 @@ class ModalManager {
         }
         if (path.startsWith('../')) return path;
         return '../' + path;
+    }
+
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    preloadImage(src, timeoutMs) {
+        return new Promise(resolve => {
+            if (!src) {
+                resolve({ ok: false, src: '' });
+                return;
+            }
+            const img = new Image();
+            let settled = false;
+            const finish = (ok, finalSrc) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timerId);
+                resolve({ ok, src: finalSrc || src });
+            };
+            const timerId = setTimeout(() => finish(false, src), timeoutMs || 3000);
+            img.onload = () => finish(true, src);
+            img.onerror = () => finish(false, src);
+            img.src = src;
+        });
+    }
+
+    buildGallerySkeletons(gallery, count) {
+        if (!gallery || count <= 0) return;
+        gallery.innerHTML = '';
+        const skeleton = '<div class="gallery-skeleton"></div>';
+        for (let i = 0; i < count; i++) {
+            gallery.insertAdjacentHTML('beforeend', skeleton);
+        }
+    }
+
+    ensureGalleryControls(gallery) {
+        if (!gallery) return { gPrev: null, gNext: null, wrapper: null };
+        if (gallery.parentElement && gallery.parentElement.classList.contains('gallery-container-wrapper')) {
+            const wrapper = gallery.parentElement;
+            const gPrev = wrapper.querySelector('.gallery-nav-btn.prev');
+            const gNext = wrapper.querySelector('.gallery-nav-btn.next');
+            return { gPrev, gNext, wrapper };
+        }
+        const gPrev = document.createElement('button');
+        gPrev.id = "gallery-prev";
+        gPrev.className = "gallery-nav-btn prev";
+        gPrev.innerHTML = "&#10094;";
+        const gNext = document.createElement('button');
+        gNext.id = "gallery-next";
+        gNext.className = "gallery-nav-btn next";
+        gNext.innerHTML = "&#10095;";
+        const wrapper = document.createElement('div');
+        wrapper.className = 'gallery-container-wrapper';
+        gallery.parentNode.insertBefore(wrapper, gallery);
+        wrapper.appendChild(gPrev);
+        wrapper.appendChild(gallery);
+        wrapper.appendChild(gNext);
+        return { gPrev, gNext, wrapper };
     }
 
     resetModal() {
@@ -70,6 +130,8 @@ class ModalManager {
         }
         const ex = document.getElementById("big-image-view");
         if (ex) ex.remove();
+        const mediaSkeleton = document.querySelector('.media-skeleton');
+        if (mediaSkeleton) mediaSkeleton.remove();
         const big = document.createElement('img');
         big.id = "big-image-view";
         big.src = this.fixImagePath(src);
@@ -128,6 +190,7 @@ class ModalManager {
 
         if (!useSecondary) {
             s.currentGalleryIndex = 0;
+            this.galleryLoadId += 1;
             const modalBody = document.querySelector(".modal-body-split");
             const modalContent = document.querySelector(".modal-content");
             if (modalBody) modalBody.scrollTop = 0;
@@ -253,6 +316,16 @@ class ModalManager {
             if (modalTools) {
                 modalTools.innerHTML = '';
                 if (toolsStr) {
+                    const toolIcons = [];
+                    let toolIconsLoaded = 0;
+                    const clearToolSkeletons = () => {
+                        const skeletons = modalTools.querySelectorAll('.tool-icon-skeleton');
+                        skeletons.forEach(s => s.remove());
+                    };
+                    const onToolIconLoad = () => {
+                        toolIconsLoaded += 1;
+                        if (toolIconsLoaded >= toolIcons.length) clearToolSkeletons();
+                    };
                     const tools = toolsStr.split(',').map(t => t.trim());
                     tools.forEach(tool => {
                         const tag = document.createElement('span');
@@ -263,14 +336,23 @@ class ModalManager {
                                 || s.allData.skills.find(sk => tool.toLowerCase().includes(sk.name.toLowerCase()))
                             ) : null;
                         if (skillMatch && skillMatch.icon) {
+                            const iconWrap = document.createElement('span');
+                            iconWrap.className = 'tool-icon-wrap';
+
+                            const iconSkeleton = document.createElement('span');
+                            iconSkeleton.className = 'tool-icon-skeleton skeleton-element';
+
                             const icon = document.createElement('img');
                             icon.src = this.fixImagePath(skillMatch.icon);
-                            icon.style.width = "14px";
-                            icon.style.height = "14px";
-                            icon.style.marginRight = "6px";
-                            icon.style.objectFit = "contain";
-                            icon.style.verticalAlign = "middle";
-                            tag.appendChild(icon);
+                            icon.className = 'tool-icon';
+
+                            iconWrap.appendChild(iconSkeleton);
+                            iconWrap.appendChild(icon);
+                            tag.appendChild(iconWrap);
+
+                            toolIcons.push(icon);
+                            icon.onload = onToolIconLoad;
+                            icon.onerror = onToolIconLoad;
                         }
                         const text = document.createElement('span');
                         text.innerText = tool.toUpperCase();
@@ -292,6 +374,8 @@ class ModalManager {
                         }
                         modalTools.appendChild(tag);
                     });
+                    if (toolIcons.length === 0) clearToolSkeletons();
+                    toolIcons.forEach(icon => { if (icon.complete) onToolIconLoad(); });
                 } else {
                     modalTools.innerText = "NONE";
                 }
@@ -303,7 +387,12 @@ class ModalManager {
             const modalDate = document.getElementById("modal-date");
             if (modalDate) modalDate.innerText = Utils.formatFullDate(rawDate).toUpperCase();
 
-            if (youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE") {
+            const hasVideo = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
+            const galleryImages = galleryData ? galleryData.split(',').map(s => s.trim()) : [];
+            const firstImg = galleryImages.length > 0 ? galleryImages[0] : "";
+            const loadId = this.galleryLoadId;
+
+            if (hasVideo) {
                 this.showVideo(youtubeID);
                 if (s.videoFrame) s.videoFrame.style.display = 'block';
             } else {
@@ -311,34 +400,71 @@ class ModalManager {
                     s.videoFrame.style.display = 'none';
                     s.videoFrame.src = "";
                 }
-                const firstImg = galleryData ? galleryData.split(',')[0].trim() : "";
-                if (firstImg) this.showImage(firstImg);
+                const bigImg = document.getElementById("big-image-view");
+                if (bigImg) bigImg.remove();
+                const mediaSkeleton = document.querySelector('.media-skeleton');
+                if (mediaSkeleton) mediaSkeleton.remove();
+                if (galleryImages.length > 0 && s.mediaContainer) {
+                    const skeleton = document.createElement('div');
+                    skeleton.className = 'media-skeleton';
+                    s.mediaContainer.appendChild(skeleton);
+                }
             }
 
-            const galleryImages = galleryData ? galleryData.split(',').map(s => s.trim()) : [];
-            if (galleryImages.length > 0) {
-                let gallery = document.getElementById("modal-gallery");
-                const mPrev = document.getElementById("gallery-prev");
-                const mNext = document.getElementById("gallery-next");
+            const initialMediaSrc = hasVideo
+                ? `https://img.youtube.com/vi/${youtubeID}/mqdefault.jpg`
+                : (firstImg ? this.fixImagePath(firstImg) : '');
+            if (initialMediaSrc) {
+                this.preloadImage(initialMediaSrc, 3000).then(() => {
+                    if (loadId !== this.galleryLoadId) return;
+                    const mediaSkeleton = document.querySelector('.media-skeleton');
+                    if (mediaSkeleton) mediaSkeleton.remove();
+                    if (!hasVideo && firstImg) {
+                        this.showImage(firstImg);
+                        if (gallery) {
+                            const fixedFirst = this.fixImagePath(firstImg);
+                            const existing = gallery.querySelector(`img[data-gallery-src="${fixedFirst}"]`);
+                            if (!existing) {
+                                const img = document.createElement('img');
+                                img.src = fixedFirst;
+                                img.alt = "Screenshot 1";
+                                img.setAttribute('data-gallery-src', fixedFirst);
+                                img.classList.add('selected');
+                                img.addEventListener('click', () => {
+                                    s.currentGalleryIndex = 0;
+                                    const items = Array.from(gallery.children).filter(child =>
+                                        child.tagName === 'IMG' || child.classList.contains('video-thumb-btn')
+                                    );
+                                    items.forEach((item, i) => {
+                                        if (i === 0) item.classList.add('selected');
+                                        else item.classList.remove('selected');
+                                    });
+                                    this.centerItemInGallery(gallery, img);
+                                    this.showImage(firstImg);
+                                    this.updateGalleryButtons(gallery, controls.gPrev, controls.gNext);
+                                });
+                                const firstSkeleton = gallery.querySelector('.gallery-skeleton');
+                                if (firstSkeleton) firstSkeleton.replaceWith(img);
+                                else gallery.insertBefore(img, gallery.firstChild);
+                            }
+                        }
+                    }
+                });
+            }
 
-                const updateSelection = (index) => {
-                    const items = Array.from(gallery.children).filter(child =>
-                        child.tagName === 'IMG' || child.classList.contains('video-thumb-btn')
-                    );
-                    items.forEach((item, i) => {
-                        if (i === index) item.classList.add('selected');
-                        else item.classList.remove('selected');
-                    });
-                };
+            const gallery = document.getElementById("modal-gallery");
+            const totalGalleryItems = galleryImages.length + (hasVideo ? 1 : 0);
+            if (gallery && totalGalleryItems > 0) {
+                const controls = this.ensureGalleryControls(gallery);
+                this.buildGallerySkeletons(gallery, totalGalleryItems);
+                this.updateGalleryButtons(gallery, controls.gPrev, controls.gNext);
 
-                const hasVideo = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
-                let galleryIndexOffset = 0;
-
+                const videoThumb = hasVideo ? `https://img.youtube.com/vi/${youtubeID}/mqdefault.jpg` : '';
                 if (hasVideo) {
                     const videoBtn = document.createElement('button');
                     videoBtn.className = 'video-thumb-btn selected';
                     videoBtn.innerHTML = `
-                        <img src="https://img.youtube.com/vi/${youtubeID}/mqdefault.jpg" alt="Video Thumbnail">
+                        <img src="${videoThumb}" alt="Video Thumbnail">
                         <div class="video-overlay">
                             <span class="video-play-icon">▶</span>
                             <span class="video-label">VIDEO</span>
@@ -346,58 +472,89 @@ class ModalManager {
                     `;
                     videoBtn.addEventListener('click', () => {
                         s.currentGalleryIndex = 0;
-                        updateSelection(0);
+                        const items = Array.from(gallery.children).filter(child =>
+                            child.tagName === 'IMG' || child.classList.contains('video-thumb-btn')
+                        );
+                        items.forEach((item, i) => {
+                            if (i === 0) item.classList.add('selected');
+                            else item.classList.remove('selected');
+                        });
                         this.centerItemInGallery(gallery, videoBtn);
                         this.showVideo(youtubeID);
-                        this.updateGalleryButtons(gallery, mPrev, mNext);
+                        this.updateGalleryButtons(gallery, controls.gPrev, controls.gNext);
                     });
-                    gallery.appendChild(videoBtn);
-                    galleryIndexOffset = 1;
+                    const firstSkeleton = gallery.querySelector('.gallery-skeleton');
+                    if (firstSkeleton) firstSkeleton.replaceWith(videoBtn);
+                    else gallery.insertBefore(videoBtn, gallery.firstChild);
                 }
 
-                galleryImages.forEach((src, idx) => {
-                    const img = document.createElement('img');
-                    img.src = this.fixImagePath(src);
-                    img.alt = `Screenshot ${idx + 1}`;
-                    const myIndex = idx + galleryIndexOffset;
-                    if (!hasVideo && idx === 0) img.classList.add('selected');
-                    img.addEventListener('click', () => {
-                        s.currentGalleryIndex = myIndex;
-                        updateSelection(myIndex);
-                        this.centerItemInGallery(gallery, img);
-                        this.showImage(src);
-                        this.updateGalleryButtons(gallery, mPrev, mNext);
-                    });
-                    gallery.appendChild(img);
+                const preloadTasks = [];
+                galleryImages.forEach(src => {
+                    const fixed = this.fixImagePath(src);
+                    preloadTasks.push(this.preloadImage(fixed, 3000));
                 });
 
-                this.initGalleryDrag(gallery);
+                Promise.all([
+                    Promise.all(preloadTasks),
+                    this.delay(800)
+                ]).then(() => {
+                    if (loadId !== this.galleryLoadId) return;
+                    if (!gallery) return;
+                    gallery.querySelectorAll('.gallery-skeleton').forEach(item => item.remove());
 
-                if (gallery.children.length > 1) {
-                    const gPrev = document.createElement('button');
-                    gPrev.id = "gallery-prev";
-                    gPrev.className = "gallery-nav-btn prev";
-                    gPrev.innerHTML = "&#10094;";
-                    gPrev.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.navigateGallery(gallery, -1, gPrev, gNext);
+                    const updateSelection = (index) => {
+                        const items = Array.from(gallery.children).filter(child =>
+                            child.tagName === 'IMG' || child.classList.contains('video-thumb-btn')
+                        );
+                        items.forEach((item, i) => {
+                            if (i === index) item.classList.add('selected');
+                            else item.classList.remove('selected');
+                        });
+                    };
+
+                    const mPrev = controls.gPrev || document.getElementById("gallery-prev");
+                    const mNext = controls.gNext || document.getElementById("gallery-next");
+                    const galleryIndexOffset = hasVideo ? 1 : 0;
+
+                    galleryImages.forEach((src, idx) => {
+                        const img = document.createElement('img');
+                        const fixedSrc = this.fixImagePath(src);
+                        if (gallery.querySelector(`img[data-gallery-src="${fixedSrc}"]`)) return;
+                        img.src = fixedSrc;
+                        img.alt = `Screenshot ${idx + 1}`;
+                        img.setAttribute('data-gallery-src', fixedSrc);
+                        const myIndex = idx + galleryIndexOffset;
+                        if (!hasVideo && idx === 0) img.classList.add('selected');
+                        img.addEventListener('click', () => {
+                            s.currentGalleryIndex = myIndex;
+                            updateSelection(myIndex);
+                            this.centerItemInGallery(gallery, img);
+                            this.showImage(src);
+                            this.updateGalleryButtons(gallery, mPrev, mNext);
+                        });
+                        gallery.appendChild(img);
                     });
-                    const gNext = document.createElement('button');
-                    gNext.id = "gallery-next";
-                    gNext.className = "gallery-nav-btn next";
-                    gNext.innerHTML = "&#10095;";
-                    gNext.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.navigateGallery(gallery, 1, gPrev, gNext);
-                    });
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'gallery-container-wrapper';
-                    gallery.parentNode.insertBefore(wrapper, gallery);
-                    wrapper.appendChild(gPrev);
-                    wrapper.appendChild(gallery);
-                    wrapper.appendChild(gNext);
-                    this.updateGalleryButtons(gallery, gPrev, gNext);
-                }
+
+                    this.initGalleryDrag(gallery);
+
+                    if (gallery.children.length > 1) {
+                        const nav = this.ensureGalleryControls(gallery);
+                        if (nav.gPrev) {
+                            nav.gPrev.onclick = (e) => {
+                                e.stopPropagation();
+                                this.navigateGallery(gallery, -1, nav.gPrev, nav.gNext);
+                            };
+                        }
+                        if (nav.gNext) {
+                            nav.gNext.onclick = (e) => {
+                                e.stopPropagation();
+                                this.navigateGallery(gallery, 1, nav.gPrev, nav.gNext);
+                            };
+                        }
+                        this.updateGalleryButtons(gallery, nav.gPrev, nav.gNext);
+                    }
+
+                });
             }
         }
 

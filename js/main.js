@@ -131,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
         links.forEach(link => {
             let href = link.getAttribute('href');
             
-            // Adjust links based on whether we are at root or in /html/
             if (isRoot) {
                 if (href !== 'index.html' && !href.startsWith('html/')) {
                     link.setAttribute('href', 'html/' + href);
@@ -148,6 +147,64 @@ document.addEventListener('DOMContentLoaded', () => {
                 link.classList.add('active');
             }
         });
+    }
+
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function preloadImage(src, timeoutMs) {
+        return new Promise(resolve => {
+            if (!src) {
+                resolve({ ok: false, src: '' });
+                return;
+            }
+            const img = new Image();
+            let settled = false;
+            const finish = (ok, finalSrc) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timerId);
+                resolve({ ok, src: finalSrc || src });
+            };
+            const timerId = setTimeout(() => finish(false, src), timeoutMs || 3500);
+            img.onload = () => finish(true, src);
+            img.onerror = () => finish(false, src);
+            img.src = src;
+        });
+    }
+
+    async function resolveProjectThumb(project) {
+        const youtubeID = project.youtube;
+        const hasValidYoutube = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
+        if (hasValidYoutube) {
+            const maxSrc = `https://img.youtube.com/vi/${youtubeID}/maxresdefault.jpg`;
+            const maxResult = await preloadImage(maxSrc, 3500);
+            if (maxResult.ok) return maxSrc;
+            const hqSrc = `https://img.youtube.com/vi/${youtubeID}/hqdefault.jpg`;
+            await preloadImage(hqSrc, 3500);
+            return hqSrc;
+        }
+        const raw = renderer.fixImagePath(project.gallery?.[0] || '');
+        if (!raw) return '';
+        await preloadImage(raw, 3500);
+        return raw;
+    }
+
+    async function preloadProjectThumbs(projects) {
+        const tasks = projects.map(async project => {
+            project.resolvedThumb = await resolveProjectThumb(project);
+        });
+        await Promise.all(tasks);
+    }
+
+    async function preloadSkillIcons(skills) {
+        const tasks = skills.map(async skill => {
+            const iconSrc = renderer.fixImagePath(skill.icon);
+            skill.resolvedIcon = iconSrc || '';
+            if (iconSrc) await preloadImage(iconSrc, 2500);
+        });
+        await Promise.all(tasks);
     }
 
     
@@ -219,14 +276,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (projectData.length === 0) {
                     state.portfolioGrid.innerHTML = `<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">No projects found for "${pageType}".</p>`;
                 }
-
-                setTimeout(() => {
-                    try {
-                        renderer.renderProjects(projectData);
-                    } catch (e) {
-                        console.error("Render error:", e);
-                    }
-                }, 300);
+                if (projectData.length > 0) {
+                    Promise.all([
+                        preloadProjectThumbs(projectData),
+                        delay(900)
+                    ]).then(() => {
+                        try {
+                            renderer.renderProjects(projectData);
+                        } catch (e) {
+                            console.error("Render error:", e);
+                        }
+                    });
+                }
             }
 
             if (state.skillsList) {
@@ -234,9 +295,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isAchievements = window.location.pathname.includes('achievements.html');
                 const dynamicCount = isAchievements ? skillData.filter(s => s.certified === true).length : skillData.length;
                 renderer.showSkeletons(state.skillsList, dynamicCount);
-                setTimeout(() => {
+                Promise.all([
+                    preloadSkillIcons(skillData),
+                    delay(800)
+                ]).then(() => {
                     renderer.renderSkills(skillData);
-                }, 400);
+                });
             }
         })
         .catch(err => console.error("Error loading data:", err));

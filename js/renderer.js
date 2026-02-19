@@ -53,6 +53,7 @@ class Renderer {
                     <div class="card-content">
                         <div class="skeleton-element" style="width: 80%; height: 18px; margin-bottom: 10px; border-radius: 4px;"></div>
                         <div class="skeleton-element" style="width: 40%; height: 14px; border-radius: 4px;"></div>
+                        <div class="skeleton-element" style="width: 55%; height: 12px; margin-top: 10px; border-radius: 4px;"></div>
                     </div>
                 </div>`;
         }
@@ -79,13 +80,13 @@ class Renderer {
                 card.setAttribute('data-badge', project.badge || '');
                 card.setAttribute('data-gallery', project.gallery ? project.gallery.join(', ') : '');
 
-                let thumbSrc = project.gallery?.[0] || '';
+                let thumbSrc = project.resolvedThumb || project.gallery?.[0] || '';
                 const youtubeID = project.youtube;
                 const hasValidYoutube = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
                 if (hasValidYoutube) {
-                    thumbSrc = `https://img.youtube.com/vi/${youtubeID}/maxresdefault.jpg`;
+                    thumbSrc = project.resolvedThumb || `https://img.youtube.com/vi/${youtubeID}/maxresdefault.jpg`;
                 } else {
-                    thumbSrc = this.fixImagePath(thumbSrc);
+                    thumbSrc = project.resolvedThumb || this.fixImagePath(thumbSrc);
                 }
 
                 const displayDate = project.date ? Utils.formatFullDate(project.date).toUpperCase() : "";
@@ -145,14 +146,29 @@ class Renderer {
             item.setAttribute('data-badge', skill.badge || "");
 
             const certifiedBadge = skill.certified ? `<span class="grid-certified-badge" title="${skill.certName ? skill.certName : skill.name}">CERTIFIED</span>` : '';
+            const iconSrc = skill.resolvedIcon || this.fixImagePath(skill.icon);
             item.innerHTML = `
-                <img src="${this.fixImagePath(skill.icon)}" class="skill-icon" onerror="console.warn('Failed to load icon:', this.src); this.style.opacity='0.5';">
+                <span class="skill-icon-wrap">
+                    <span class="skill-icon-skeleton skeleton-element"></span>
+                    <img src="${iconSrc}" class="skill-icon" onerror="console.warn('Failed to load icon:', this.src); this.style.opacity='0.5';">
+                </span>
                 <span class="skill-meta">
                     <span class="skill-name">${skill.name}${certifiedBadge}</span>
                     <span class="type-badge">${skill.badge}</span>
                 </span>
                 <span class="level">${skill.level}</span>
                 <span class="last-used">${skill.lastUsed}</span>`;
+
+            const iconImg = item.querySelector('.skill-icon');
+            const iconSkeleton = item.querySelector('.skill-icon-skeleton');
+            if (iconImg && iconSkeleton) {
+                const clearSkeleton = () => {
+                    if (iconSkeleton.parentElement) iconSkeleton.remove();
+                };
+                iconImg.onload = clearSkeleton;
+                iconImg.onerror = clearSkeleton;
+                if (iconImg.complete) clearSkeleton();
+            }
 
             item.addEventListener('click', () => s.openModalForItem(item));
             s.skillsList.appendChild(item);
