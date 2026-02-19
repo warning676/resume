@@ -146,8 +146,6 @@ class ControlsManager {
                     }
                 }
 
-                // Allow empty selection: do not force 'all' when nothing selected.
-
                 this.renderMultiSelect(container, options, selectedValues, onChange);
                 onChange(selectedValues);
             });

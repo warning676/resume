@@ -3,13 +3,11 @@ class FilterManager {
         this.s = state;
     }
 
-    // Normalize text: lowercase, strip punctuation, collapse spaces
     normalizeText(s) {
         if (!s) return '';
         return String(s).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
-    // Levenshtein distance for fuzzy single-word comparisons
     levenshtein(a, b) {
         if (a === b) return 0;
         const al = a.length, bl = b.length;
@@ -31,7 +29,6 @@ class FilterManager {
         return matrix[al][bl];
     }
 
-    // Break the query into tokens (whole query + individual words)
     expandQueryTerms(query) {
         if (!query) return [''];
         const q = this.normalizeText(query);
@@ -41,15 +38,12 @@ class FilterManager {
         return Array.from(terms);
     }
 
-    // Fuzzy match: true if content (normalized tokens) matches term by substring
-    // or token-level one-edit distance (Levenshtein <= 1) or token contains term.
     fuzzyTermMatch(contentTokens, term) {
         if (!term) return true;
         const t = this.normalizeText(term);
         if (!t) return true;
         const joined = contentTokens.join(' ');
         if (joined.includes(t)) return true;
-        // If the term is very short, try matching against initials/abbreviations
         if (t.length <= 3) {
             const abbrs = new Set();
             const len = contentTokens.length;
@@ -64,11 +58,8 @@ class FilterManager {
                 if (a === t) return true;
                 if (this.levenshtein(a, t) <= 1) return true;
             }
-                // If the term is very short (1-2 chars), only match by exact token or initials
                 if (t.length <= 2) {
-                    // exact token match
                     for (const ct of contentTokens) if (ct === t) return true;
-                    // sliding-window initials (e.g., 'vs' -> 'visual studio')
                     const abbrs = new Set();
                     const len = contentTokens.length;
                     for (let w = 1; w <= Math.min(3, len); w++) {
@@ -82,14 +73,12 @@ class FilterManager {
                     return false;
                 }
 
-                // For longer terms, require each token in the query to match some content token.
                 const termTokens = t.split(/\s+/);
                 for (const tt of termTokens) {
                     let matched = false;
                     for (const ct of contentTokens) {
                         if (!ct) continue;
                         if (ct.includes(tt)) { matched = true; break; }
-                        // allow small typo tolerance only for tokens length >= 3
                         if (tt.length >= 3 && Math.abs(ct.length - tt.length) <= 1 && this.levenshtein(ct, tt) <= 1) { matched = true; break; }
                     }
                     if (!matched) return false;

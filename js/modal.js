@@ -3,12 +3,9 @@ class ModalManager {
         this.s = state;
     }
 
-    // Fix relative image paths since HTML is now in html/ subfolder
     fixImagePath(path) {
         if (!path) return path;
-        // If it's already absolute (http/https) or data URI, return as-is
         if (path.startsWith('http') || path.startsWith('data:')) return path;
-        // For relative paths, prepend ../ if not already present
         if (path.startsWith('../')) return path;
         return '../' + path;
     }
