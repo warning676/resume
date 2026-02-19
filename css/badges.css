@@ -1,0 +1,97 @@
+/* Badge styling - certified badges and type badges */
+
+.software-tag {
+    color: #58a6ff;
+    font-weight: 800;
+    display: inline-block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none !important;
+}
+
+#modal-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 5px;
+    align-items: flex-start;
+}
+
+#modal-tools .software-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #0d1117;
+    border: 1px solid #30363d !important;
+    padding: 0 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    color: #e1e4e8;
+    height: 28px;
+    margin-bottom: 0;
+    transition: all 0.2s ease;
+}
+
+#modal-tools .grid-certified-badge {
+    margin-left: 7px;
+    margin-right: 0;
+}
+
+.certified-label {
+    background-color: rgba(63, 185, 80, 0.15);
+    color: #3fb950;
+    border: 1px solid rgba(63, 185, 80, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    margin-left: 8px;
+    vertical-align: middle;
+    letter-spacing: 0.5px;
+}
+
+.cert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: rgba(63, 185, 80, 0.1);
+    border: 1px solid rgba(63, 185, 80, 0.3);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.grid-certified-badge {
+    background-color: rgba(63, 185, 80, 0.1);
+    color: #3fb950;
+    border: 1px solid rgba(63, 185, 80, 0.3);
+    font-size: 0.55rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-left: 8px;
+    font-weight: 800;
+    vertical-align: middle;
+    display: inline-block;
+    letter-spacing: 0.5px;
+    cursor: help;
+}
+
+#modal-skill-cert-name,
+#sec-modal-skill-cert-name {
+    color: #3fb950 !important;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Clickable tool styles */
+
+.clickable-tool {
+    cursor: pointer !important;
+    transition: all 0.2s ease;
+}
+
+#modal-tools .clickable-tool:hover {
+    background: #1f2428 !important;
+    border-color: #58a6ff !important;
+    color: #58a6ff !important;
+}

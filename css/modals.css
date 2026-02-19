@@ -1,0 +1,235 @@
+/* Modal and overlay styling */
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    overflow-y: auto;
+    padding: 20px 0;
+}
+
+.modal-content {
+    background-color: #050505;
+    border: 1px solid #30363d;
+    width: 70%;
+    max-width: 80%;
+    border-radius: 12px;
+    position: relative;
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+    overflow: visible !important;
+    box-sizing: border-box;
+    padding-left: 85px;
+    padding-right: 85px;
+    margin: auto;
+}
+
+.modal-content.no-side-padding {
+    padding-left: 20px;
+    padding-right: 20px;
+    max-width: 90%;
+}
+
+.modal-skill .modal-content.no-side-padding {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.modal-skill .modal-content {
+    width: 600px;
+    max-width: 90%;
+    padding-left: 70px;
+    padding-right: 70px;
+}
+
+.modal-skill .modal-body-split {
+    grid-template-columns: 1fr;
+}
+
+.modal-skill .modal-info-pane {
+    max-width: none;
+    padding: 30px 0;
+}
+
+.modal-nav-btn {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 55px;
+    background: transparent;
+    border: none;
+    color: #e1e4e8;
+    font-size: 2.0rem;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    overflow: hidden;
+}
+
+.modal-nav-btn:hover {
+    background: #1f2428;
+}
+
+.modal-nav-btn.prev {
+    left: 0;
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+.modal-nav-btn.next {
+    right: 0;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid #1f2428;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #ffffff;
+}
+
+.close-button {
+    color: #8b949e;
+    font-size: 32px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-button:hover {
+    color: #ffffff;
+}
+
+.modal-body-split {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-media-pane {
+    padding: 30px;
+    border-right: 1px solid #1f2428;
+    display: flex;
+    flex-direction: column;
+    background-color: #000;
+    overflow: hidden;
+}
+
+.modal-skill .modal-body-split {
+    grid-template-columns: 1fr !important;
+    overflow-y: hidden !important;
+}
+
+.modal-skill .modal-info-pane {
+    max-width: none !important;
+    width: 100%;
+}
+
+.modal-info-pane {
+    padding: 40px 35px;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+#modal-date {
+    color: #8b949e;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    margin-bottom: 25px;
+    display: block;
+}
+
+#modal-description,
+#bio-description {
+    color: #e1e4e8;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+/* Secondary (skill) modal navigation */
+
+.sec-modal-nav-btn {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50px;
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2010;
+}
+
+.sec-modal-nav-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sec-modal-nav-btn.prev {
+    left: 0;
+    border-radius: 12px 0 0 12px;
+}
+
+.sec-modal-nav-btn.next {
+    right: 0;
+    border-radius: 0 12px 12px 0;
+}
+
+@media (max-width: 600px) {
+    .modal-body-split {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-media-pane {
+        border-right: none;
+        border-bottom: 1px solid #1f2428;
+    }
+
+    .modal-nav-btn {
+        width: 50px;
+    }
+
+    .modal-header,
+    .modal-body-split {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+    }
+
+    .modal-content {
+        width: 95% !important;
+        padding-left: 55px !important;
+        padding-right: 55px !important;
+    }
+}
+
+.modal-skill .modal-body-split {
+    overflow: hidden;
+}

@@ -1,0 +1,84 @@
+/* Skills list grid and styling */
+
+.grid-structure {
+    display: grid;
+    grid-template-columns: 40px 1fr 180px 120px;
+    gap: 15px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .grid-structure {
+        grid-template-columns: 35px 1fr 140px;
+        gap: 10px;
+    }
+
+    .grid-header span:last-child,
+    .skill-item span:last-child {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .grid-structure {
+        grid-template-columns: 30px 1fr;
+    }
+
+    .grid-header span:nth-child(2),
+    .skill-item .level {
+        display: none;
+    }
+}
+
+.grid-header {
+    padding: 0 15px 5px 15px;
+    font-size: 0.65rem;
+    font-weight: bold;
+    color: #6a737d;
+    border-bottom: 1px solid #30363d;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.grid-header span:first-child {
+    grid-column: 1 / span 2;
+}
+
+.skill-item {
+    padding: 0 15px;
+    border-bottom: 1px solid #161b22;
+    cursor: pointer;
+    height: 55px;
+    transition: background-color 0.2s ease;
+}
+
+.skill-item:hover {
+    background-color: #0d1117;
+}
+
+.skill-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.skill-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow: hidden;
+}
+
+.skill-name {
+    color: #e1e4e8;
+    font-weight: 600;
+}
+
+.type-badge {
+    color: #8b949e;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}

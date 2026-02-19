@@ -1,0 +1,78 @@
+/* Navigation bar styling */
+
+header[data-include="nav.html"] {
+    position: sticky;
+    top: 0;
+    background-color: #050505;
+    z-index: 1000;
+    border-bottom: 1px solid #1f2428;
+    margin-bottom: 20px;
+    min-height: 60px;
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    max-width: 1150px;
+    margin: 0 auto;
+}
+
+.nav-brand {
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: #ffffff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.nav-links {
+    display: flex;
+    gap: 20px;
+}
+
+.nav-links a {
+    color: #58a6ff;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: #ffffff;
+}
+
+.nav-links a.active {
+    color: #ffffff;
+    border-bottom: 2px solid #58a6ff;
+    text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+}
+
+@media (max-width: 600px) {
+    .nav-container {
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+        padding: 15px 0;
+    }
+
+    .nav-links {
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .nav-links a {
+        font-size: 0.8rem;
+    }
+}

@@ -1,0 +1,63 @@
+/* Global styles and resets */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: #30363d transparent;
+}
+
+html::-webkit-scrollbar {
+    width: 10px;
+}
+
+html::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+    background-color: #30363d;
+    border-radius: 10px;
+    border: 2px solid #050505;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+    background-color: #484f58;
+}
+
+body {
+    font-family: -apple-system, system-ui, sans-serif;
+    max-width: 1150px;
+    margin: 0 auto;
+    padding: 15px 40px 60px 40px;
+    line-height: 1.6;
+    color: #e1e4e8;
+    background-color: #050505;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 15px 20px 80px 20px;
+    }
+}
+
+h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #ffffff;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+hr {
+    margin: 15px 0 !important;
+}

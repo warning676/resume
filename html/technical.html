@@ -3,17 +3,17 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>BEN REYNOLDS | VIDEOS</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Benjamin "Ben" Reynolds | TECHNICAL</title>
+    <link rel="stylesheet" href="../css/index.css">
 </head>
 
 <body>
     <header data-include="nav.html"></header>
 
     <div class="page-intro">
-        <h2>HIGH SCHOOL VIDEO PROJECTS</h2>
-        <p>A collection of videos I created with a good friend during high school. These were all made using footage we
-            shot ourselves and edited in Adobe Premiere Pro and After Effects and some using Unreal Engine 5.</p>
+        <h2>TECHNICAL PROFICIENCY</h2>
+        <p>A list of my technical skills, including programming languages, game engines, and creative tools. Each skill
+            is categorized and includes information about my proficiency level and when I last used it.</p>
     </div>
 
     <div class="controls">
@@ -31,19 +31,23 @@
                 <label>CATEGORY:</label>
                 <div id="type-select"></div>
             </div>
-            <div class="filter-group">
-                <label>TOOLS:</label>
-                <div id="tool-select"></div>
-            </div>
         </div>
     </div>
 
-    <div class="portfolio-grid" id="portfolio-grid"></div>
+    <div id="skills">
+        <div id="skills-list">
+            <div class="grid-structure grid-header">
+                <span>Skill</span>
+                <span>Proficiency</span>
+                <span>Last Used</span>
+            </div>
+        </div>
 
-    <div id="no-results" style="display: none;">
-        <div class="no-results-content">
-            <h3>No projects found</h3>
-            <p>Try searching for different keywords or tools.</p>
+        <div id="no-results" style="display: none;">
+            <div class="no-results-content">
+                <h3>No skills found</h3>
+                <p>Try searching for different keywords or tools.</p>
+            </div>
         </div>
     </div>
 
@@ -53,24 +57,24 @@
             <button id="modal-next" class="modal-nav-btn next" aria-label="Next project">&#10095;</button>
 
             <div class="modal-header">
-                <div id="project-header" style="display: block;">
+                <div id="project-header" style="display: none;">
                     <h2 id="modal-title">Project Details</h2>
                 </div>
-                <div id="skill-header" style="display: none; align-items: center; gap: 15px;">
+                <div id="skill-header" style="display: flex; align-items: center; gap: 15px;">
                     <img id="modal-skill-icon" src="" alt="" style="width: 32px; height: 32px; object-fit: contain;">
                     <h2 id="modal-title-main">Skill Details</h2>
                 </div>
                 <span class="close-button">&times;</span>
             </div>
             <div id="modal-split-body" class="modal-body-split">
-                <div class="modal-media-pane">
+                <div class="modal-media-pane" style="display: none;">
                     <div id="media-container">
                         <iframe id="modal-video" src="" frameborder="0" allowfullscreen></iframe>
                     </div>
                     <div id="modal-gallery" class="screenshot-gallery"></div>
                 </div>
                 <div class="modal-info-pane">
-                    <div id="project-info" style="display: block;">
+                    <div id="project-info" style="display: none;">
                         <h3 id="modal-info-title" style="color: #ffffff; margin-bottom: 5px; font-size: 1.3rem;"></h3>
                         <p id="modal-date" style="color: #6a737d; font-size: 0.85rem; margin-bottom: 10px;"></p>
                         <span id="modal-info-category" class="type-badge"
@@ -78,7 +82,7 @@
                         <p id="modal-description" style="margin-bottom: 25px;"></p>
                     </div>
 
-                    <div id="skill-info" style="display: none;">
+                    <div id="skill-info" style="display: block;">
                         <p id="bio-description"
                             style="margin-bottom: 25px; font-size: 1rem; line-height: 1.6; color: #e1e4e8;"></p>
                         <hr style="border: 0; border-top: 1px solid #1f2428; margin-bottom: 20px;">
@@ -110,11 +114,11 @@
                         </div>
                     </div>
 
-                    <div style="margin-top: auto;">
+                    <div style="margin-top: auto; display: none;">
                         <small
                             style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem; font-weight: bold; margin-bottom: 5px;">Tools
                             used:</small>
-                        <span id="modal-tools" class="software-tag"></span>
+                        <span id="modal-tools"></span>
                     </div>
                 </div>
             </div>
@@ -171,7 +175,13 @@
 
     <footer data-include="footer.html"></footer>
 
-    <script src="script.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/data.js"></script>
+    <script src="../js/modal.js"></script>
+    <script src="../js/controls.js"></script>
+    <script src="../js/renderer.js"></script>
+    <script src="../js/filter.js"></script>
+    <script src="../js/main.js"></script>
 </body>
 
 </html>
