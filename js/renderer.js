@@ -5,7 +5,17 @@ class Renderer {
 
     fixImagePath(path) {
         if (!path) return path;
-        if (path.startsWith('http') || path.startsWith('data:')) return path;
+        if (path.startsWith('http') || path.startsWith('data:')) {
+            if (path.includes('drive.google.com')) {
+                if (!path.includes('lh3.google.com')) {
+                    const fileIdMatch = path.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                    if (fileIdMatch) {
+                        return `https://lh3.google.com/d/${fileIdMatch[1]}=w1200`;
+                    }
+                }
+            }
+            return path;
+        }
         if (path.startsWith('../')) return path;
         return '../' + path;
     }
@@ -136,7 +146,7 @@ class Renderer {
 
             const certifiedBadge = skill.certified ? `<span class="grid-certified-badge" title="${skill.certName ? skill.certName : skill.name}">CERTIFIED</span>` : '';
             item.innerHTML = `
-                <img src="${this.fixImagePath(skill.icon)}" class="skill-icon">
+                <img src="${this.fixImagePath(skill.icon)}" class="skill-icon" onerror="console.warn('Failed to load icon:', this.src); this.style.opacity='0.5';">
                 <span class="skill-meta">
                     <span class="skill-name">${skill.name}${certifiedBadge}</span>
                     <span class="type-badge">${skill.badge}</span>

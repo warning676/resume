@@ -5,7 +5,17 @@ class ModalManager {
 
     fixImagePath(path) {
         if (!path) return path;
-        if (path.startsWith('http') || path.startsWith('data:')) return path;
+        if (path.startsWith('http') || path.startsWith('data:')) {
+            if (path.includes('drive.google.com')) {
+                if (!path.includes('lh3.google.com')) {
+                    const fileIdMatch = path.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                    if (fileIdMatch) {
+                        return `https://lh3.google.com/d/${fileIdMatch[1]}=w1200`;
+                    }
+                }
+            }
+            return path;
+        }
         if (path.startsWith('../')) return path;
         return '../' + path;
     }
