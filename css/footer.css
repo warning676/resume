@@ -1,6 +1,7 @@
 /* Footer styling */
 
-footer[data-include="footer.html"] {
+footer[data-include="footer.html"],
+footer[data-include="html/footer.html"] {
     position: fixed;
     bottom: 0;
     left: 0;
@@ -17,14 +18,16 @@ footer[data-include="footer.html"] {
 }
 
 @media (max-width: 600px) {
-    footer[data-include="footer.html"] {
+    footer[data-include="footer.html"],
+    footer[data-include="html/footer.html"] {
         font-size: 0.65rem;
         padding: 0 15px;
     }
 }
 
 @media (max-width: 400px) {
-    footer[data-include="footer.html"] {
+    footer[data-include="footer.html"],
+    footer[data-include="html/footer.html"] {
         font-size: 0.55rem;
     }
 }

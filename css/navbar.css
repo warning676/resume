@@ -1,6 +1,7 @@
 /* Navigation bar styling */
 
-header[data-include="nav.html"] {
+header[data-include="nav.html"],
+header[data-include="html/nav.html"] {
     position: sticky;
     top: 0;
     background-color: #050505;

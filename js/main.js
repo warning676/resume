@@ -125,9 +125,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupNavigation() {
         const path = window.location.pathname;
         const page = path.split("/").pop() || "index.html";
+        const isRoot = !path.includes('/html/');
         const links = document.querySelectorAll('.nav-links a');
+        
         links.forEach(link => {
-            if (link.getAttribute('href') === page) link.classList.add('active');
+            let href = link.getAttribute('href');
+            
+            // Adjust links based on whether we are at root or in /html/
+            if (isRoot) {
+                if (href !== 'index.html' && !href.startsWith('html/')) {
+                    link.setAttribute('href', 'html/' + href);
+                }
+            } else {
+                if (href === 'index.html') {
+                    link.setAttribute('href', '../index.html');
+                } else if (href.startsWith('html/')) {
+                    link.setAttribute('href', href.replace('html/', ''));
+                }
+            }
+
+            if (link.getAttribute('href').endsWith(page)) {
+                link.classList.add('active');
+            }
         });
     }
 
@@ -186,8 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             state.allData = data;
             if (document.querySelector('.achievement-card')) setupAchievementVideoLinks(data.videos || []);
-            const dateElement = document.getElementById("last-updated-date");
-            if (dateElement && data.lastUpdated) dateElement.innerText = data.lastUpdated;
 
             if (state.portfolioGrid) {
                 const path = window.location.pathname.toLowerCase();
