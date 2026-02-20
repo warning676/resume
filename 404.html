@@ -9,9 +9,15 @@
 <body>
     <script>
         const fullPath = window.location.pathname + window.location.search + window.location.hash;
-        const base = window.location.pathname.replace(/\/404\.html$/, '');
+        const candidateBase = window.location.pathname.replace(/\/404\.html$/, '');
+        const appRoot = candidateBase.replace(/\/[^/]*$/, '') || '/';
         sessionStorage.setItem('spa-redirect', fullPath);
-        window.location.replace(`${base}/index.html`);
+        const target = (appRoot.endsWith('/') ? appRoot : appRoot + '/') + 'index.html';
+        if (window.location.pathname !== target) {
+            window.location.replace(target);
+        } else {
+            window.location.replace(window.location.href);
+        }
     </script>
 </body>
 
