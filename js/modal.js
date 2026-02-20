@@ -190,9 +190,9 @@ class ModalManager {
 
     navigateItem(direction) {
         const s = this.s;
+        const isSkillModal = s.modal && s.modal.classList.contains('modal-skill');
         
-        // Special handling for achievements page - navigate through achievement videos
-        if (s.isAchievementsPage && s.achievementVideos && s.achievementVideos.length > 1) {
+        if (s.isAchievementsPage && !isSkillModal && s.achievementVideos && s.achievementVideos.length > 1) {
             const currentIndex = s.currentAchievementVideoIndex;
             if (currentIndex < 0) return;
             const nextIndex = (currentIndex + direction + s.achievementVideos.length) % s.achievementVideos.length;
@@ -204,14 +204,13 @@ class ModalManager {
         
         if (!s.currentItemCard) return;
         let container, itemSelector;
-        if (s.isSkillsPage) {
+        if (s.isSkillsPage || (s.isAchievementsPage && isSkillModal)) {
             container = s.skillsList;
             itemSelector = '.skill-item';
         } else if (s.isPortfolioPage) {
             container = s.portfolioGrid;
             itemSelector = '.portfolio-card';
         } else if (s.isAchievementsPage) {
-            // Don't use achievement cards for navigation anymore
             return;
         } else return;
 
@@ -265,11 +264,11 @@ class ModalManager {
                 ? Array.from(container.querySelectorAll(itemSelector)).filter(item => item.style.display !== 'none')
                 : [];
             
-            // Show arrows for achievements page video navigation
             const showAchievementNav = s.isAchievementsPage && s.achievementVideos && s.achievementVideos.length > 1;
             const showRegularNav = s.currentItemCard && visibleItems.length > 1;
-            if (s.prevBtn) s.prevBtn.style.visibility = (showAchievementNav || showRegularNav) ? 'visible' : 'hidden';
-            if (s.nextBtn) s.nextBtn.style.visibility = (showAchievementNav || showRegularNav) ? 'visible' : 'hidden';
+            s.showModalNavArrows = showAchievementNav || showRegularNav;
+            if (s.prevBtn) s.prevBtn.style.visibility = s.showModalNavArrows ? 'visible' : 'hidden';
+            if (s.nextBtn) s.nextBtn.style.visibility = s.showModalNavArrows ? 'visible' : 'hidden';
 
             let gallery = document.getElementById("modal-gallery");
             if (gallery && gallery.parentElement.classList.contains('gallery-container-wrapper')) {
@@ -459,7 +458,6 @@ class ModalManager {
 
             const awardsContainer = document.getElementById("film-festival-awards");
             const awardsList = document.getElementById("awards-list");
-            // Only show awards for videos, not games
             const isGamesPage = s.currentRoute === '/games';
             if (awardsContainer && awardsList && s.filmFestivalAwards && !isGamesPage) {
                 const awards = s.filmFestivalAwards[data.name];
@@ -467,6 +465,10 @@ class ModalManager {
                     awardsContainer.style.display = 'block';
                     awardsList.innerHTML = '';
                     awards.forEach(award => {
+                        const locationParts = (award.location || '').split('|').map(part => part.trim());
+                        const school = locationParts[0] || '';
+                        const festival = locationParts[1] || '';
+                        
                         const awardItem = document.createElement('div');
                         awardItem.className = 'award-item';
                         awardItem.innerHTML = `
@@ -475,7 +477,10 @@ class ModalManager {
                                     <strong style="color: #ffffff; font-size: 0.85rem;">${award.award}</strong>
                                     <span style="color: #ffffff; font-size: 0.75rem; white-space: nowrap; opacity: 0.7;">${award.date}</span>
                                 </div>
-                                <small style="color: #ffffff; font-size: 0.75rem; opacity: 0.7;">${award.location}</small>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <span style="color: #ffffff; font-size: 0.75rem; opacity: 0.85;">${festival}</span>
+                                    <span style="color: #ffffff; font-size: 0.65rem; opacity: 0.6;">${school}</span>
+                                </div>
                             </div>
                         `;
                         awardsList.appendChild(awardItem);
@@ -726,20 +731,23 @@ class ModalManager {
         const s = this.s;
         if (!targetModal) return;
         const content = targetModal.querySelector('.modal-content');
-        let prev = s.prevBtn;
-        let next = s.nextBtn;
         if (targetModal === s.secModal) {
-            prev = s.secPrevBtn || prev;
-            next = s.secNextBtn || next;
-        }
-        try {
-            const prevVis = prev ? getComputedStyle(prev).visibility : 'hidden';
-            const nextVis = next ? getComputedStyle(next).visibility : 'hidden';
+            const prev = s.secPrevBtn;
+            const next = s.secNextBtn;
+            try {
+                const prevVis = prev ? getComputedStyle(prev).visibility : 'hidden';
+                const nextVis = next ? getComputedStyle(next).visibility : 'hidden';
+                if (content) {
+                    if (prevVis === 'hidden' && nextVis === 'hidden') content.classList.add('no-side-padding');
+                    else content.classList.remove('no-side-padding');
+                }
+            } catch (e) {}
+        } else {
             if (content) {
-                if (prevVis === 'hidden' && nextVis === 'hidden') content.classList.add('no-side-padding');
+                if (!s.showModalNavArrows) content.classList.add('no-side-padding');
                 else content.classList.remove('no-side-padding');
             }
-        } catch (e) {}
+        }
     }
 
     centerItemInGallery(container, item) {

@@ -8,23 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
         '/games': { fragment: 'html/pages/games.html', title: 'GAMES' }
     };
 
-    const filmFestivalAwards = {
-        "Toothbrush Chronicles: Super Hill": [
-            { award: "Video of the Year", location: "Rogers High School | 86th Avenue Film Festival", date: "JUNE 2025" },
-            { award: "Best Use of Dialogue", location: "Rogers High School | 86th Avenue Film Festival", date: "JUNE 2025" }
-        ],
-        "House of Pain - Jump Around": [
-            { award: "Video of the Year", location: "Rogers High School | 86th Avenue Film Festival", date: "JAN 2025" }
-        ],
-        "Two Highschoolers Fight Using Toothbrushes": [
-            { award: "Best Editing", location: "Rogers High School | 86th Avenue Film Festival", date: "JUNE 2024" },
-            { award: "Best Use of Prop", location: "Rogers High School | 86th Avenue Film Festival", date: "JUNE 2024" }
-        ],
-        "House of Horrors": [
-            { award: "Best Short Film", location: "Emerald Ridge High School | Clock Tower Film Festival", date: "APRIL 2025" }
-        ]
-    };
-
     const state = {
         modal: null,
         closeBtn: null,
@@ -58,9 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
         currentToolIndex: -1,
         achievementVideos: [],
         currentAchievementVideoIndex: -1,
+        showModalNavArrows: false,
         allData: null,
         dataPromise: null,
-        filmFestivalAwards: filmFestivalAwards,
+        filmFestivalAwards: {},
 
         openModalForItem: null,
         filterCards: null,
@@ -355,7 +339,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return lower.includes('search=') && (lower.includes('videos.html') || lower.includes('/videos'));
         };
         
-        // Collect unique videos linked from achievements page
         const linkedVideoNames = new Set();
         anchors.forEach(a => {
             const projectNameAttr = a.getAttribute('data-project');
@@ -364,7 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Build list of video projects in order they appear
         const achievementVideos = [];
         const addedNames = new Set();
         anchors.forEach(a => {
@@ -403,7 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         || projects.find(p => normalize(p.name).includes(nDecoded))
                         || projects.find(p => nDecoded.includes(normalize(p.name)));
                     if (match) {
-                        // Find index in achievementVideos for navigation
                         const videoIndex = state.achievementVideos.findIndex(v => v.name === match.name);
                         state.currentAchievementVideoIndex = videoIndex;
                         if (state.openModalForItem) state.openModalForItem(match);
@@ -425,6 +406,117 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {
             }
         });
+    };
+
+    const renderAchievementAwards = () => {
+        const container = document.getElementById('festival-awards-container');
+        if (!container) return;
+
+        if (!document.getElementById('award-link-styles')) {
+            const style = document.createElement('style');
+            style.id = 'award-link-styles';
+            style.textContent = '.award-video-link:hover { text-decoration: underline !important; }';
+            document.head.appendChild(style);
+        }
+
+        const awards = state.filmFestivalAwards;
+        if (!awards || Object.keys(awards).length === 0) {
+            container.innerHTML = '<p style="color: #8b949e;">No awards found.</p>';
+            return;
+        }
+
+        const normalize = (s) => (s || '').toString().toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+        const awardsByType = {};
+        
+        Object.entries(awards).forEach(([projectName, projectAwards]) => {
+            if (Array.isArray(projectAwards)) {
+                projectAwards.forEach(award => {
+                    if (!awardsByType[award.award]) {
+                        awardsByType[award.award] = [];
+                    }
+                    awardsByType[award.award].push({
+                        projectName,
+                        date: award.date || '',
+                        location: award.location || ''
+                    });
+                });
+            }
+        });
+
+        const awardVideos = [];
+        const addedVideoNames = new Set();
+        
+        Object.entries(awardsByType).forEach(([awardName, wins]) => {
+            wins.forEach(win => {
+                const nName = normalize(win.projectName);
+                if (!addedVideoNames.has(nName)) {
+                    const videos = state.allData?.videos || [];
+                    const project = videos.find(v => normalize(v.name) === nName)
+                        || videos.find(v => normalize(v.name).includes(nName))
+                        || videos.find(v => nName.includes(normalize(v.name)));
+                    if (project) {
+                        awardVideos.push(project);
+                        addedVideoNames.add(nName);
+                    }
+                }
+            });
+        });
+        
+        container.innerHTML = '';
+        Object.entries(awardsByType).forEach(([awardName, wins]) => {
+            const card = document.createElement('div');
+            card.style.cssText = 'background: #000000; border: 1px solid #30363d; padding: 12px; border-radius: 6px; display: flex; flex-direction: column;';
+            
+            let cardHTML = `<strong style="color: #ffffff; font-size: 0.85rem; text-transform: uppercase; display: block; margin-bottom: 8px;">${awardName}</strong>`;
+            cardHTML += '<div style="display: flex; flex-direction: column; gap: 12px;">';
+            
+            wins.forEach((win, index) => {
+                const locationParts = win.location.split('|').map(part => part.trim());
+                const school = locationParts[0] || '';
+                const festival = locationParts[1] || '';
+                
+                cardHTML += `<div style="display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                        <span class="award-video-link" data-project="${win.projectName}" role="button" tabindex="0" style="color: #58a6ff; text-decoration: none; font-size: 0.9rem; line-height: 1.2; cursor: pointer;">${win.projectName}</span>
+                        <span style="color: #8b949e; font-size: 0.75rem; white-space: nowrap; margin-top: 2px;">${win.date}</span>
+                    </div>
+                    <small style="color: #8b949e; font-size: 0.75rem; line-height: 1.4;">${festival}<br/><span style="font-size: 0.65rem; opacity: 0.8;">${school}</span></small>
+                </div>`;
+            });
+            
+            cardHTML += '</div>';
+            card.innerHTML = cardHTML;
+            container.appendChild(card);
+        });
+        
+        if (container._clickHandler) {
+            container.removeEventListener('click', container._clickHandler);
+        }
+        
+        container._clickHandler = (e) => {
+            const link = e.target.closest('.award-video-link');
+            if (!link) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const projectName = link.getAttribute('data-project');
+            const nName = normalize(projectName);
+            
+            const project = awardVideos.find(v => normalize(v.name) === nName)
+                || awardVideos.find(v => normalize(v.name).includes(nName))
+                || awardVideos.find(v => nName.includes(normalize(v.name)));
+            
+            if (project && state.modalManager) {
+                state.achievementVideos = awardVideos;
+                state.currentAchievementVideoIndex = awardVideos.indexOf(project);
+                state.showModalNavArrows = true;
+                state.modalManager.openModalForItem(project, 'videos', awardVideos);
+            }
+        };
+        
+        container.addEventListener('click', container._clickHandler);
     };
 
     const bindModalButtons = () => {
@@ -492,6 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.dataPromise = dataService.loadAllData()
             .then(data => {
                 state.allData = data;
+                state.filmFestivalAwards = dataService.buildFilmFestivalAwards(data.videos || []);
                 return data;
             })
             .catch(err => {
@@ -509,6 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (state.currentRoute === '/achievements') {
                     setupAchievementVideoLinks(data.videos || []);
+                    renderAchievementAwards();
                 }
 
                 if (state.portfolioGrid) {

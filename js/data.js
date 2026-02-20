@@ -28,6 +28,45 @@ class DataService {
         return path;
     }
 
+    parseAwards(awardsString) {
+        if (!awardsString) return [];
+        
+        const awards = [];
+        const awardParts = awardsString.split(',');
+        
+        for (const part of awardParts) {
+            const trimmed = part.trim();
+            if (!trimmed) continue;
+            
+            const awardMatch = trimmed.match(/Award:\s*([^|]+)/);
+            const locationMatch = trimmed.match(/Location:\s*(.+?)\s*\|\s*Date:/);
+            const dateMatch = trimmed.match(/Date:\s*(.+)$/);
+            
+            if (awardMatch && locationMatch && dateMatch) {
+                awards.push({
+                    award: awardMatch[1].trim(),
+                    location: locationMatch[1].trim(),
+                    date: dateMatch[1].trim().toUpperCase()
+                });
+            }
+        }
+        
+        return awards;
+    }
+
+    buildFilmFestivalAwards(videosData) {
+        const awards = {};
+        if (!Array.isArray(videosData)) return awards;
+        
+        videosData.forEach(video => {
+            if (video.name && Array.isArray(video.awards) && video.awards.length > 0) {
+                awards[video.name] = video.awards;
+            }
+        });
+        
+        return awards;
+    }
+
     async fetchLastUpdated() {
         const dateElement = document.getElementById('last-updated-date');
         if (!dateElement) return;
@@ -113,6 +152,7 @@ class DataService {
             'Tools': 'tools',
             'YouTube Link': 'youtube',
             'Gallery': 'gallery',
+            'Awards': 'awards',
             'Level': 'level',
             'Last Used': 'lastUsed',
             'Icon': 'icon',
@@ -153,6 +193,8 @@ class DataService {
                     val = cell.v === true || String(cell.f).toUpperCase() === 'TRUE';
                 } else if (key === 'icon' && val && typeof val === 'string') {
                     val = this.convertGoogleDriveUrl(val);
+                } else if (key === 'awards' && val && typeof val === 'string') {
+                    val = this.parseAwards(val);
                 }
                 item[key] = val;
             });

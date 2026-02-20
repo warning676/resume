@@ -21,7 +21,7 @@
     max-height: none;
     display: flex;
     flex-direction: column;
-    overflow: visible !important;
+    overflow: hidden;
     box-sizing: border-box;
     padding-left: 85px;
     padding-right: 85px;
@@ -31,7 +31,7 @@
 .modal-content.no-side-padding {
     padding-left: 20px;
     padding-right: 20px;
-    max-width: 90%;
+    max-width: 75%;
 }
 
 .modal-skill .modal-content.no-side-padding {
@@ -120,7 +120,7 @@
 .modal-body-split {
     display: grid;
     grid-template-columns: 1.6fr 0.9fr;
-    overflow-y: auto;
+    overflow: hidden;
     flex: 1;
     transition: grid-template-columns 0.35s ease;
 }
@@ -129,6 +129,7 @@
     height: 70vh;
     min-height: 70vh;
     max-height: 70vh;
+    grid-template-rows: minmax(0, 1fr);
 }
 
 .modal.gallery-collapsed .modal-body-split {
@@ -161,6 +162,7 @@
     max-width: 500px;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
 }
 
 #modal-date {
@@ -212,6 +214,30 @@
     border-radius: 0 12px 12px 0;
 }
 
+@media (max-width: 1400px) {
+    .modal-content {
+        padding-left: 65px;
+        padding-right: 65px;
+    }
+
+    .modal-nav-btn {
+        width: 50px;
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 1200px) {
+    .modal-content {
+        padding-left: 50px;
+        padding-right: 50px;
+    }
+
+    .modal-nav-btn {
+        width: 45px;
+        font-size: 1.6rem;
+    }
+}
+
 @media (max-width: 900px) {
     .modal-body-split {
         grid-template-columns: 1fr;
@@ -235,12 +261,34 @@
 
     .modal-content {
         width: 92%;
-        padding-left: 55px;
-        padding-right: 55px;
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+
+    .modal-nav-btn {
+        width: 42px;
+        font-size: 1.4rem;
     }
 
     .modal-info-pane {
         max-width: none;
+    }
+}
+
+@media (max-width: 750px) {
+    .modal-content {
+        width: 95%;
+        padding-left: 35px;
+        padding-right: 35px;
+    }
+
+    .modal-nav-btn {
+        width: 40px;
+        font-size: 1.5rem;
+    }
+
+    .modal-media-pane {
+        padding: 20px;
     }
 }
 

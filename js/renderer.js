@@ -92,7 +92,6 @@ class Renderer {
                 const displayDate = project.date ? Utils.formatFullDate(project.date).toUpperCase() : "";
                 const badgeHTML = project.badge ? `<span class="type-badge" style="margin-top: 10px; display: block;">${project.badge}</span>` : '';
                 
-                // Check for film festival awards (only for videos page)
                 const isVideosPage = s.currentRoute === '/videos';
                 const awards = isVideosPage && s.filmFestivalAwards ? s.filmFestivalAwards[project.name] : null;
                 let awardsHTML = '';
