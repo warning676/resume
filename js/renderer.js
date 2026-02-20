@@ -91,6 +91,21 @@ class Renderer {
 
                 const displayDate = project.date ? Utils.formatFullDate(project.date).toUpperCase() : "";
                 const badgeHTML = project.badge ? `<span class="type-badge" style="margin-top: 10px; display: block;">${project.badge}</span>` : '';
+                
+                // Check for film festival awards (only for videos page)
+                const isVideosPage = s.currentRoute === '/videos';
+                const awards = isVideosPage && s.filmFestivalAwards ? s.filmFestivalAwards[project.name] : null;
+                let awardsHTML = '';
+                let awardsSearchData = '';
+                if (awards && awards.length > 0) {
+                    const awardsList = awards.map(a => `${a.award} - ${a.location}`).join('\n');
+                    awardsSearchData = awards.map(a => `${a.award} ${a.location}`).join(' ');
+                    awardsHTML = `<span class="awards-badge" title="${awardsList}">WON AWARDS</span>`;
+                } else {
+                    awardsHTML = '';
+                }
+                card.setAttribute('data-awards', awardsSearchData);
+                
                 card.innerHTML = `
                     <div class="card-thumb">
                         <img src="${thumbSrc}" alt="${project.name}">
@@ -99,6 +114,7 @@ class Renderer {
                         <h4>${(project.name || '')}</h4>
                         <p>${displayDate}</p>
                         ${badgeHTML}
+                        ${awardsHTML}
                     </div>`;
                 
                 const imgElement = card.querySelector('img');

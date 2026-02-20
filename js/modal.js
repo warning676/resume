@@ -190,6 +190,18 @@ class ModalManager {
 
     navigateItem(direction) {
         const s = this.s;
+        
+        // Special handling for achievements page - navigate through achievement videos
+        if (s.isAchievementsPage && s.achievementVideos && s.achievementVideos.length > 1) {
+            const currentIndex = s.currentAchievementVideoIndex;
+            if (currentIndex < 0) return;
+            const nextIndex = (currentIndex + direction + s.achievementVideos.length) % s.achievementVideos.length;
+            s.currentAchievementVideoIndex = nextIndex;
+            const nextVideo = s.achievementVideos[nextIndex];
+            if (nextVideo) this.openModalForItem(nextVideo);
+            return;
+        }
+        
         if (!s.currentItemCard) return;
         let container, itemSelector;
         if (s.isSkillsPage) {
@@ -199,8 +211,8 @@ class ModalManager {
             container = s.portfolioGrid;
             itemSelector = '.portfolio-card';
         } else if (s.isAchievementsPage) {
-            container = s.achievementsList;
-            itemSelector = '.achievement-card';
+            // Don't use achievement cards for navigation anymore
+            return;
         } else return;
 
         const allItems = Array.from(container.querySelectorAll(itemSelector));
@@ -252,8 +264,12 @@ class ModalManager {
             const visibleItems = container
                 ? Array.from(container.querySelectorAll(itemSelector)).filter(item => item.style.display !== 'none')
                 : [];
-            if (s.prevBtn) s.prevBtn.style.visibility = (s.currentItemCard && visibleItems.length > 1) ? 'visible' : 'hidden';
-            if (s.nextBtn) s.nextBtn.style.visibility = (s.currentItemCard && visibleItems.length > 1) ? 'visible' : 'hidden';
+            
+            // Show arrows for achievements page video navigation
+            const showAchievementNav = s.isAchievementsPage && s.achievementVideos && s.achievementVideos.length > 1;
+            const showRegularNav = s.currentItemCard && visibleItems.length > 1;
+            if (s.prevBtn) s.prevBtn.style.visibility = (showAchievementNav || showRegularNav) ? 'visible' : 'hidden';
+            if (s.nextBtn) s.nextBtn.style.visibility = (showAchievementNav || showRegularNav) ? 'visible' : 'hidden';
 
             let gallery = document.getElementById("modal-gallery");
             if (gallery && gallery.parentElement.classList.contains('gallery-container-wrapper')) {
@@ -443,7 +459,9 @@ class ModalManager {
 
             const awardsContainer = document.getElementById("film-festival-awards");
             const awardsList = document.getElementById("awards-list");
-            if (awardsContainer && awardsList && s.filmFestivalAwards) {
+            // Only show awards for videos, not games
+            const isGamesPage = s.currentRoute === '/games';
+            if (awardsContainer && awardsList && s.filmFestivalAwards && !isGamesPage) {
                 const awards = s.filmFestivalAwards[data.name];
                 if (awards && awards.length > 0) {
                     awardsContainer.style.display = 'block';

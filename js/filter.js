@@ -98,11 +98,12 @@ class FilterManager {
             const cardType = card.getAttribute('data-type') || '';
             const cardTools = (card.getAttribute('data-tools') || '').toLowerCase();
             const toolsList = cardTools.split(',').map(t => t.trim());
+            const cardAwards = (card.getAttribute('data-awards') || '').toLowerCase();
 
             const matchesType = s.selectedCategories.includes('all') || s.selectedCategories.includes(cardType);
             const matchesTool = s.selectedTools.includes('all') || toolsList.some(t => s.selectedTools.map(st => st.toLowerCase()).includes(t));
 
-            const contentRaw = (card.innerText || '') + ' ' + cardTools + ' ' + (card.getAttribute('data-info') || '');
+            const contentRaw = (card.innerText || '') + ' ' + cardTools + ' ' + (card.getAttribute('data-info') || '') + ' ' + cardAwards;
             const content = this.normalizeText(contentRaw);
             const contentTokens = content.split(/\s+/);
             let matchesQuery = true;

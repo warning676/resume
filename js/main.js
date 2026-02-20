@@ -56,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentGalleryIndex: 0,
         currentToolsContext: [],
         currentToolIndex: -1,
+        achievementVideos: [],
+        currentAchievementVideoIndex: -1,
         allData: null,
         dataPromise: null,
         filmFestivalAwards: filmFestivalAwards,
@@ -202,6 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
         state.currentGalleryIndex = 0;
         state.currentToolsContext = [];
         state.currentToolIndex = -1;
+        state.achievementVideos = [];
+        state.currentAchievementVideoIndex = -1;
         state.didPrimeSkeletons = false;
         state.primedSkeletonCount = 0;
         state.primedSkeletonTarget = null;
@@ -350,6 +354,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const lower = (href || '').toLowerCase();
             return lower.includes('search=') && (lower.includes('videos.html') || lower.includes('/videos'));
         };
+        
+        // Collect unique videos linked from achievements page
+        const linkedVideoNames = new Set();
+        anchors.forEach(a => {
+            const projectNameAttr = a.getAttribute('data-project');
+            if (projectNameAttr && projectNameAttr.trim()) {
+                linkedVideoNames.add(normalize(projectNameAttr.trim()));
+            }
+        });
+        
+        // Build list of video projects in order they appear
+        const achievementVideos = [];
+        const addedNames = new Set();
+        anchors.forEach(a => {
+            const projectNameAttr = a.getAttribute('data-project');
+            if (projectNameAttr && projectNameAttr.trim()) {
+                const nName = normalize(projectNameAttr.trim());
+                if (!addedNames.has(nName)) {
+                    const match = projects.find(p => normalize(p.name) === nName)
+                        || projects.find(p => normalize(p.name).includes(nName))
+                        || projects.find(p => nName.includes(normalize(p.name)));
+                    if (match) {
+                        achievementVideos.push(match);
+                        addedNames.add(nName);
+                    }
+                }
+            }
+        });
+        state.achievementVideos = achievementVideos;
+        
         anchors.forEach(a => {
             try {
                 const projectNameAttr = a.getAttribute('data-project');
@@ -369,6 +403,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         || projects.find(p => normalize(p.name).includes(nDecoded))
                         || projects.find(p => nDecoded.includes(normalize(p.name)));
                     if (match) {
+                        // Find index in achievementVideos for navigation
+                        const videoIndex = state.achievementVideos.findIndex(v => v.name === match.name);
+                        state.currentAchievementVideoIndex = videoIndex;
                         if (state.openModalForItem) state.openModalForItem(match);
                     } else {
                         if (href && href !== '#') {
