@@ -1,5 +1,3 @@
-/* Navigation bar styling */
-
 header[data-include="nav.html"],
 header[data-include="html/nav.html"] {
     position: sticky;
@@ -39,7 +37,6 @@ nav {
     display: flex;
     gap: 20px;
     position: relative;
-    padding-bottom: 6px;
 }
 
 .nav-links a {
@@ -49,6 +46,8 @@ nav {
     font-size: 0.9rem;
     text-transform: uppercase;
     transition: color 0.3s ease;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 4px;
 }
 
 .nav-links a:hover {
@@ -57,19 +56,8 @@ nav {
 
 .nav-links a.active {
     color: #ffffff;
+    border-bottom-color: #58a6ff;
     text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
-}
-
-.nav-underline {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    height: 2px;
-    width: 0;
-    background: #58a6ff;
-    opacity: 0;
-    transform: translateX(0);
-    transition: transform 0.35s ease, width 0.35s ease, opacity 0.2s ease;
 }
 
 @media (max-width: 600px) {

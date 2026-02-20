@@ -93,13 +93,27 @@ class Renderer {
                 const badgeHTML = project.badge ? `<span class="type-badge" style="margin-top: 10px; display: block;">${project.badge}</span>` : '';
                 card.innerHTML = `
                     <div class="card-thumb">
-                        <img src="${thumbSrc}" alt="${project.name}" onerror="if(this.src.includes('maxresdefault')){this.src='https://img.youtube.com/vi/${youtubeID}/hqdefault.jpg';}else{this.style.display='none';}">
+                        <img src="${thumbSrc}" alt="${project.name}">
                     </div>
                     <div class="card-content">
                         <h4>${(project.name || '')}</h4>
                         <p>${displayDate}</p>
                         ${badgeHTML}
                     </div>`;
+                
+                const imgElement = card.querySelector('img');
+                if (imgElement && hasValidYoutube) {
+                    imgElement.onload = function() {
+                        if (this.naturalWidth === 120 && this.naturalHeight === 90) {
+                            this.style.opacity = '0.3';
+                            this.style.filter = 'blur(2px)';
+                        }
+                    };
+                    imgElement.onerror = function() {
+                        this.style.opacity = '0.3';
+                    };
+                }
+                
                 card.addEventListener('click', () => s.openModalForItem(card));
                 s.portfolioGrid.appendChild(card);
             } catch (err) {

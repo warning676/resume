@@ -122,12 +122,10 @@ class ModalManager {
         }
         if (s.mediaContainer) {
             if (isVertical) {
-                // Vertical video aspect ratio (9:16)
                 s.mediaContainer.style.paddingBottom = '177.78%';
                 s.mediaContainer.style.maxWidth = '400px';
                 s.mediaContainer.style.margin = '0 auto';
             } else {
-                // Standard video aspect ratio (16:9)
                 s.mediaContainer.style.paddingBottom = '56.25%';
                 s.mediaContainer.style.maxWidth = '';
                 s.mediaContainer.style.margin = '';
@@ -313,7 +311,6 @@ class ModalManager {
             const toolsStr = data.tools;
             const info = data.info;
             
-            // Extract YouTube ID from potential URL
             const youtubeID = Utils.extractYouTubeID(data.youtube || '');
             const isVerticalVideo = youtubeID && data.youtube && 
                 (data.youtube.includes('/shorts/') || data.youtube.toLowerCase().includes('shorts'));
@@ -405,7 +402,6 @@ class ModalManager {
             const modalDate = document.getElementById("modal-date");
             if (modalDate) modalDate.innerText = Utils.formatFullDate(rawDate).toUpperCase();
 
-            // Populate film festival awards if available
             const awardsContainer = document.getElementById("film-festival-awards");
             const awardsList = document.getElementById("awards-list");
             if (awardsContainer && awardsList && s.filmFestivalAwards) {

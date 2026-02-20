@@ -1,5 +1,3 @@
-/* Portfolio grid and card styling */
-
 .portfolio-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;

@@ -25,16 +25,14 @@ class Utils {
     static extractYouTubeID(input) {
         if (!input) return '';
         
-        // Already just an ID
-        if (!/[:\/\.]/.test(input)) return input.trim();
+        if (!/[:/\.]/.test(input)) return input.trim();
         
-        // Try to extract from various YouTube URL formats
         const patterns = [
-            /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/, // Shorts
-            /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/, // Standard watch
-            /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/, // Short link
-            /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/, // Embed
-            /^([a-zA-Z0-9_-]{11})$/ // Just the ID
+            /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+            /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+            /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+            /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+            /^([a-zA-Z0-9_-]{11})$/
         ];
         
         for (const pattern of patterns) {

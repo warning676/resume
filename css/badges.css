@@ -1,5 +1,3 @@
-/* Badge styling - certified badges and type badges */
-
 .software-tag {
     color: #58a6ff;
     font-weight: 800;
@@ -85,8 +83,6 @@
     font-weight: bold;
     font-size: 0.9rem;
 }
-
-/* Clickable tool styles */
 
 .clickable-tool {
     cursor: pointer !important;

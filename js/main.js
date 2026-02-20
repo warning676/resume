@@ -185,32 +185,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const updateNavUnderline = () => {
-        const navLinks = document.querySelector('.nav-links');
-        if (!navLinks) return;
-        const underline = navLinks.querySelector('.nav-underline');
-        const active = navLinks.querySelector('a.active');
-        if (!underline || !active) {
-            if (underline) underline.style.opacity = '0';
-            return;
-        }
-        // Force reflow to get fresh layout measurements
-        void navLinks.offsetHeight;
-        const parentRect = navLinks.getBoundingClientRect();
-        const activeRect = active.getBoundingClientRect();
-        const offset = activeRect.left - parentRect.left;
-        underline.style.width = `${activeRect.width}px`;
-        underline.style.transform = `translateX(${offset}px)`;
-        underline.style.opacity = '1';
-    };
-
     const updateNavActive = (route) => {
         document.querySelectorAll('.nav-links a').forEach(link => {
             const linkRoute = link.getAttribute('data-route') || '/';
             if (linkRoute === route) link.classList.add('active');
             else link.classList.remove('active');
         });
-        requestAnimationFrame(updateNavUnderline);
     };
 
     const resetPageState = () => {
@@ -311,7 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
             resolve({ ok, src: finalSrc || src });
         };
         const timerId = setTimeout(() => finish(false, src), timeoutMs || 3500);
-        img.onload = () => finish(true, src);
+        img.onload = () => {
+            const isPlaceholder = src.includes('youtube.com/vi/') && 
+                                  img.naturalWidth === 120 && 
+                                  img.naturalHeight === 90;
+            finish(!isPlaceholder, src);
+        };
         img.onerror = () => finish(false, src);
         img.src = src;
     });
@@ -320,12 +305,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const youtubeID = Utils.extractYouTubeID(project.youtube || '');
         const hasValidYoutube = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
         if (hasValidYoutube) {
-            const maxSrc = `https://img.youtube.com/vi/${youtubeID}/maxresdefault.jpg`;
-            const maxResult = await preloadImage(maxSrc, 3500);
-            if (maxResult.ok) return maxSrc;
-            const hqSrc = `https://img.youtube.com/vi/${youtubeID}/hqdefault.jpg`;
-            await preloadImage(hqSrc, 3500);
-            return hqSrc;
+            const thumbnailQualities = [
+                'maxresdefault',
+                'hqdefault',
+                'mqdefault',
+                'default'
+            ];
+            
+            for (const quality of thumbnailQualities) {
+                const thumbSrc = `https://img.youtube.com/vi/${youtubeID}/${quality}.jpg`;
+                const result = await preloadImage(thumbSrc, 3500);
+                if (result.ok) return thumbSrc;
+            }
+            
+            return `https://img.youtube.com/vi/${youtubeID}/default.jpg`;
         }
         const raw = state.renderer.fixImagePath(project.gallery?.[0] || '');
         if (!raw) return '';
@@ -606,19 +599,4 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = new URL(window.location.href);
         loadRoute(resolveRoute(url.pathname), url.search, { push: false });
     });
-
-    let resizeTimer = null;
-    const handleResize = () => {
-        if (resizeTimer) cancelAnimationFrame(resizeTimer);
-        resizeTimer = requestAnimationFrame(() => {
-            requestAnimationFrame(updateNavUnderline);
-        });
-    };
-
-    window.addEventListener('resize', handleResize);
-    
-    // Handle zoom changes more reliably
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', handleResize);
-    }
 });
