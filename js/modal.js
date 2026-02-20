@@ -112,13 +112,26 @@ class ModalManager {
         } catch (e) {}
     }
 
-    showVideo(id) {
+    showVideo(id, isVertical = false) {
         const s = this.s;
         const ex = document.getElementById("big-image-view");
         if (ex) ex.remove();
         if (s.videoFrame) {
             s.videoFrame.style.display = "block";
             s.videoFrame.src = `https://www.youtube.com/embed/${id}`;
+        }
+        if (s.mediaContainer) {
+            if (isVertical) {
+                // Vertical video aspect ratio (9:16)
+                s.mediaContainer.style.paddingBottom = '177.78%';
+                s.mediaContainer.style.maxWidth = '400px';
+                s.mediaContainer.style.margin = '0 auto';
+            } else {
+                // Standard video aspect ratio (16:9)
+                s.mediaContainer.style.paddingBottom = '56.25%';
+                s.mediaContainer.style.maxWidth = '';
+                s.mediaContainer.style.margin = '';
+            }
         }
     }
 
@@ -294,11 +307,16 @@ class ModalManager {
             if (mMedia) mMedia.style.display = 'block';
             if (mTools) mTools.style.display = 'block';
 
-            const youtubeID = data.youtube || '';
+
             const galleryData = Array.isArray(data.gallery) ? data.gallery.join(',') : (data.gallery || '');
             const rawDate = data.date;
             const toolsStr = data.tools;
             const info = data.info;
+            
+            // Extract YouTube ID from potential URL
+            const youtubeID = Utils.extractYouTubeID(data.youtube || '');
+            const isVerticalVideo = youtubeID && data.youtube && 
+                (data.youtube.includes('/shorts/') || data.youtube.toLowerCase().includes('shorts'));
 
             const modalTitle = document.getElementById("modal-title");
             if (modalTitle) modalTitle.innerText = data.name.toUpperCase();
@@ -387,13 +405,42 @@ class ModalManager {
             const modalDate = document.getElementById("modal-date");
             if (modalDate) modalDate.innerText = Utils.formatFullDate(rawDate).toUpperCase();
 
+            // Populate film festival awards if available
+            const awardsContainer = document.getElementById("film-festival-awards");
+            const awardsList = document.getElementById("awards-list");
+            if (awardsContainer && awardsList && s.filmFestivalAwards) {
+                const awards = s.filmFestivalAwards[data.name];
+                if (awards && awards.length > 0) {
+                    awardsContainer.style.display = 'block';
+                    awardsList.innerHTML = '';
+                    awards.forEach(award => {
+                        const awardItem = document.createElement('div');
+                        awardItem.className = 'award-item';
+                        awardItem.innerHTML = `
+                            <div style="background: #000000; padding: 0; margin-bottom: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 2px;">
+                                    <strong style="color: #ffffff; font-size: 0.85rem;">${award.award}</strong>
+                                    <span style="color: #ffffff; font-size: 0.75rem; white-space: nowrap; opacity: 0.7;">${award.date}</span>
+                                </div>
+                                <small style="color: #ffffff; font-size: 0.75rem; opacity: 0.7;">${award.location}</small>
+                            </div>
+                        `;
+                        awardsList.appendChild(awardItem);
+                    });
+                } else {
+                    awardsContainer.style.display = 'none';
+                }
+            } else if (awardsContainer) {
+                awardsContainer.style.display = 'none';
+            }
+
             const hasVideo = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
             const galleryImages = galleryData ? galleryData.split(',').map(s => s.trim()) : [];
             const firstImg = galleryImages.length > 0 ? galleryImages[0] : "";
             const loadId = this.galleryLoadId;
 
             if (hasVideo) {
-                this.showVideo(youtubeID);
+                this.showVideo(youtubeID, isVerticalVideo);
                 if (s.videoFrame) s.videoFrame.style.display = 'block';
             } else {
                 if (s.videoFrame) {
@@ -480,7 +527,7 @@ class ModalManager {
                             else item.classList.remove('selected');
                         });
                         this.centerItemInGallery(gallery, videoBtn);
-                        this.showVideo(youtubeID);
+                        this.showVideo(youtubeID, isVerticalVideo);
                         this.updateGalleryButtons(gallery, controls.gPrev, controls.gNext);
                     });
                     const firstSkeleton = gallery.querySelector('.gallery-skeleton');

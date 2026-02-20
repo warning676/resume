@@ -81,7 +81,7 @@ class Renderer {
                 card.setAttribute('data-gallery', project.gallery ? project.gallery.join(', ') : '');
 
                 let thumbSrc = project.resolvedThumb || project.gallery?.[0] || '';
-                const youtubeID = project.youtube;
+                const youtubeID = Utils.extractYouTubeID(project.youtube || '');
                 const hasValidYoutube = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
                 if (hasValidYoutube) {
                     thumbSrc = project.resolvedThumb || `https://img.youtube.com/vi/${youtubeID}/maxresdefault.jpg`;
@@ -126,7 +126,7 @@ class Renderer {
     renderSkills(skills) {
         const s = this.s;
         if (!s.skillsList || !skills) return;
-        const isAchievementsPage = window.location.pathname.includes('achievements.html');
+        const isAchievementsPage = !!s.isAchievementsPage;
 
         s.skillsList.innerHTML = '<div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>';
 

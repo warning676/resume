@@ -31,18 +31,55 @@ class DataService {
     async fetchLastUpdated() {
         const dateElement = document.getElementById('last-updated-date');
         if (!dateElement) return;
+        let cachedDate = null;
+        try {
+            cachedDate = localStorage.getItem('lastUpdatedOnGithub') || null;
+        } catch (err) {
+            cachedDate = null;
+        }
+        if (cachedDate) dateElement.textContent = cachedDate;
         try {
             const response = await fetch('https://api.github.com/repos/warning676/resume/commits/main');
             const data = await response.json();
             const date = new Date(data.commit.committer.date);
-            dateElement.textContent = date.toLocaleDateString('en-US', {
+            const formattedDate = date.toLocaleDateString('en-US', {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric'
             });
+            if (formattedDate === cachedDate) return;
+            dateElement.textContent = formattedDate;
+            try {
+                localStorage.setItem('lastUpdatedOnGithub', formattedDate);
+            } catch (err) {
+            }
         } catch (err) {
-            dateElement.textContent = "Recently";
+            if (!cachedDate) dateElement.textContent = "Recently";
         }
+    }
+
+    updateCurrentTime() {
+        const timeElement = document.getElementById('current-time');
+        if (!timeElement) return;
+        
+        const now = new Date();
+        const options = {
+            timeZone: 'America/Los_Angeles',
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        };
+        
+        timeElement.textContent = now.toLocaleString('en-US', options);
+    }
+
+    startTimeUpdates() {
+        this.updateCurrentTime();
+        setInterval(() => this.updateCurrentTime(), 60000);
     }
 
     async loadAllData() {

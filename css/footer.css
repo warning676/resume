@@ -1,23 +1,22 @@
 /* Footer styling */
 
+footer.page-footer,
 footer[data-include="footer.html"],
 footer[data-include="html/footer.html"] {
-    position: fixed;
-    bottom: 0;
-    left: 0;
     width: 100%;
-    min-height: 40px;
     background-color: #050505;
     border-top: 1px solid #1f2428;
     color: #6a737d;
     font-size: 0.75rem;
-    z-index: 1010;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-top: 40px;
+    padding: 10px 0 14px;
 }
 
 @media (max-width: 600px) {
+    footer.page-footer,
     footer[data-include="footer.html"],
     footer[data-include="html/footer.html"] {
         font-size: 0.65rem;
@@ -26,6 +25,7 @@ footer[data-include="html/footer.html"] {
 }
 
 @media (max-width: 400px) {
+    footer.page-footer,
     footer[data-include="footer.html"],
     footer[data-include="html/footer.html"] {
         font-size: 0.55rem;

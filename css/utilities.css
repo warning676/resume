@@ -27,6 +27,10 @@
     display: none;
 }
 
+.no-results-portfolio {
+    padding: 30px 20px;
+}
+
 .no-results-content h3 {
     color: white;
     margin-bottom: 5px;

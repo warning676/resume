@@ -16,8 +16,8 @@
 .modal-content {
     background-color: #050505;
     border: 1px solid #30363d;
-    width: 70%;
-    max-width: 80%;
+    width: 85%;
+    max-width: 90%;
     border-radius: 12px;
     position: relative;
     max-height: none;
@@ -201,6 +201,17 @@
 .sec-modal-nav-btn.next {
     right: 0;
     border-radius: 0 12px 12px 0;
+}
+
+@media (max-width: 1400px) {
+    .modal-body-split {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-media-pane {
+        border-right: none;
+        border-bottom: 1px solid #1f2428;
+    }
 }
 
 @media (max-width: 600px) {

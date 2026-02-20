@@ -38,6 +38,8 @@ nav {
 .nav-links {
     display: flex;
     gap: 20px;
+    position: relative;
+    padding-bottom: 6px;
 }
 
 .nav-links a {
@@ -46,7 +48,7 @@ nav {
     text-decoration: none;
     font-size: 0.9rem;
     text-transform: uppercase;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease;
 }
 
 .nav-links a:hover {
@@ -55,8 +57,19 @@ nav {
 
 .nav-links a.active {
     color: #ffffff;
-    border-bottom: 2px solid #58a6ff;
     text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+}
+
+.nav-underline {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 0;
+    background: #58a6ff;
+    opacity: 0;
+    transform: translateX(0);
+    transition: transform 0.35s ease, width 0.35s ease, opacity 0.2s ease;
 }
 
 @media (max-width: 600px) {

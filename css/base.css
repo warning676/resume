@@ -29,10 +29,11 @@ html::-webkit-scrollbar-thumb:hover {
 }
 
 body {
+    --footer-buffer: 40px;
     font-family: -apple-system, system-ui, sans-serif;
     max-width: 1150px;
     margin: 0 auto;
-    padding: 15px 40px 60px 40px;
+    padding: 15px 40px calc(60px + var(--footer-buffer)) 40px;
     line-height: 1.6;
     color: #e1e4e8;
     background-color: #050505;
@@ -43,7 +44,7 @@ body {
 
 @media (max-width: 768px) {
     body {
-        padding: 15px 20px 80px 20px;
+        padding: 15px 20px calc(80px + var(--footer-buffer)) 20px;
     }
 }
 

@@ -8,69 +8,31 @@
 </head>
 
 <body>
-    <header data-include="html/nav.html"></header>
-
-    <div class="controls" style="display:none;"></div>
-
-    <div class="page-intro">
-        <h2>BIO</h2>
-        <p>Welcome to my portfolio! This site showcases my work in game development and video production, highlighting
-            both my technical skills and creative projects.</p>
-        <p>Note: This portfolio is a work in progress; stay tuned as I continue to add new and past projects.</p>
-    </div>
-
-    <section id="about" style="margin-top: 25px;">
-        <h2>ABOUT ME</h2>
-        <div class="page-intro">
-            <p>Hi, I'm Benjamin "Ben" Reynolds. I'm currently based in Puyallup, Washington, where I'm pursuing my degree remotely
-                through Southern New Hampshire University. In high school I made a bunch of different projects with a
-                good
-                friend Seth. We worked on a ton of video projects and some game projects. I'm hoping to get into
-                game development as I really enjoy programming games and creating something I want to make. Go ahead and
-                look around to find more information about me.</p>
-        </div>
-
-    <section style="margin-top: 25px;">
-        <h2>DEVIOUS DUO PRODUCTIONS</h2>
-        <div class="page-intro">
-            <p>Devious Duo Productions was a name Seth and I came up with as a joke in sophomore year during video production class. It started as just a joke, but we ended up using it for all of our videos together. We created a signature intro for our videos that featured our logo and to let people know they were watching Devious Duo Productions.</p>
-        </div>
-    </section>
-
-    <section id="education">
-        <h2 style="margin-top: 25px;">EDUCATION</h2>
-
-        <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428;">
-            <div class="achievement-info">
-                <span class="software-tag">SNHU</span>
-                <h3>Southern New Hampshire University</h3>
-                <p>Bachelor of Science in Computer Science (Software Engineering)</p>
-                <p style="font-size: 0.85rem; color: #8b949e; margin-bottom: 5px;">Manchester, New Hampshire</p>
-                <div style="font-size: 0.9rem; color: #8b949e; margin-top: 10px;">
-                    <span style="margin-right: 25px;"><strong style="color: #58a6ff;">Started:</strong> September,
-                        2025</span>
-                    <span style="margin-right: 25px;"><strong style="color: #58a6ff;">Status:</strong> Currently
-                        Enrolled</span>
-                </div>
+    <header>
+        <div class="nav-container">
+            <div class="nav-brand">Benjamin "Ben" Reynolds</div>
+            <div class="nav-links">
+                <a href="./" data-route="/">Bio</a>
+                <a href="achievements" data-route="/achievements">Achievements</a>
+                <a href="technical" data-route="/technical">Technical</a>
+                <a href="videos" data-route="/videos">Videos</a>
+                <a href="games" data-route="/games">Games</a>
+                <span class="nav-underline" aria-hidden="true"></span>
             </div>
         </div>
+    </header>
 
-        <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428; margin-top: 12px;">
-            <div class="achievement-info">
-                <span class="software-tag">ERHS</span>
-                <h3>Emerald Ridge High School</h3>
-                <p>High School Diploma</p>
-                <p style="font-size: 0.85rem; color: #8b949e; margin-bottom: 5px;">Puyallup, Washington</p>
-                <div style="font-size: 0.9rem; color: #8b949e; margin-top: 10px;">
-                    <span style="margin-right: 25px;"><strong style="color: #58a6ff;">Started:</strong> September,
-                        2022</span>
-                    <span><strong style="color: #58a6ff;">Status:</strong> Graduated (June 2025)</span>
-                </div>
-            </div>
-        </div>
-    </section>
+    <main id="page-root"></main>
 
-    <footer data-include="html/footer.html"></footer>
+    <footer class="page-footer">
+        <p>Last Updated on GitHub: <span id="last-updated-date"><span class="skeleton-element"
+                    style="display: inline-block; width: 90px; height: 12px; vertical-align: middle; border-radius: 3px;"></span></span>
+            <span style="margin: 0 10px;">|</span>
+            <span>My Local Time:</span>
+            <span id="current-time"><span class="skeleton-element"
+                    style="display: inline-block; width: 180px; height: 12px; vertical-align: middle; border-radius: 3px;"></span></span>
+        </p>
+    </footer>
 
     <script src="js/utils.js"></script>
     <script src="js/data.js"></script>
