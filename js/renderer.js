@@ -204,6 +204,6 @@ class Renderer {
         });
 
         s.updateTypeFilter(categories);
-        if (!isAchievementsPage) s.sortSkills();
+        s.sortSkills();
     }
 }
