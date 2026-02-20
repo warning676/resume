@@ -119,16 +119,29 @@
 
 .modal-body-split {
     display: grid;
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: 1.6fr 0.9fr;
     overflow-y: auto;
     flex: 1;
+    transition: grid-template-columns 0.35s ease;
 }
+
+.modal:not(.modal-skill) .modal-body-split {
+    height: 70vh;
+    min-height: 70vh;
+    max-height: 70vh;
+}
+
+.modal.gallery-collapsed .modal-body-split {
+    grid-template-columns: 1.9fr 0.7fr;
+}
+
 
 .modal-media-pane {
     padding: 30px;
     border-right: 1px solid #1f2428;
     display: flex;
     flex-direction: column;
+    min-height: 0;
     background-color: #000;
     overflow: hidden;
 }
@@ -199,41 +212,55 @@
     border-radius: 0 12px 12px 0;
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 900px) {
     .modal-body-split {
         grid-template-columns: 1fr;
+    }
+
+    .modal:not(.modal-skill) .modal-body-split {
+        height: auto;
+        min-height: auto;
+        max-height: none;
+        overflow-y: visible;
     }
 
     .modal-media-pane {
         border-right: none;
         border-bottom: 1px solid #1f2428;
+    }
+
+    .modal.gallery-collapsed .modal-body-split {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 92%;
+        padding-left: 55px;
+        padding-right: 55px;
+    }
+
+    .modal-info-pane {
+        max-width: none;
     }
 }
 
 @media (max-width: 600px) {
-    .modal-body-split {
-        grid-template-columns: 1fr;
-    }
-
-    .modal-media-pane {
-        border-right: none;
-        border-bottom: 1px solid #1f2428;
+    .modal-content {
+        width: 96% !important;
+        padding-left: 40px !important;
+        padding-right: 40px !important;
     }
 
     .modal-nav-btn {
-        width: 50px;
+        width: 40px;
     }
 
-    .modal-header,
-    .modal-body-split {
-        padding-left: 20px !important;
-        padding-right: 20px !important;
+    .modal-media-pane {
+        padding: 15px;
     }
 
-    .modal-content {
-        width: 95% !important;
-        padding-left: 55px !important;
-        padding-right: 55px !important;
+    .modal-info-pane {
+        padding: 20px 15px;
     }
 }
 

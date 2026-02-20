@@ -80,6 +80,37 @@ class ModalManager {
         return { gPrev, gNext, wrapper };
     }
 
+    applyGalleryState() {
+        const s = this.s;
+        const gallery = s.galleryEl;
+        const galleryWrapper = s.galleryWrapper;
+        const galleryToggle = s.galleryToggleEl;
+        const targetModal = s.galleryTargetModal;
+        const collapsed = !!s.galleryCollapsed;
+        const canToggle = !!s.canToggleGallery;
+        if (targetModal) targetModal.classList.toggle('gallery-collapsed', collapsed);
+        if (galleryToggle) {
+            galleryToggle.style.display = canToggle ? '' : 'none';
+            galleryToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            galleryToggle.setAttribute('aria-label', collapsed ? 'Show gallery' : 'Hide gallery');
+        }
+        if (!canToggle) {
+            if (gallery) gallery.style.display = 'none';
+            if (galleryWrapper) galleryWrapper.style.display = 'none';
+            return;
+        }
+        if (!s.galleryHasRendered) {
+            if (targetModal) targetModal.classList.toggle('gallery-collapsed', collapsed);
+            if (gallery) gallery.style.display = '';
+            if (galleryWrapper) galleryWrapper.style.display = '';
+            s.galleryHasRendered = true;
+            return;
+        }
+
+        if (gallery) gallery.style.display = '';
+        if (galleryWrapper) galleryWrapper.style.display = '';
+    }
+
     resetModal() {
         const s = this.s;
         if (s.modal) s.modal.style.display = "none";
@@ -92,6 +123,14 @@ class ModalManager {
         if (modalContent) modalContent.scrollTop = 0;
         const gal = document.getElementById("modal-gallery");
         if (gal) gal.scrollLeft = 0;
+        if (s.modal) s.modal.classList.remove('gallery-collapsed');
+        s.galleryCollapsed = false;
+        s.canToggleGallery = false;
+        s.galleryHasRendered = false;
+        s.galleryEl = null;
+        s.galleryWrapper = null;
+        s.galleryToggleEl = null;
+        s.galleryTargetModal = null;
         s.currentItemCard = null;
         try { document.body.style.overflow = ''; } catch (e) {}
         try {
@@ -434,6 +473,35 @@ class ModalManager {
             const galleryImages = galleryData ? galleryData.split(',').map(s => s.trim()) : [];
             const firstImg = galleryImages.length > 0 ? galleryImages[0] : "";
             const loadId = this.galleryLoadId;
+            const gallery = document.getElementById("modal-gallery");
+            const galleryToggle = document.getElementById("gallery-toggle");
+            const totalGalleryItems = galleryImages.length + (hasVideo ? 1 : 0);
+            const shouldShowGallery = totalGalleryItems > 1;
+            let galleryWrapper = gallery && gallery.parentElement && gallery.parentElement.classList.contains('gallery-container-wrapper')
+                ? gallery.parentElement
+                : null;
+            let controls = null;
+            s.galleryCollapsed = !shouldShowGallery;
+            s.canToggleGallery = shouldShowGallery;
+            s.galleryHasRendered = false;
+            s.galleryEl = gallery;
+            s.galleryWrapper = galleryWrapper;
+            s.galleryToggleEl = galleryToggle;
+            s.galleryTargetModal = targetModal;
+
+            if (galleryToggle && !galleryToggle.hasAttribute('data-toggle-bound')) {
+                galleryToggle.setAttribute('data-toggle-bound', 'true');
+                galleryToggle.addEventListener('click', () => {
+                    if (!this.s.canToggleGallery) return;
+                    this.s.galleryCollapsed = !this.s.galleryCollapsed;
+                    this.applyGalleryState();
+                });
+            }
+            this.applyGalleryState();
+
+            if (gallery) {
+                if (!shouldShowGallery) gallery.innerHTML = '';
+            }
 
             if (hasVideo) {
                 this.showVideo(youtubeID, isVerticalVideo);
@@ -464,7 +532,7 @@ class ModalManager {
                     if (mediaSkeleton) mediaSkeleton.remove();
                     if (!hasVideo && firstImg) {
                         this.showImage(firstImg);
-                        if (gallery) {
+                        if (gallery && shouldShowGallery) {
                             const fixedFirst = this.fixImagePath(firstImg);
                             const existing = gallery.querySelector(`img[data-gallery-src="${fixedFirst}"]`);
                             if (!existing) {
@@ -484,7 +552,7 @@ class ModalManager {
                                     });
                                     this.centerItemInGallery(gallery, img);
                                     this.showImage(firstImg);
-                                    this.updateGalleryButtons(gallery, controls.gPrev, controls.gNext);
+                                    if (controls) this.updateGalleryButtons(gallery, controls.gPrev, controls.gNext);
                                 });
                                 const firstSkeleton = gallery.querySelector('.gallery-skeleton');
                                 if (firstSkeleton) firstSkeleton.replaceWith(img);
@@ -495,10 +563,13 @@ class ModalManager {
                 });
             }
 
-            const gallery = document.getElementById("modal-gallery");
-            const totalGalleryItems = galleryImages.length + (hasVideo ? 1 : 0);
-            if (gallery && totalGalleryItems > 0) {
-                const controls = this.ensureGalleryControls(gallery);
+            if (gallery && shouldShowGallery) {
+                controls = this.ensureGalleryControls(gallery);
+                if (controls.wrapper) {
+                    galleryWrapper = controls.wrapper;
+                    s.galleryWrapper = galleryWrapper;
+                }
+                this.applyGalleryState();
                 this.buildGallerySkeletons(gallery, totalGalleryItems);
                 this.updateGalleryButtons(gallery, controls.gPrev, controls.gNext);
 

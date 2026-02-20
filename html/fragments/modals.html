@@ -18,7 +18,12 @@
                 <div id="media-container">
                     <iframe id="modal-video" src="" frameborder="0" allowfullscreen></iframe>
                 </div>
-                <div id="modal-gallery" class="screenshot-gallery"></div>
+                <div class="gallery-stack">
+                    <div class="gallery-toggle-row">
+                        <button id="gallery-toggle" class="gallery-toggle" type="button" aria-expanded="true" aria-controls="modal-gallery" aria-label="Hide gallery"></button>
+                    </div>
+                    <div id="modal-gallery" class="screenshot-gallery"></div>
+                </div>
             </div>
             <div class="modal-info-pane">
                 <div id="project-info" style="display: block;">
