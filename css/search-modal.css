@@ -1,0 +1,216 @@
+.search-trigger-btn {
+    color: #58a6ff;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    transition: color 0.3s ease;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 4px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+}
+
+.search-trigger-btn:hover {
+    color: #ffffff;
+}
+
+.search-trigger-btn:focus {
+    outline: none;
+}
+
+.search-modal {
+    display: none;
+    position: fixed;
+    z-index: 3000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+}
+
+.search-modal.active {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+}
+
+.search-modal-content {
+    background-color: #050505;
+    border: 1px solid #1f2428;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8);
+}
+
+.search-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    border-bottom: 1px solid #1f2428;
+}
+
+#global-search-input {
+    flex: 1;
+    background-color: #000000;
+    border: 1px solid #1f2428;
+    color: #ffffff;
+    padding: 12px 16px;
+    font-size: 1rem;
+    border-radius: 6px;
+    outline: none;
+    font-family: inherit;
+}
+
+#global-search-input:focus {
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
+}
+
+.search-close-btn {
+    background: none;
+    border: none;
+    color: #8b949e;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.search-close-btn:hover {
+    background-color: #30363d;
+    color: #e1e4e8;
+}
+
+.search-results {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 20px 20px;
+    background-color: #000000;
+}
+
+.search-result-item {
+    padding: 16px;
+    border: 1px solid #1f2428;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: #000000;
+}
+
+.search-result-item:hover {
+    background-color: #161b22;
+    border-color: #58a6ff;
+    box-shadow: 0 2px 8px rgba(88, 166, 255, 0.1);
+}
+
+.search-result-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.search-result-type {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.search-result-type[title] {
+    cursor: help;
+}
+
+.search-result-type.type-video {
+    background-color: rgba(255, 76, 76, 0.2);
+    color: #ff4c4c;
+}
+
+.search-result-type.type-game {
+    background-color: rgba(100, 220, 100, 0.2);
+    color: #64dc64;
+}
+
+.search-result-type.type-skill {
+    background-color: rgba(88, 166, 255, 0.2);
+    color: #58a6ff;
+}
+
+.search-result-type.type-achievement {
+    background-color: rgba(255, 184, 0, 0.2);
+    color: #ffb800;
+}
+
+.search-result-type.type-certified {
+    background-color: rgba(100, 220, 100, 0.2);
+    color: #64dc64;
+}
+
+.search-result-title {
+    color: #e1e4e8;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.search-result-info {
+    color: #8b949e;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.search-result-match {
+    background-color: rgba(88, 166, 255, 0.3);
+    border-radius: 3px;
+}
+
+.search-no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: #8b949e;
+}
+
+.search-no-results-text {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: #ffffff;
+}
+
+.search-no-results-hint {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+    .search-modal.active {
+        padding-top: 5vh;
+    }
+    
+    .search-modal-content {
+        width: 95%;
+    }
+    
+    .search-trigger-btn {
+        font-size: 0.8rem;
+    }
+}

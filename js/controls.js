@@ -217,9 +217,14 @@ class ControlsManager {
         input.className = 'custom-input';
         input.placeholder = placeholder || 'Search...';
         input.value = initialValue;
+        input.autocomplete = 'off';
 
+        let searchTimeout;
         input.addEventListener('input', (e) => {
-            onInput(e.target.value);
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                onInput(e.target.value);
+            }, 150);
         });
 
         searchWrap.appendChild(input);

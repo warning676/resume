@@ -3,8 +3,32 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>BIO</title>
-    <link rel="stylesheet" href="css/index.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benjamin Reynolds - Portfolio</title>
+    <meta name="description" content="Benjamin Reynolds - Game Developer & Technical Artist Portfolio showcasing games, videos, technical projects, and achievements.">
+    <meta property="og:title" content="Benjamin Reynolds - Portfolio">
+    <meta property="og:description" content="Game Developer & Technical Artist Portfolio showcasing games, videos, technical projects, and achievements.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="dns-prefetch" href="https://docs.google.com">
+    <link rel="dns-prefetch" href="https://api.github.com">
+    <link rel="preconnect" href="https://docs.google.com">
+    <link rel="preconnect" href="https://api.github.com">
+    <link rel="preconnect" href="https://lh3.google.com">
+    <link rel="preconnect" href="https://img.youtube.com">
+    <link rel="stylesheet" href="css/combined.min.css">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Benjamin Reynolds",
+        "alternateName": "Ben Reynolds",
+        "jobTitle": "Game Developer & Technical Artist",
+        "url": "https://warning676.github.io/resume/",
+        "sameAs": []
+    }
+    </script>
 </head>
 
 <body>
@@ -17,9 +41,20 @@
                 <a href="technical" data-route="/technical">Technical</a>
                 <a href="videos" data-route="/videos">Videos</a>
                 <a href="games" data-route="/games">Games</a>
+                <button id="global-search-btn" class="search-trigger-btn" aria-label="Search">Search</button>
             </div>
         </div>
     </header>
+
+    <div id="global-search-modal" class="search-modal">
+        <div class="search-modal-content">
+            <div class="search-header">
+                <input type="text" id="global-search-input" placeholder="Search projects, skills, achievements..." autofocus>
+                <button class="search-close-btn">&times;</button>
+            </div>
+            <div id="search-results" class="search-results"></div>
+        </div>
+    </div>
 
     <main id="page-root"></main>
 
@@ -33,13 +68,7 @@
         </p>
     </footer>
 
-    <script src="js/utils.js"></script>
-    <script src="js/data.js"></script>
-    <script src="js/modal.js"></script>
-    <script src="js/controls.js"></script>
-    <script src="js/renderer.js"></script>
-    <script src="js/filter.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/bundle.min.js" defer></script>
 </body>
 
 </html>

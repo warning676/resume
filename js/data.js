@@ -121,20 +121,49 @@ class DataService {
         setInterval(() => this.updateCurrentTime(), 60000);
     }
 
+    async loadSheet(sheetName) {
+        const cacheKey = `sheet_${sheetName}`;
+        const timestampKey = `sheet_${sheetName}_ts`;
+        const cacheExpiry = 60 * 60 * 1000;
+        
+        try {
+            const cached = localStorage.getItem(cacheKey);
+            const timestamp = localStorage.getItem(timestampKey);
+            if (cached && timestamp && (Date.now() - parseInt(timestamp)) < cacheExpiry) {
+                return { data: JSON.parse(cached), fromCache: true };
+            }
+        } catch (err) {}
+
+        try {
+            const url = `https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Could not fetch ${sheetName} sheet`);
+            const text = await response.text();
+            const data = this.parseGVizResponse(text, sheetName);
+            
+            try {
+                localStorage.setItem(cacheKey, JSON.stringify(data));
+                localStorage.setItem(timestampKey, String(Date.now()));
+            } catch (err) {}
+            
+            return { data, fromCache: false };
+        } catch (err) {
+            throw err;
+        }
+    }
+
     async loadAllData() {
         const sheets = ['videos', 'games', 'skills'];
         const data = {};
+        let allCached = true;
         try {
             for (const sheet of sheets) {
-                const url = `https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheet}`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Could not fetch ${sheet} sheet`);
-                const text = await response.text();
-                data[sheet] = this.parseGVizResponse(text, sheet);
+                const result = await this.loadSheet(sheet);
+                data[sheet] = result.data;
+                if (!result.fromCache) allCached = false;
             }
-            return data;
+            return { data, allCached };
         } catch (err) {
-            console.error("Error loading spreadsheet data:", err);
             throw err;
         }
     }

@@ -28,16 +28,19 @@ class ModalManager {
     preloadImage(src, timeoutMs) {
         return new Promise(resolve => {
             if (!src) {
-                resolve({ ok: false, src: '' });
+                resolve({ ok: false, src: '', cached: false });
                 return;
             }
             const img = new Image();
+            const startTime = Date.now();
             let settled = false;
             const finish = (ok, finalSrc) => {
                 if (settled) return;
                 settled = true;
                 clearTimeout(timerId);
-                resolve({ ok, src: finalSrc || src });
+                const loadTime = Date.now() - startTime;
+                const cached = ok && loadTime < 50;
+                resolve({ ok, src: finalSrc || src, cached });
             };
             const timerId = setTimeout(() => finish(false, src), timeoutMs || 3000);
             img.onload = () => finish(true, src);
@@ -231,7 +234,11 @@ class ModalManager {
         const skillMatch = s.allData && s.allData.skills
             ? s.allData.skills.find(sk => sk.name.toLowerCase() === nextToolName.toLowerCase())
             : null;
-        if (skillMatch) this.openModalForItem(skillMatch, 'skill', s.currentToolsContext);
+        if (skillMatch) this.openModalForItemWithTransition(skillMatch, direction, 'skill', s.currentToolsContext);
+    }
+
+    openModalForItemWithTransition(cardOrData, direction, typeOverride = null, toolsContext = null) {
+        this.openModalForItem(cardOrData, typeOverride, toolsContext);
     }
 
     openModalForItem(cardOrData, typeOverride = null, toolsContext = null) {
@@ -549,7 +556,7 @@ class ModalManager {
                 ? `https://img.youtube.com/vi/${youtubeID}/mqdefault.jpg`
                 : (firstImg ? this.fixImagePath(firstImg) : '');
             if (initialMediaSrc) {
-                this.preloadImage(initialMediaSrc, 3000).then(() => {
+                this.preloadImage(initialMediaSrc, 3000).then((result) => {
                     if (loadId !== this.galleryLoadId) return;
                     const mediaSkeleton = document.querySelector('.media-skeleton');
                     if (mediaSkeleton) mediaSkeleton.remove();
@@ -631,10 +638,14 @@ class ModalManager {
                     preloadTasks.push(this.preloadImage(fixed, 3000));
                 });
 
-                Promise.all([
-                    Promise.all(preloadTasks),
-                    this.delay(800)
-                ]).then(() => {
+                const startTime = Date.now();
+                Promise.all(preloadTasks).then(results => {
+                    const allCached = results.every(r => r.cached);
+                    const loadTime = Date.now() - startTime;
+                    const smoothingDelay = allCached ? 0 : Math.max(0, 120 - loadTime);
+                    
+                    return Promise.all([results, this.delay(smoothingDelay)]);
+                }).then(([results]) => {
                     if (loadId !== this.galleryLoadId) return;
                     if (!gallery) return;
                     gallery.querySelectorAll('.gallery-skeleton').forEach(item => item.remove());

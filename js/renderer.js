@@ -107,13 +107,15 @@ class Renderer {
                 
                 card.innerHTML = `
                     <div class="card-thumb">
-                        <img src="${thumbSrc}" alt="${project.name}">
+                        <img src="${thumbSrc}" alt="${project.name}" loading="lazy">
                     </div>
                     <div class="card-content">
-                        <h4>${(project.name || '')}</h4>
-                        <p>${displayDate}</p>
-                        ${badgeHTML}
-                        ${awardsHTML}
+                        <div class="card-info">
+                            <h4>${(project.name || '')}</h4>
+                            <p>${displayDate}</p>
+                            ${badgeHTML}
+                        </div>
+                        ${awardsHTML ? `<div class="card-awards">${awardsHTML}</div>` : ''}
                     </div>`;
                 
                 const imgElement = card.querySelector('img');
@@ -132,7 +134,6 @@ class Renderer {
                 card.addEventListener('click', () => s.openModalForItem(card));
                 s.portfolioGrid.appendChild(card);
             } catch (err) {
-                console.error("Error individual card:", project.name, err);
             }
         });
 
@@ -179,7 +180,7 @@ class Renderer {
             item.innerHTML = `
                 <span class="skill-icon-wrap">
                     <span class="skill-icon-skeleton skeleton-element"></span>
-                    <img src="${iconSrc}" class="skill-icon" onerror="console.warn('Failed to load icon:', this.src); this.style.opacity='0.5';">
+                    <img src="${iconSrc}" class="skill-icon" loading="lazy" onerror="this.style.opacity='0.5';">
                 </span>
                 <span class="skill-meta">
                     <span class="skill-name">${skill.name}${certifiedBadge}</span>

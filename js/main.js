@@ -73,6 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const dataService = new DataService('12V7XnylQtfLmT1ux5Va-DPhKc201m3fht9JstupnHdk');
+    
+    window.dataService = dataService;
+    
+    window.state = state;
+    
     const routePaths = Object.keys(routes).sort((a, b) => b.length - a.length);
 
     const applyRedirectPath = () => {
@@ -267,16 +272,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const preloadImage = (src, timeoutMs) => new Promise(resolve => {
         if (!src) {
-            resolve({ ok: false, src: '' });
+            resolve({ ok: false, src: '', cached: false });
             return;
         }
         const img = new Image();
+        const startTime = Date.now();
         let settled = false;
         const finish = (ok, finalSrc) => {
             if (settled) return;
             settled = true;
             clearTimeout(timerId);
-            resolve({ ok, src: finalSrc || src });
+            const loadTime = Date.now() - startTime;
+            const cached = ok && loadTime < 50;
+            resolve({ ok, src: finalSrc || src, cached });
         };
         const timerId = setTimeout(() => finish(false, src), timeoutMs || 3500);
         img.onload = () => {
@@ -303,31 +311,40 @@ document.addEventListener('DOMContentLoaded', () => {
             for (const quality of thumbnailQualities) {
                 const thumbSrc = `https://img.youtube.com/vi/${youtubeID}/${quality}.jpg`;
                 const result = await preloadImage(thumbSrc, 3500);
-                if (result.ok) return thumbSrc;
+                if (result.ok) return { src: thumbSrc, cached: result.cached };
             }
             
-            return `https://img.youtube.com/vi/${youtubeID}/default.jpg`;
+            return { src: `https://img.youtube.com/vi/${youtubeID}/default.jpg`, cached: false };
         }
         const raw = state.renderer.fixImagePath(project.gallery?.[0] || '');
-        if (!raw) return '';
-        await preloadImage(raw, 3500);
-        return raw;
+        if (!raw) return { src: '', cached: false };
+        const result = await preloadImage(raw, 3500);
+        return { src: raw, cached: result.cached };
     };
 
     const preloadProjectThumbs = async (projects) => {
+        let allCached = true;
         const tasks = projects.map(async project => {
-            project.resolvedThumb = await resolveProjectThumb(project);
+            const result = await resolveProjectThumb(project);
+            project.resolvedThumb = result.src;
+            if (!result.cached) allCached = false;
         });
         await Promise.all(tasks);
+        return allCached;
     };
 
     const preloadSkillIcons = async (skills) => {
+        let allCached = true;
         const tasks = skills.map(async skill => {
             const iconSrc = state.renderer.fixImagePath(skill.icon);
             skill.resolvedIcon = iconSrc || '';
-            if (iconSrc) await preloadImage(iconSrc, 2500);
+            if (iconSrc) {
+                const result = await preloadImage(iconSrc, 2500);
+                if (!result.cached) allCached = false;
+            }
         });
         await Promise.all(tasks);
+        return allCached;
     };
 
     const setupAchievementVideoLinks = (projects) => {
@@ -572,32 +589,71 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
             }, { passive: true });
 
+            let modalMousedownTarget = null;
+            
+            window.addEventListener('mousedown', (event) => {
+                modalMousedownTarget = event.target;
+            });
+            
             window.onclick = function (event) {
-                if (event.target === state.modal) state.modalManager?.resetModal();
-                else if (event.target === state.secModal) state.modalManager?.resetSecModal();
+                if (event.target === state.modal && modalMousedownTarget === state.modal) {
+                    state.modalManager?.resetModal();
+                } else if (event.target === state.secModal && modalMousedownTarget === state.secModal) {
+                    state.modalManager?.resetSecModal();
+                }
+                modalMousedownTarget = null;
             };
         };
     })();
 
     const loadDataOnce = () => {
-        if (state.dataPromise) return state.dataPromise;
-        state.dataPromise = dataService.loadAllData()
-            .then(data => {
-                state.allData = data;
-                state.filmFestivalAwards = dataService.buildFilmFestivalAwards(data.videos || []);
-                return data;
+        if (!state.allData) state.allData = {};
+        const route = state.currentRoute;
+        const sheetsNeeded = [];
+        
+        if (route === '/videos') {
+            if (!state.allData.videos) sheetsNeeded.push('videos');
+            if (!state.allData.skills) sheetsNeeded.push('skills');
+        }
+        if (route === '/games') {
+            if (!state.allData.games) sheetsNeeded.push('games');
+            if (!state.allData.skills) sheetsNeeded.push('skills');
+        }
+        if (route === '/technical' && !state.allData.skills) sheetsNeeded.push('skills');
+        if (route === '/achievements') {
+            if (!state.allData.videos) sheetsNeeded.push('videos');
+            if (!state.allData.skills) sheetsNeeded.push('skills');
+        }
+        
+        if (sheetsNeeded.length === 0) {
+            return Promise.resolve({ data: state.allData, allCached: true });
+        }
+        
+        let allCached = true;
+        return Promise.all(sheetsNeeded.map(sheet => 
+            dataService.loadSheet(sheet).then(result => {
+                state.allData[sheet] = result.data;
+                if (!result.fromCache) allCached = false;
+                if (sheet === 'videos') {
+                    state.filmFestivalAwards = dataService.buildFilmFestivalAwards(result.data || []);
+                }
+                return result.data;
             })
-            .catch(err => {
-                console.error("Error loading data:", err);
-                throw err;
-            });
-        return state.dataPromise;
+        )).then(() => ({ data: state.allData, allCached })).catch(err => {
+            const container = state.portfolioGrid || state.skillsList;
+            if (container) {
+                container.innerHTML = '<p style="color: #ff6b6b; grid-column: 1/-1; text-align: center; padding: 40px;">Unable to load data. Please check your connection and refresh the page.</p>';
+            }
+            throw err;
+        });
     };
 
     const applyDataForRoute = (token) => {
         if (!state.renderer) return;
-        loadDataOnce()
-            .then(data => {
+        const dataPromise = loadDataOnce();
+        dataPromise.then(result => {
+                const data = result.data;
+                const isCached = result.allCached;
                 if (state.routeToken !== token) return;
 
                 if (state.currentRoute === '/achievements') {
@@ -609,7 +665,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const pageType = state.currentRoute === '/games' ? 'games' : 'videos';
                     const projectData = data[pageType] || [];
                     setStoredCount(state.skeletonKey, projectData.length);
-                    if (!state.didPrimeSkeletons || state.primedSkeletonTarget !== 'portfolio' || state.primedSkeletonCount !== projectData.length) {
+                    
+                    if (!isCached && (!state.didPrimeSkeletons || state.primedSkeletonTarget !== 'portfolio' || state.primedSkeletonCount !== projectData.length)) {
                         state.renderer.showSkeletons(state.portfolioGrid, projectData.length);
                     }
 
@@ -617,15 +674,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         state.portfolioGrid.innerHTML = `<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">No projects found for "${pageType}".</p>`;
                     }
                     if (projectData.length > 0) {
-                        Promise.all([
-                            preloadProjectThumbs(projectData),
-                            delay(900)
-                        ]).then(() => {
+                        const startTime = Date.now();
+                        preloadProjectThumbs(projectData).then(imagesCached => {
+                            const loadTime = Date.now() - startTime;
+                            const smoothingDelay = imagesCached ? 0 : Math.max(0, 150 - loadTime);
+                            return delay(smoothingDelay);
+                        }).then(() => {
                             if (state.routeToken !== token) return;
                             try {
                                 state.renderer.renderProjects(projectData);
                             } catch (e) {
-                                console.error("Render error:", e);
+                                if (state.portfolioGrid) {
+                                    state.portfolioGrid.innerHTML = '<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">Unable to display projects. Please refresh the page.</p>';
+                                }
                             }
                         });
                     }
@@ -636,13 +697,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isAchievements = state.currentRoute === '/achievements';
                     const dynamicCount = isAchievements ? skillData.filter(s => s.certified === true).length : skillData.length;
                     setStoredCount(state.skeletonKey, dynamicCount);
-                    if (!state.didPrimeSkeletons || state.primedSkeletonTarget !== 'skills' || state.primedSkeletonCount !== dynamicCount) {
+                    
+                    if (!isCached && (!state.didPrimeSkeletons || state.primedSkeletonTarget !== 'skills' || state.primedSkeletonCount !== dynamicCount)) {
                         state.renderer.showSkeletons(state.skillsList, dynamicCount);
                     }
-                    Promise.all([
-                        preloadSkillIcons(skillData),
-                        delay(800)
-                    ]).then(() => {
+                    
+                    const startTime = Date.now();
+                    preloadSkillIcons(skillData).then(iconsCached => {
+                        const loadTime = Date.now() - startTime;
+                        const smoothingDelay = iconsCached ? 0 : Math.max(0, 150 - loadTime);
+                        return delay(smoothingDelay);
+                    }).then(() => {
                         if (state.routeToken !== token) return;
                         state.renderer.renderSkills(skillData);
                     });
@@ -695,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateNavActive(route);
-        document.title = routeInfo.title;
+        document.title = `${routeInfo.title} - Benjamin Reynolds`;
 
         const token = ++state.routeToken;
         try {
@@ -714,10 +779,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const navigate = (route, search) => loadRoute(route, search, { push: true });
+    
+    window.navigateTo = navigate;
 
     updateNavLinks();
     updateNavActive(resolveRoute(window.location.pathname));
     ensureGlobalEvents();
+    
+    if (typeof initializeGlobalSearch === 'function') {
+        initializeGlobalSearch();
+    }
 
     dataService.fetchLastUpdated();
     dataService.startTimeUpdates();
