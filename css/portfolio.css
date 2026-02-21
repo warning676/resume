@@ -40,7 +40,7 @@
     display: inline-block;
     margin: 0;
     padding: 3px 8px;
-    background: #1a1a2e;
+    background: rgba(255, 215, 0, 0.15);
     border: 1px solid #ffd700;
     border-radius: 4px;
     color: #ffd700;

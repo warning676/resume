@@ -512,7 +512,7 @@ footer[data-include="html/footer.html"] {
     display: inline-block;
     margin: 0;
     padding: 3px 8px;
-    background: #1a1a2e;
+    background: rgba(255, 215, 0, 0.15);
     border: 1px solid #ffd700;
     border-radius: 4px;
     color: #ffd700;
@@ -1496,6 +1496,7 @@ footer[data-include="html/footer.html"] {
     border: none;
     border-bottom: 2px solid transparent;
     cursor: pointer;
+    margin-right: 20px;
 }
 
 .search-trigger-btn:hover {
@@ -1628,26 +1629,31 @@ footer[data-include="html/footer.html"] {
 
 .search-result-type.type-video {
     background-color: rgba(255, 76, 76, 0.2);
+    border: 1px solid rgba(255, 76, 76, 0.5);
     color: #ff4c4c;
 }
 
 .search-result-type.type-game {
     background-color: rgba(100, 220, 100, 0.2);
+    border: 1px solid rgba(100, 220, 100, 0.5);
     color: #64dc64;
 }
 
 .search-result-type.type-skill {
     background-color: rgba(88, 166, 255, 0.2);
+    border: 1px solid rgba(88, 166, 255, 0.5);
     color: #58a6ff;
 }
 
 .search-result-type.type-achievement {
     background-color: rgba(255, 184, 0, 0.2);
+    border: 1px solid rgba(255, 184, 0, 0.5);
     color: #ffb800;
 }
 
 .search-result-type.type-certified {
     background-color: rgba(100, 220, 100, 0.2);
+    border: 1px solid rgba(100, 220, 100, 0.5);
     color: #64dc64;
 }
 
