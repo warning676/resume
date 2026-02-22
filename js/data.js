@@ -7,10 +7,10 @@ class DataService {
         if (!url) return null;
         if (!url.includes('drive.google.com')) return url;
         
-        const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
         if (fileIdMatch) {
             const fileId = fileIdMatch[1];
-            return `https://lh3.googleusercontent.com/d/${fileId}`;
+            return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1200`;
         }
         return url;
     }

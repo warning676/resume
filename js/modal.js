@@ -8,17 +8,17 @@ class ModalManager {
         if (!path) return path;
         if (path.startsWith('http') || path.startsWith('data:')) {
             if (path.includes('drive.google.com')) {
-                if (!path.includes('lh3.googleusercontent.com')) {
-                    const fileIdMatch = path.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                if (!path.includes('thumbnail?')) {
+                    const fileIdMatch = path.match(/\/d\/([a-zA-Z0-9_-]+)/) || path.match(/[?&]id=([a-zA-Z0-9_-]+)/);
                     if (fileIdMatch) {
-                        return `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`;
+                        return `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1200`;
                     }
                 }
             }
             return path;
         }
-        if (path.startsWith('../')) return path;
-        return '../' + path;
+        if (path.startsWith('../')) return encodeURI(path);
+        return '../' + encodeURI(path);
     }
 
     delay(ms) {
