@@ -10,7 +10,7 @@ class DataService {
         const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
         if (fileIdMatch) {
             const fileId = fileIdMatch[1];
-            return `https://lh3.google.com/d/${fileId}=w1200`;
+            return `https://lh3.googleusercontent.com/d/${fileId}`;
         }
         return url;
     }
