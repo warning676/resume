@@ -6,3 +6,4 @@ package-lock.json
 .idea/
 dist/
 .github/instructions/
+fiveserver.config.js

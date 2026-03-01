@@ -302,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasValidYoutube = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
         if (hasValidYoutube) {
             const thumbnailQualities = [
-                'maxresdefault',
                 'hqdefault',
                 'mqdefault',
                 'default'

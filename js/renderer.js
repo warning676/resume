@@ -84,7 +84,7 @@ class Renderer {
                 const youtubeID = Utils.extractYouTubeID(project.youtube || '');
                 const hasValidYoutube = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
                 if (hasValidYoutube) {
-                    thumbSrc = project.resolvedThumb || `https://img.youtube.com/vi/${youtubeID}/maxresdefault.jpg`;
+                    thumbSrc = project.resolvedThumb || `https://img.youtube.com/vi/${youtubeID}/hqdefault.jpg`;
                 } else {
                     thumbSrc = project.resolvedThumb || this.fixImagePath(thumbSrc);
                 }
