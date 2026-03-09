@@ -84,7 +84,7 @@ class Renderer {
                 const youtubeID = Utils.extractYouTubeID(project.youtube || '');
                 const hasValidYoutube = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
                 if (hasValidYoutube) {
-                    thumbSrc = project.resolvedThumb || `https://img.youtube.com/vi/${youtubeID}/hqdefault.jpg`;
+                    thumbSrc = project.resolvedThumb || `https://i.ytimg.com/vi/${youtubeID}/hqdefault.jpg`;
                 } else {
                     thumbSrc = project.resolvedThumb || this.fixImagePath(thumbSrc);
                 }
@@ -111,7 +111,7 @@ class Renderer {
                     </div>
                     <div class="card-content">
                         <div class="card-info">
-                            <h4>${(project.name || '')}</h4>
+                            <h3>${(project.name || '')}</h3>
                             <p>${displayDate}</p>
                             ${badgeHTML}
                         </div>
@@ -180,7 +180,7 @@ class Renderer {
             item.innerHTML = `
                 <span class="skill-icon-wrap">
                     <span class="skill-icon-skeleton skeleton-element"></span>
-                    <img src="${iconSrc}" class="skill-icon" loading="lazy" onerror="this.style.opacity='0.5';">
+                    <img src="${iconSrc}" class="skill-icon" alt="${skill.name} icon" loading="lazy" onerror="this.style.opacity='0.5';">
                 </span>
                 <span class="skill-meta">
                     <span class="skill-name">${skill.name}${certifiedBadge}</span>

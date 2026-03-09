@@ -160,7 +160,7 @@ class ModalManager {
         if (ex) ex.remove();
         if (s.videoFrame) {
             s.videoFrame.style.display = "block";
-            s.videoFrame.src = `https://www.youtube.com/embed/${id}`;
+            s.videoFrame.src = `https://www.youtube-nocookie.com/embed/${id}`;
         }
         if (s.mediaContainer) {
             if (isVertical) {
@@ -553,7 +553,7 @@ class ModalManager {
             }
 
             const initialMediaSrc = hasVideo
-                ? `https://img.youtube.com/vi/${youtubeID}/mqdefault.jpg`
+                ? `https://i.ytimg.com/vi/${youtubeID}/mqdefault.jpg`
                 : (firstImg ? this.fixImagePath(firstImg) : '');
             if (initialMediaSrc) {
                 this.preloadImage(initialMediaSrc, 3000).then((result) => {
@@ -603,7 +603,7 @@ class ModalManager {
                 this.buildGallerySkeletons(gallery, totalGalleryItems);
                 this.updateGalleryButtons(gallery, controls.gPrev, controls.gNext);
 
-                const videoThumb = hasVideo ? `https://img.youtube.com/vi/${youtubeID}/mqdefault.jpg` : '';
+                const videoThumb = hasVideo ? `https://i.ytimg.com/vi/${youtubeID}/mqdefault.jpg` : '';
                 if (hasVideo) {
                     const videoBtn = document.createElement('button');
                     videoBtn.className = 'video-thumb-btn selected';

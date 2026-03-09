@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const timerId = setTimeout(() => finish(false, src), timeoutMs || 3500);
         img.onload = () => {
-            const isPlaceholder = src.includes('youtube.com/vi/') && 
+            const isPlaceholder = src.includes('/vi/') && 
                                   img.naturalWidth === 120 && 
                                   img.naturalHeight === 90;
             finish(!isPlaceholder, src);
@@ -308,12 +308,12 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
             
             for (const quality of thumbnailQualities) {
-                const thumbSrc = `https://img.youtube.com/vi/${youtubeID}/${quality}.jpg`;
+                const thumbSrc = `https://i.ytimg.com/vi/${youtubeID}/${quality}.jpg`;
                 const result = await preloadImage(thumbSrc, 3500);
                 if (result.ok) return { src: thumbSrc, cached: result.cached };
             }
             
-            return { src: `https://img.youtube.com/vi/${youtubeID}/default.jpg`, cached: false };
+            return { src: `https://i.ytimg.com/vi/${youtubeID}/default.jpg`, cached: false };
         }
         const raw = state.renderer.fixImagePath(project.gallery?.[0] || '');
         if (!raw) return { src: '', cached: false };
