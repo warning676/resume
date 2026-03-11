@@ -509,6 +509,38 @@ footer[data-include="html/footer.html"] {
     line-height: 1.4;
     color: #8b949e;
 }
+
+.school-tag-skeleton {
+    display: inline-block;
+    width: 72px;
+    height: 20px;
+    border-radius: 6px;
+}
+
+.school-name-skeleton {
+    display: block;
+    width: 320px;
+    max-width: 85%;
+    height: 28px;
+    border-radius: 6px;
+}
+
+.school-gpa-skeleton {
+    display: block;
+    width: 180px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+#presidents-list-items,
+#honor-roll-items,
+#nominations-items {
+    min-height: 24px;
+}
+
+#festival-awards-container {
+    min-height: 600px;
+}
 .portfolio-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
@@ -745,9 +777,9 @@ body.dropdown-scroll-lock {
     z-index: 990;
     min-width: 160px;
     max-height: 420px;
-    overflow-y: auto;
+    overflow: hidden;
     display: block;
-    padding: 6px 0;
+    padding: 6px 0 0 0;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -778,9 +810,21 @@ body.dropdown-scroll-lock {
     transform: translateY(-4px);
 }
 
+.custom-select-container.skip-animation .custom-select-item,
+.multi-select-container.skip-animation .multi-select-item {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
 .custom-select-container.open .custom-select-item,
 .multi-select-container.open .multi-select-item {
     animation: dropdown-item-reveal 0.16s ease forwards;
+}
+
+.custom-select-container[data-no-animate] .custom-select-item,
+.multi-select-container[data-no-animate] .multi-select-item {
+    animation: none !important;
 }
 
 .custom-select-container.open .custom-select-item:nth-child(1),
@@ -797,6 +841,19 @@ body.dropdown-scroll-lock {
 .multi-select-container.open .multi-select-item:nth-child(6) { animation-delay: 0.11s; }
 .custom-select-container.open .custom-select-item:nth-child(n+7),
 .multi-select-container.open .multi-select-item:nth-child(n+7) { animation-delay: 0.13s; }
+
+.custom-select-dropdown > .custom-select-item:first-child,
+.multi-select-dropdown > .multi-select-item:first-child {
+    margin-top: -6px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.custom-select-dropdown > .custom-select-item:last-child,
+.multi-select-dropdown > .multi-select-item:last-child {
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
 
 @keyframes dropdown-item-reveal {
     from {

@@ -231,7 +231,7 @@ class DataService {
     }
 
     async loadAllData() {
-        const sheets = ['videos', 'games', 'skills'];
+        const sheets = ['videos', 'games', 'skills', 'Achievements', 'School'];
         const data = {};
         let allCached = true;
         try {
@@ -253,6 +253,13 @@ class DataService {
         const table = obj.table;
         const headerMap = {
             'Name': 'name',
+            'Type': 'type',
+            'School': 'school',
+            'Location': 'location',
+            'Started': 'started',
+            'Status': 'status',
+            'GPA': 'gpa',
+            'Link': 'link',
             'Badge': 'badge',
             'Date': 'date',
             'Info': 'info',
@@ -266,9 +273,32 @@ class DataService {
             'Certified Status': 'certified',
             'Certification Name': 'certName',
         };
-        const cols = table.cols.map(c => headerMap[c.label] || c.label.toLowerCase());
+        const normalizeHeader = (label) => {
+            const raw = (label || '').toString().trim();
+            if (!raw) return '';
+            const mapped = headerMap[raw];
+            if (mapped) return mapped;
+            return raw.toLowerCase().replace(/\s+/g, '');
+        };
 
-        return table.rows.map(row => {
+        const rawColLabels = (table.cols || []).map(c => (c && c.label ? String(c.label).trim() : ''));
+        const allLabelsEmpty = rawColLabels.length > 0 && rawColLabels.every(label => !label);
+
+        let cols = rawColLabels.map(normalizeHeader);
+        let rows = table.rows || [];
+
+        if (allLabelsEmpty && rows.length > 0) {
+            const inferredHeaders = (rows[0].c || []).map(cell => {
+                if (!cell) return '';
+                if (cell.v !== null && cell.v !== undefined) return String(cell.v).trim();
+                if (cell.f !== null && cell.f !== undefined) return String(cell.f).trim();
+                return '';
+            });
+            cols = inferredHeaders.map(normalizeHeader);
+            rows = rows.slice(1);
+        }
+
+        return rows.map(row => {
             const item = {};
             row.c.forEach((cell, i) => {
                 const key = cols[i];
@@ -294,7 +324,7 @@ class DataService {
                         
                         return processedPath;
                     }).filter(s => s);
-                } else if (key === 'date' || key === 'lastUsed') {
+                } else if (key === 'date' || key === 'lastUsed' || key === 'started') {
                     val = (cell && cell.f) ? cell.f : val;
                 } else if (key === 'certified' && cell) {
                     val = cell.v === true || String(cell.f).toUpperCase() === 'TRUE';

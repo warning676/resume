@@ -8,6 +8,7 @@ let globalSearchData = {
 let globalSearchDataLoadPromise = null;
 let globalSearchRequestId = 0;
 let globalSearchLatestQuery = '';
+const searchModalFadeMs = 180;
 
 function initializeGlobalSearch() {
     const searchBtn = document.getElementById('global-search-btn');
@@ -95,8 +96,20 @@ function openGlobalSearch() {
     const searchModal = document.getElementById('global-search-modal');
     const searchInput = document.getElementById('global-search-input');
     const searchResults = document.getElementById('search-results');
-    
+
+    if (!searchModal) return;
+
+    if (searchModal._fadeTimer) {
+        clearTimeout(searchModal._fadeTimer);
+        searchModal._fadeTimer = null;
+    }
+
     searchModal.classList.add('active');
+    searchModal.style.transition = `opacity ${searchModalFadeMs}ms ease`;
+    searchModal.style.opacity = '0';
+    requestAnimationFrame(() => {
+        searchModal.style.opacity = '1';
+    });
     searchInput.value = '';
     
     if (searchResults) {
@@ -112,8 +125,25 @@ function closeGlobalSearch() {
     const searchModal = document.getElementById('global-search-modal');
     const searchInput = document.getElementById('global-search-input');
     const searchResults = document.getElementById('search-results');
-    
-    searchModal.classList.remove('active');
+
+    if (!searchModal) return;
+
+    if (searchModal._fadeTimer) {
+        clearTimeout(searchModal._fadeTimer);
+        searchModal._fadeTimer = null;
+    }
+
+    if (!searchModal.classList.contains('active')) {
+        searchModal.style.opacity = '';
+    } else {
+        searchModal.style.transition = `opacity ${searchModalFadeMs}ms ease`;
+        searchModal.style.opacity = '0';
+        searchModal._fadeTimer = setTimeout(() => {
+            searchModal.classList.remove('active');
+            searchModal.style.opacity = '';
+            searchModal._fadeTimer = null;
+        }, searchModalFadeMs + 20);
+    }
     
     if (searchInput) searchInput.value = '';
     if (searchResults) searchResults.innerHTML = '';
@@ -142,7 +172,7 @@ async function loadAllSearchData() {
     }
     
     if (globalSearchData.achievements.length === 0) {
-        const achievementsData = await window.dataService.loadSheet('achievements');
+        const achievementsData = await window.dataService.loadSheet('Achievements');
         globalSearchData.achievements = achievementsData.data || [];
     }
 }
@@ -284,7 +314,8 @@ function performSearch(query) {
         if (videoNames.has(item.name)) return;
         if (skillNames.has(item.name)) return;
         
-        let score = getMatchScore(item, queryLower, ['name', 'info', 'badge', 'certName']);
+        let score = getMatchScore(item, queryLower, ['name', 'info', 'badge', 'certName', 'type', 'school', 'link']);
+        score += getLinkMatchScore(item, queryLower, ['link', 'url']);
         
         if (queryLower.includes('film festival') || queryLower.includes('festival') || 
             queryLower.includes('award') || queryLower.includes('won')) {
@@ -331,6 +362,46 @@ function getMatchScore(item, queryLower, fields) {
         });
     });
     
+    return score;
+}
+
+function getLinkMatchScore(item, queryLower, fields) {
+    let score = 0;
+
+    fields.forEach(field => {
+        const rawValue = String(item[field] || '').trim();
+        if (!rawValue) return;
+
+        const candidates = [rawValue];
+
+        try {
+            const parsed = new URL(rawValue);
+            const host = parsed.hostname.replace(/^www\./i, '');
+            const path = decodeURIComponent(parsed.pathname || '').replace(/[\/_-]+/g, ' ');
+            const params = decodeURIComponent(parsed.search || '').replace(/[?&=_+/.-]+/g, ' ');
+            const hash = decodeURIComponent(parsed.hash || '').replace(/[#/_-]+/g, ' ');
+            candidates.push(host, path, params, hash);
+        } catch (err) {
+            try {
+                candidates.push(decodeURIComponent(rawValue));
+            } catch (decodeErr) {
+            }
+        }
+
+        const merged = candidates.join(' ').toLowerCase();
+        if (!merged) return;
+
+        if (merged === queryLower) score += 80;
+        else if (merged.includes(queryLower)) score += 40;
+
+        const queryWords = queryLower.split(' ');
+        queryWords.forEach(word => {
+            if (word.length > 2 && merged.includes(word)) {
+                score += 8;
+            }
+        });
+    });
+
     return score;
 }
 
@@ -392,6 +463,26 @@ function resolveSearchResultThumbnail(result) {
     return '';
 }
 
+function getSearchResultDescription(result) {
+    if (!result || !result.data) return '';
+
+    if (result.type !== 'achievement') {
+        return result.data.info || result.data.badge || '';
+    }
+
+    const parts = [];
+    const typeValue = String(result.data.type || '').trim();
+    const schoolValue = String(result.data.school || '').trim();
+    const dateValue = String(result.data.date || '').trim();
+
+    if (schoolValue) parts.push(schoolValue);
+    if (typeValue) parts.push(typeValue);
+    if (dateValue) parts.push(dateValue);
+
+    if (parts.length > 0) return parts.join(' • ');
+    return result.data.info || result.data.badge || '';
+}
+
 function renderSearchResults(results, query) {
     const searchResults = document.getElementById('search-results');
     
@@ -406,7 +497,7 @@ function renderSearchResults(results, query) {
 
     html += results.map(result => {
         const title = result.data.name || 'Untitled';
-        const description = result.data.info || result.data.badge || '';
+        const description = getSearchResultDescription(result);
         const highlightedTitle = highlightMatch(title, query);
         const highlightedDesc = highlightMatch(description, query);
         const thumbnailUrl = resolveSearchResultThumbnail(result);

@@ -3,6 +3,7 @@ class ModalManager {
         this.s = state;
         this.galleryLoadId = 0;
         this.modalFadeMs = 180;
+        this.modalTransitionToken = 0;
     }
 
     fadeInModal(modalEl) {
@@ -91,6 +92,37 @@ class ModalManager {
             img.onerror = () => finish(false, src);
             img.src = src;
         });
+    }
+
+    setModalSkillIcon(modalIcon, iconSrc, altText) {
+        if (!modalIcon) return;
+        const finalSrc = this.fixImagePath(iconSrc || '');
+        modalIcon.alt = altText || '';
+        const token = (modalIcon._swapToken || 0) + 1;
+        modalIcon._swapToken = token;
+
+        if (!finalSrc) {
+            modalIcon.removeAttribute('src');
+            modalIcon.style.opacity = '';
+            return;
+        }
+
+        modalIcon.style.opacity = '0';
+        const img = new Image();
+        img.onload = () => {
+            if (modalIcon._swapToken !== token) return;
+            modalIcon.src = finalSrc;
+            requestAnimationFrame(() => {
+                if (modalIcon._swapToken !== token) return;
+                modalIcon.style.opacity = '1';
+            });
+        };
+        img.onerror = () => {
+            if (modalIcon._swapToken !== token) return;
+            modalIcon.src = finalSrc;
+            modalIcon.style.opacity = '1';
+        };
+        img.src = finalSrc;
     }
 
     buildGallerySkeletons(gallery, count) {
@@ -300,7 +332,16 @@ class ModalManager {
         const useSecondary = isSkill && s.modal && s.modal.style.display === "flex" && s.secModal && toolsContext;
         const targetModal = useSecondary ? s.secModal : s.modal;
         const transitionTarget = targetModal ? targetModal.querySelector('.modal-info-pane') : null;
-        const modalContent = targetModal ? targetModal.querySelector('.modal-content') : null;
+        let headerTransitionTarget = null;
+        if (targetModal) {
+            if (useSecondary) {
+                headerTransitionTarget = targetModal.querySelector('.modal-header > div');
+            } else if (isSkill) {
+                headerTransitionTarget = targetModal.querySelector('#skill-header');
+            } else {
+                headerTransitionTarget = targetModal.querySelector('#project-header');
+            }
+        }
         const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (!transitionTarget || prefersReducedMotion) {
@@ -308,76 +349,83 @@ class ModalManager {
             return;
         }
 
-        const fadeMs = 140;
-        const sizeMorphMs = 220;
-        const cleanupMs = Math.max(fadeMs, sizeMorphMs) + 40;
-
-        const transitionHost = transitionTarget.parentElement;
-        if (!transitionHost) {
-            this.openModalForItem(cardOrData, typeOverride, toolsContext);
-            return;
-        }
-
-        const previousModalOverflowY = targetModal ? targetModal.style.overflowY : '';
-        const previousInfoOverflowY = transitionTarget.style.overflowY;
-        if (targetModal) targetModal.style.overflowY = 'hidden';
-        transitionTarget.style.overflowY = 'hidden';
-
-        let startHeight = null;
-        if (modalContent) {
-            const measuredStart = modalContent.getBoundingClientRect().height;
-            if (Number.isFinite(measuredStart) && measuredStart > 0) {
-                startHeight = measuredStart;
-                modalContent.style.height = `${startHeight}px`;
+        const durationMs = 150;
+        const exitShift = direction >= 0 ? -12 : 12;
+        const enterShift = -exitShift;
+        const transitionToken = ++this.modalTransitionToken;
+        if (targetModal) {
+            targetModal._morphActive = true;
+            if (targetModal._morphTimer) {
+                clearTimeout(targetModal._morphTimer);
+                targetModal._morphTimer = null;
             }
         }
 
-        transitionHost.querySelectorAll('.modal-transition-snapshot').forEach(node => node.remove());
-        const snapshot = transitionTarget.cloneNode(true);
-        snapshot.classList.add('modal-transition-snapshot');
-        snapshot.style.position = 'absolute';
-        snapshot.style.top = `${transitionTarget.offsetTop}px`;
-        snapshot.style.left = `${transitionTarget.offsetLeft}px`;
-        snapshot.style.width = `${transitionTarget.offsetWidth}px`;
-        snapshot.style.height = `${transitionTarget.offsetHeight}px`;
-        snapshot.style.margin = '0';
-        snapshot.style.pointerEvents = 'none';
-        snapshot.style.zIndex = '30';
-        snapshot.style.opacity = '1';
-        snapshot.style.transition = `opacity ${fadeMs}ms ease`;
-        snapshot.style.overflow = 'hidden';
-        transitionHost.appendChild(snapshot);
-
-        transitionTarget.style.transition = 'none';
+        transitionTarget.style.willChange = 'opacity, transform';
+        transitionTarget.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
         transitionTarget.style.opacity = '0';
-        this.openModalForItem(cardOrData, typeOverride, toolsContext);
+        transitionTarget.style.transform = `translateX(${exitShift}px)`;
+        if (headerTransitionTarget) {
+            headerTransitionTarget.style.willChange = 'opacity, transform';
+            headerTransitionTarget.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
+            headerTransitionTarget.style.opacity = '0';
+            headerTransitionTarget.style.transform = `translateX(${exitShift}px)`;
+        }
 
-        requestAnimationFrame(() => {
-            if (modalContent && Number.isFinite(startHeight)) {
-                modalContent.style.height = 'auto';
-                const measuredEnd = modalContent.getBoundingClientRect().height;
-                const endHeight = Number.isFinite(measuredEnd) && measuredEnd > 0 ? measuredEnd : startHeight;
-                modalContent.style.height = `${startHeight}px`;
-                void modalContent.offsetHeight;
-                modalContent.style.transition = `height ${sizeMorphMs}ms ease`;
-                modalContent.style.height = `${endHeight}px`;
-                setTimeout(() => {
-                    modalContent.style.transition = '';
-                    modalContent.style.height = '';
-                }, cleanupMs);
+        const performSwap = () => {
+            if (transitionToken !== this.modalTransitionToken) return;
+            this.openModalForItem(cardOrData, typeOverride, toolsContext);
+            transitionTarget.style.transition = 'none';
+            transitionTarget.style.opacity = '0';
+            transitionTarget.style.transform = `translateX(${enterShift}px)`;
+            if (headerTransitionTarget) {
+                headerTransitionTarget.style.transition = 'none';
+                headerTransitionTarget.style.opacity = '0';
+                headerTransitionTarget.style.transform = `translateX(${enterShift}px)`;
             }
 
-            transitionTarget.style.transition = `opacity ${fadeMs}ms ease`;
-            transitionTarget.style.opacity = '1';
-            snapshot.style.opacity = '0';
-            setTimeout(() => {
-                transitionTarget.style.transition = '';
-                transitionTarget.style.opacity = '';
-                transitionTarget.style.overflowY = previousInfoOverflowY || '';
-                if (targetModal) targetModal.style.overflowY = previousModalOverflowY || '';
-                snapshot.remove();
-            }, cleanupMs);
-        });
+            requestAnimationFrame(() => {
+                if (transitionToken !== this.modalTransitionToken) return;
+                transitionTarget.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
+                transitionTarget.style.opacity = '1';
+                transitionTarget.style.transform = 'translateX(0px)';
+                if (headerTransitionTarget) {
+                    headerTransitionTarget.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
+                    headerTransitionTarget.style.opacity = '1';
+                    headerTransitionTarget.style.transform = 'translateX(0px)';
+                }
+
+                const cleanup = () => {
+                    if (transitionToken !== this.modalTransitionToken) return;
+                    transitionTarget.style.transition = '';
+                    transitionTarget.style.opacity = '';
+                    transitionTarget.style.transform = '';
+                    transitionTarget.style.willChange = '';
+                    if (headerTransitionTarget) {
+                        headerTransitionTarget.style.transition = '';
+                        headerTransitionTarget.style.opacity = '';
+                        headerTransitionTarget.style.transform = '';
+                        headerTransitionTarget.style.willChange = '';
+                    }
+                    if (targetModal) {
+                        targetModal._morphActive = false;
+                        targetModal._morphTimer = null;
+                    }
+                };
+
+                if (targetModal) {
+                    targetModal._morphTimer = setTimeout(cleanup, durationMs + 30);
+                } else {
+                    setTimeout(cleanup, durationMs + 30);
+                }
+            });
+        };
+
+        if (targetModal) {
+            targetModal._morphTimer = setTimeout(performSwap, durationMs);
+        } else {
+            setTimeout(performSwap, durationMs);
+        }
     }
 
     openModalForItem(cardOrData, typeOverride = null, toolsContext = null) {
@@ -455,8 +503,11 @@ class ModalManager {
 
             const modalIcon = document.getElementById(prefix + 'modal-skill-icon');
             if (modalIcon) {
-                modalIcon.src = this.fixImagePath(data.icon || (cardOrData instanceof HTMLElement ? cardOrData.querySelector('img').src : ""));
-                modalIcon.alt = data.name;
+                this.setModalSkillIcon(
+                    modalIcon,
+                    data.icon || (cardOrData instanceof HTMLElement ? cardOrData.querySelector('img').src : ''),
+                    data.name
+                );
             }
 
             const sType = document.getElementById(prefix + 'modal-skill-type');
@@ -524,7 +575,8 @@ class ModalManager {
             const infoCategory = document.getElementById("modal-info-category");
             if (infoCategory) {
                 infoCategory.innerText = (data.badge || "").toUpperCase();
-                infoCategory.style.display = data.badge ? "block" : "none";
+                infoCategory.style.display = "block";
+                infoCategory.style.visibility = data.badge ? "visible" : "hidden";
             }
 
             const modalTools = document.getElementById("modal-tools");

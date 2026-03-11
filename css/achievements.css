@@ -32,3 +32,44 @@
     line-height: 1.4;
     color: #8b949e;
 }
+
+.school-tag-skeleton {
+    display: inline-block;
+    width: 72px;
+    height: 20px;
+    border-radius: 6px;
+    color: transparent !important;
+    font-size: 0;
+    line-height: 0;
+    overflow: hidden;
+}
+
+.school-name-skeleton {
+    display: block;
+    width: 320px;
+    max-width: 85%;
+    height: 28px;
+    border-radius: 6px;
+    color: transparent !important;
+    font-size: 0;
+    line-height: 0;
+    overflow: hidden;
+}
+
+.school-gpa-skeleton {
+    display: block;
+    width: 180px;
+    height: 16px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#presidents-list-items,
+#honor-roll-items,
+#nominations-items {
+    min-height: 82px;
+}
+
+#festival-awards-container {
+    min-height: 600px;
+}

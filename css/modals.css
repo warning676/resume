@@ -129,6 +129,7 @@
     align-items: center;
     padding: 20px 0;
     border-bottom: 1px solid #1f2428;
+    min-height: 77px;
 }
 
 .modal-header h2 {
@@ -138,6 +139,39 @@
     letter-spacing: 0.5px;
     text-transform: uppercase;
     color: #ffffff;
+    line-height: 1.1;
+    display: flex;
+    align-items: center;
+    height: 36px;
+    white-space: nowrap;
+}
+
+#skill-header,
+#project-header,
+#secondaryModal .modal-header > div {
+    align-items: center;
+    display: flex;
+    height: 36px;
+    min-height: 36px;
+}
+
+#modal-skill-icon,
+#sec-modal-skill-icon {
+    display: block;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    transition: opacity 0.12s ease;
+}
+
+#modal-title-main,
+#sec-modal-title-main {
+    display: flex;
+    align-items: center;
+    line-height: 36px;
+    height: 36px;
+    margin: 0;
 }
 
 .close-button {
@@ -227,8 +261,23 @@
     max-width: 500px;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
     transition: padding 0.26s ease, max-width 0.26s ease;
+}
+
+#modal-info-title {
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+}
+
+#modal-date {
+    min-height: 16px;
+}
+
+#modal-info-category {
+    min-height: 20px;
 }
 
 #modal-date {

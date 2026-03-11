@@ -41,6 +41,11 @@ body {
     flex-direction: column;
 }
 
+main#page-root {
+    flex: 1 0 auto;
+    min-height: 60vh;
+}
+
 @media (max-width: 768px) {
     body {
         padding: 15px 20px calc(80px + var(--footer-buffer)) 20px;

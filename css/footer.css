@@ -11,6 +11,7 @@ footer[data-include="html/footer.html"] {
     justify-content: center;
     margin-top: 40px;
     padding: 10px 0 14px;
+    min-height: 50px;
 }
 
 @media (max-width: 600px) {
@@ -33,6 +34,32 @@ footer[data-include="html/footer.html"] {
 .page-footer p {
     margin: 0;
     max-width: 950px;
+    white-space: nowrap;
+}
+
+#last-updated-date,
+#current-time,
+#db-connection-quality {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+#last-updated-date {
+    min-width: 130px;
+}
+
+#current-time {
+    min-width: 220px;
+}
+
+#db-connection-quality {
+    min-width: 84px;
+}
+
+@media (max-width: 900px) {
+    .page-footer p {
+        white-space: normal;
+    }
 }
 
 .connection-status {

@@ -86,8 +86,12 @@ class ControlsManager {
 
     renderMultiSelect(container, options, selectedValues, onChange) {
         const wasOpen = container.classList.contains('open');
+        container.classList.remove('open');
+        container.classList.add('skip-animation');
         container.innerHTML = '';
-        container.className = 'multi-select-container' + (wasOpen ? ' open' : '');
+        if (!container.classList.contains('multi-select-container')) {
+            container.classList.add('multi-select-container');
+        }
 
         const hasAllOption = options.some(o => o.id === 'all');
         const individualIds = options.filter(o => o.id !== 'all').map(o => o.id);
@@ -164,12 +168,17 @@ class ControlsManager {
             document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => {
                 if (c !== container) c.classList.remove('open');
             });
+            container.classList.remove('skip-animation');
             container.classList.toggle('open');
             this.syncDropdownScrollLock();
         });
 
         container.appendChild(trigger);
         container.appendChild(dropdown);
+        
+        if (wasOpen) {
+            container.classList.add('open');
+        }
     }
 
     renderSingleSelect(container, options, initialValue, onChange) {
