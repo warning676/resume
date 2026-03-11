@@ -102,11 +102,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const resolveAppRoot = (pathname) => {
         const legacyMatch = pathname.match(/^(.*)\/html\/[^/]+\.html$/i);
         if (legacyMatch) return legacyMatch[1];
-        const normalized = pathname.replace(/\/index\.html$/i, '');
+        const normalized = pathname.replace(/\/index\.html$/i, '').replace(/\/$/, '');
         const match = routePaths.find(route => route !== '/' && normalized.endsWith(route));
         if (match) return normalized.slice(0, -match.length);
-        if (normalized.endsWith('/')) return normalized.slice(0, -1);
-        return normalized === '/' ? '' : normalized;
+        return normalized;
     };
 
     applyRedirectPath();
