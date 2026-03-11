@@ -1,6 +1,67 @@
 class DataService {
     constructor(spreadsheetId) {
         this.spreadsheetId = spreadsheetId;
+        this.connectionSamples = [];
+        this.lastConnectionState = null;
+    }
+
+    recordConnectionSample(durationMs, fromCache = false, hadError = false) {
+        const sample = {
+            durationMs: Number.isFinite(durationMs) ? durationMs : null,
+            fromCache,
+            hadError,
+            at: Date.now()
+        };
+        this.lastConnectionState = sample;
+        if (Number.isFinite(sample.durationMs)) {
+            this.connectionSamples.push(sample.durationMs);
+            if (this.connectionSamples.length > 8) {
+                this.connectionSamples.shift();
+            }
+        }
+    }
+
+    getAverageConnectionMs() {
+        if (!this.connectionSamples.length) return null;
+        const total = this.connectionSamples.reduce((sum, v) => sum + v, 0);
+        return total / this.connectionSamples.length;
+    }
+
+    resolveConnectionQuality() {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            return { label: 'Offline', key: 'offline' };
+        }
+
+        if (this.lastConnectionState && this.lastConnectionState.fromCache && this.lastConnectionState.hadError) {
+            return { label: 'Poor', key: 'poor' };
+        }
+
+        const avgMs = this.getAverageConnectionMs();
+        if (Number.isFinite(avgMs)) {
+            if (avgMs <= 1200) return { label: 'Good', key: 'good' };
+            return { label: 'Poor', key: 'poor' };
+        }
+
+        const connection = typeof navigator !== 'undefined' ? navigator.connection || navigator.mozConnection || navigator.webkitConnection : null;
+        const type = connection && connection.effectiveType ? String(connection.effectiveType).toLowerCase() : '';
+        if (type === '4g') return { label: 'Good', key: 'good' };
+        if (type === '3g' || type === '2g' || type === 'slow-2g') return { label: 'Poor', key: 'poor' };
+
+        return { label: 'Good', key: 'good' };
+    }
+
+    updateConnectionStatus() {
+        const statusElement = document.getElementById('db-connection-quality');
+        if (!statusElement) return;
+
+        const quality = this.resolveConnectionQuality();
+        statusElement.textContent = quality.label;
+        statusElement.className = `connection-status${quality.key ? ` ${quality.key}` : ''}`;
+    }
+
+    startConnectionStatusUpdates() {
+        this.updateConnectionStatus();
+        setInterval(() => this.updateConnectionStatus(), 10000);
     }
 
     convertGoogleDriveUrl(url) {
@@ -135,6 +196,7 @@ class DataService {
 
         try {
             const url = `https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}&_=${Date.now()}`;
+            const fetchStartedAt = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
             const response = await fetch(url, {
                 cache: 'no-cache',
                 headers: {
@@ -145,6 +207,9 @@ class DataService {
             if (!response.ok) throw new Error(`Could not fetch ${sheetName} sheet`);
             const text = await response.text();
             const data = this.parseGVizResponse(text, sheetName);
+            const fetchEndedAt = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            this.recordConnectionSample(fetchEndedAt - fetchStartedAt, false, false);
+            this.updateConnectionStatus();
             
             try {
                 localStorage.setItem(cacheKey, JSON.stringify(data));
@@ -155,8 +220,12 @@ class DataService {
         } catch (err) {
             if (cachedData) {
                 console.warn(`Using cached data for ${sheetName} due to fetch error:`, err);
+                this.recordConnectionSample(null, true, true);
+                this.updateConnectionStatus();
                 return { data: cachedData, fromCache: true };
             }
+            this.recordConnectionSample(null, false, true);
+            this.updateConnectionStatus();
             throw err;
         }
     }

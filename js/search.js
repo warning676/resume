@@ -5,6 +5,10 @@ let globalSearchData = {
     achievements: []
 };
 
+let globalSearchDataLoadPromise = null;
+let globalSearchRequestId = 0;
+let globalSearchLatestQuery = '';
+
 function initializeGlobalSearch() {
     const searchBtn = document.getElementById('global-search-btn');
     const searchModal = document.getElementById('global-search-modal');
@@ -50,10 +54,39 @@ function initializeGlobalSearch() {
     });
 
     let searchTimeout;
-    searchInput.addEventListener('input', (e) => {
+    searchInput.addEventListener('input', async (e) => {
+        globalSearchLatestQuery = e.target.value;
+        const requestId = ++globalSearchRequestId;
+
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            performSearch(e.target.value);
+        searchTimeout = setTimeout(async () => {
+            const query = globalSearchLatestQuery;
+            if (!query || query.trim().length === 0) {
+                performSearch(query);
+                return;
+            }
+
+            renderSearchLoadingState(query);
+
+            try {
+                await ensureGlobalSearchDataLoaded();
+
+                if (requestId !== globalSearchRequestId) {
+                    return;
+                }
+
+                const currentQuery = searchInput.value;
+                performSearch(currentQuery);
+            } catch (err) {
+                if (requestId !== globalSearchRequestId) {
+                    return;
+                }
+
+                const searchResults = document.getElementById('search-results');
+                if (searchResults) {
+                    searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">Search is temporarily unavailable</div><div class="search-no-results-hint">Please try again in a moment</div></div>';
+                }
+            }
         }, 200);
     });
 }
@@ -72,7 +105,7 @@ function openGlobalSearch() {
     
     searchInput.focus();
     
-    loadAllSearchData();
+    ensureGlobalSearchDataLoaded();
 }
 
 function closeGlobalSearch() {
@@ -112,6 +145,34 @@ async function loadAllSearchData() {
         const achievementsData = await window.dataService.loadSheet('achievements');
         globalSearchData.achievements = achievementsData.data || [];
     }
+}
+
+function ensureGlobalSearchDataLoaded() {
+    if (globalSearchDataLoadPromise) {
+        return globalSearchDataLoadPromise;
+    }
+
+    globalSearchDataLoadPromise = loadAllSearchData().catch((err) => {
+        globalSearchDataLoadPromise = null;
+        throw err;
+    });
+
+    return globalSearchDataLoadPromise;
+}
+
+function renderSearchLoadingState(query) {
+    const searchResults = document.getElementById('search-results');
+    if (!searchResults) return;
+
+    const safeQuery = escapeHtml(query || '');
+    searchResults.innerHTML = `
+        <div class="search-loading-state" aria-live="polite" aria-busy="true">
+            <div class="search-loading-head">
+                <span class="search-loading-spinner" aria-hidden="true"></span>
+                <span class="search-loading-text">Loading results for "<span class="search-loading-query">${safeQuery}</span>"</span>
+            </div>
+        </div>
+    `;
 }
 
 function performSearch(query) {
@@ -218,8 +279,10 @@ function performSearch(query) {
     });
 
     const videoNames = new Set(globalSearchData.videos.map(v => v.name));
+    const skillNames = new Set(globalSearchData.skills.map(s => s.name));
     globalSearchData.achievements.forEach(item => {
         if (videoNames.has(item.name)) return;
+        if (skillNames.has(item.name)) return;
         
         let score = getMatchScore(item, queryLower, ['name', 'info', 'badge', 'certName']);
         
@@ -271,6 +334,64 @@ function getMatchScore(item, queryLower, fields) {
     return score;
 }
 
+function resolveSearchMediaPath(path) {
+    if (!path) return '';
+
+    if (window.state && window.state.renderer && typeof window.state.renderer.fixImagePath === 'function') {
+        return window.state.renderer.fixImagePath(path);
+    }
+
+    if (path.startsWith('http') || path.startsWith('data:')) {
+        return path;
+    }
+
+    if (path.startsWith('../')) {
+        return encodeURI(path);
+    }
+
+    return '../' + encodeURI(path);
+}
+
+function resolveSearchResultThumbnail(result) {
+    if (!result || !result.data) return '';
+
+    const item = result.data;
+
+    if (result.type === 'video' || result.type === 'game') {
+        const youtubeID = typeof Utils !== 'undefined' && Utils.extractYouTubeID
+            ? Utils.extractYouTubeID(item.youtube || '')
+            : '';
+        const hasValidYoutube = youtubeID && youtubeID.trim() !== '' && youtubeID !== 'YOUTUBE_ID_HERE';
+
+        if (hasValidYoutube) {
+            return `https://i.ytimg.com/vi/${youtubeID}/mqdefault.jpg`;
+        }
+
+        if (Array.isArray(item.gallery) && item.gallery.length > 0) {
+            return resolveSearchMediaPath(item.gallery[0]);
+        }
+
+        if (typeof item.gallery === 'string' && item.gallery.trim()) {
+            const parts = item.gallery.split(',').map(g => g.trim()).filter(Boolean);
+            if (parts.length > 0) {
+                return resolveSearchMediaPath(parts[0]);
+            }
+        }
+    }
+
+    if (result.type === 'skill') {
+        if (item.resolvedIcon) {
+            return item.resolvedIcon;
+        }
+
+        if (item.icon) {
+            return resolveSearchMediaPath(item.icon);
+        }
+    }
+
+    return '';
+}
+
 function renderSearchResults(results, query) {
     const searchResults = document.getElementById('search-results');
     
@@ -288,13 +409,15 @@ function renderSearchResults(results, query) {
         const description = result.data.info || result.data.badge || '';
         const highlightedTitle = highlightMatch(title, query);
         const highlightedDesc = highlightMatch(description, query);
+        const thumbnailUrl = resolveSearchResultThumbnail(result);
+        const mediaClass = result.type === 'skill' ? 'is-skill' : 'is-wide';
         
         const badges = [];
         
         const typeClass = `type-${result.type}`;
         let typeName = result.type.charAt(0).toUpperCase() + result.type.slice(1);
         if (result.type === 'achievement') {
-            typeName = 'Won Awards';
+            typeName = 'Achievement';
         }
         badges.push(`<span class="search-result-type ${typeClass}">${typeName}</span>`);
         
@@ -315,14 +438,22 @@ function renderSearchResults(results, query) {
         }
         
         const badgesHtml = badges.join(' ');
+        const mediaHtml = thumbnailUrl
+            ? `<div class="search-result-media ${mediaClass}"><img src="${escapeHtml(thumbnailUrl)}" alt="${escapeHtml(title)} thumbnail" loading="lazy"></div>`
+            : '';
         
         return `
             <div class="search-result-item" onclick="navigateToSearchResult('${result.route}', '${escapeHtml(title)}', '${result.type}')">
-                <div class="search-result-header">
-                    ${badgesHtml}
+                <div class="search-result-main${thumbnailUrl ? ' has-media' : ''}">
+                    ${mediaHtml}
+                    <div class="search-result-body">
+                        <div class="search-result-header">
+                            ${badgesHtml}
+                        </div>
+                        <div class="search-result-title">${highlightedTitle}</div>
+                        ${highlightedDesc ? `<div class="search-result-info">${highlightedDesc}</div>` : ''}
+                    </div>
                 </div>
-                <div class="search-result-title">${highlightedTitle}</div>
-                ${highlightedDesc ? `<div class="search-result-info">${highlightedDesc}</div>` : ''}
             </div>
         `;
     }).join('');

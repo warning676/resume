@@ -270,6 +270,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+    const ROUTE_FADE_MS = 180;
+
+    const prefersReducedMotion = () => {
+        try {
+            return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        } catch (err) {
+            return false;
+        }
+    };
+
+    const ensureRouteTransitionSetup = (root) => {
+        if (!root || root.dataset.routeTransitionReady === 'true') return;
+        root.style.viewTransitionName = 'page-root';
+
+        if (!document.getElementById('route-transition-style')) {
+            const style = document.createElement('style');
+            style.id = 'route-transition-style';
+            style.textContent = `
+                ::view-transition-old(page-root),
+                ::view-transition-new(page-root) {
+                    animation-duration: ${ROUTE_FADE_MS}ms;
+                    animation-timing-function: ease;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        root.dataset.routeTransitionReady = 'true';
+    };
+
+    const runRouteCrossfade = async (root, updateDom) => {
+        if (!root) {
+            updateDom();
+            return;
+        }
+
+        if (prefersReducedMotion() || typeof document.startViewTransition !== 'function') {
+            updateDom();
+            return;
+        }
+
+        ensureRouteTransitionSetup(root);
+        const transition = document.startViewTransition(() => {
+            updateDom();
+        });
+
+        try {
+            await transition.finished;
+        } catch (err) {
+        }
+    };
+
+    const isSameRouteNavigation = (route, search) => {
+        const currentRoute = resolveRoute(window.location.pathname);
+        const currentSearch = window.location.search || '';
+        const nextSearch = search || '';
+        return route === currentRoute && nextSearch === currentSearch;
+    };
+
+    const shouldSkipRouteLoad = (route, search, root) => {
+        if (!isSameRouteNavigation(route, search)) return false;
+        if (state.routeToken <= 0) return false;
+        if (state.currentRoute !== route) return false;
+        if (!root) return false;
+        const hasRenderedContent = root.children.length > 0 || (root.textContent || '').trim().length > 0;
+        return hasRenderedContent;
+    };
+
     const preloadImage = (src, timeoutMs) => new Promise(resolve => {
         if (!src) {
             resolve({ ok: false, src: '', cached: false });
@@ -555,6 +623,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const syncDropdownScrollLock = () => {
+        const hasOpenDropdown = !!document.querySelector('.custom-select-container.open, .multi-select-container.open');
+        if (hasOpenDropdown) {
+            document.body.classList.add('dropdown-scroll-lock');
+            document.documentElement.classList.add('dropdown-scroll-lock');
+        } else {
+            document.body.classList.remove('dropdown-scroll-lock');
+            document.documentElement.classList.remove('dropdown-scroll-lock');
+        }
+    };
+
+    window.syncDropdownScrollLock = syncDropdownScrollLock;
+
     const ensureGlobalEvents = (() => {
         let bound = false;
         return () => {
@@ -575,18 +656,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.addEventListener('click', (e) => {
                 document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
+                syncDropdownScrollLock();
 
                 const link = e.target.closest('a[data-route]');
                 if (!link) return;
                 if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
                 const route = link.getAttribute('data-route') || '/';
+                if (isSameRouteNavigation(route, '')) {
+                    e.preventDefault();
+                    return;
+                }
                 e.preventDefault();
                 navigate(route, '');
             });
-
-            window.addEventListener('scroll', () => {
-                document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
-            }, { passive: true });
 
             let modalMousedownTarget = null;
             
@@ -753,6 +835,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const root = document.getElementById('page-root');
         if (!root) return;
 
+        document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
+        document.body.classList.remove('dropdown-scroll-lock');
+        document.documentElement.classList.remove('dropdown-scroll-lock');
+
+        if (shouldSkipRouteLoad(route, search, root)) return;
+
         const nextUrl = buildUrl(route, search || '');
         if (!options || options.push !== false) {
             window.history.pushState(null, '', nextUrl);
@@ -767,13 +855,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`Failed to load ${routeInfo.fragment}`);
             const html = await response.text();
             if (state.routeToken !== token) return;
-            root.innerHTML = html;
-            await injectFragments(root, route);
-            initializePage(route);
+            const nextRoot = document.createElement('div');
+            nextRoot.innerHTML = html;
+            await injectFragments(nextRoot, route);
+            if (state.routeToken !== token) return;
+            await runRouteCrossfade(root, () => {
+                root.innerHTML = nextRoot.innerHTML;
+                initializePage(route);
+            });
         } catch (err) {
             if (state.routeToken !== token) return;
-            root.innerHTML = '<div class="page-intro"><h2>Page not found</h2><p>The page could not be loaded.</p></div>';
-            initializePage('/');
+            await runRouteCrossfade(root, () => {
+                root.innerHTML = '<div class="page-intro"><h2>Page not found</h2><p>The page could not be loaded.</p></div>';
+                initializePage('/');
+            });
         }
     };
 
@@ -791,6 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     dataService.fetchLastUpdated();
     dataService.startTimeUpdates();
+    dataService.startConnectionStatusUpdates();
 
     const initialUrl = new URL(window.location.href);
     const initialRoute = resolveRoute(initialUrl.pathname);

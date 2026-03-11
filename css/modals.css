@@ -26,6 +26,7 @@
     padding-left: 85px;
     padding-right: 85px;
     margin: auto;
+    transition: width 0.26s ease, max-width 0.26s ease, padding-left 0.26s ease, padding-right 0.26s ease;
 }
 
 .modal-body-split {
@@ -190,9 +191,9 @@
 }
 
 .modal:not(.modal-skill) .modal-body-split {
-    height: 70vh;
-    min-height: 70vh;
-    max-height: 70vh;
+    height: min(70vh, calc(100dvh - 140px));
+    min-height: min(70vh, calc(100dvh - 140px));
+    max-height: min(70vh, calc(100dvh - 140px));
     grid-template-rows: minmax(0, 1fr);
 }
 
@@ -227,6 +228,7 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    transition: padding 0.26s ease, max-width 0.26s ease;
 }
 
 #modal-date {

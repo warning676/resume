@@ -2,6 +2,50 @@ class ModalManager {
     constructor(state) {
         this.s = state;
         this.galleryLoadId = 0;
+        this.modalFadeMs = 180;
+    }
+
+    fadeInModal(modalEl) {
+        if (!modalEl) return;
+        if (modalEl._fadeTimer) {
+            clearTimeout(modalEl._fadeTimer);
+            modalEl._fadeTimer = null;
+        }
+        if (modalEl.style.display === 'flex') {
+            modalEl.style.opacity = '1';
+            return;
+        }
+        modalEl.style.transition = `opacity ${this.modalFadeMs}ms ease`;
+        modalEl.style.opacity = '0';
+        modalEl.style.display = 'flex';
+        requestAnimationFrame(() => {
+            modalEl.style.opacity = '1';
+        });
+    }
+
+    fadeOutModal(modalEl, onDone) {
+        if (!modalEl) {
+            if (typeof onDone === 'function') onDone();
+            return;
+        }
+        if (modalEl._fadeTimer) {
+            clearTimeout(modalEl._fadeTimer);
+            modalEl._fadeTimer = null;
+        }
+        if (modalEl.style.display !== 'flex') {
+            modalEl.style.display = 'none';
+            modalEl.style.opacity = '';
+            if (typeof onDone === 'function') onDone();
+            return;
+        }
+        modalEl.style.transition = `opacity ${this.modalFadeMs}ms ease`;
+        modalEl.style.opacity = '0';
+        modalEl._fadeTimer = setTimeout(() => {
+            modalEl.style.display = 'none';
+            modalEl.style.opacity = '';
+            modalEl._fadeTimer = null;
+            if (typeof onDone === 'function') onDone();
+        }, this.modalFadeMs + 20);
     }
 
     fixImagePath(path) {
@@ -116,42 +160,48 @@ class ModalManager {
 
     resetModal() {
         const s = this.s;
-        if (s.modal) s.modal.style.display = "none";
-        if (s.videoFrame) s.videoFrame.src = "";
-        const ex = document.getElementById("big-image-view");
-        if (ex) ex.remove();
-        const modalBody = document.querySelector(".modal-body-split");
-        if (modalBody) modalBody.scrollTop = 0;
-        const modalContent = document.querySelector(".modal-content");
-        if (modalContent) modalContent.scrollTop = 0;
-        const gal = document.getElementById("modal-gallery");
-        if (gal) gal.scrollLeft = 0;
-        if (s.modal) s.modal.classList.remove('gallery-collapsed');
-        s.galleryCollapsed = false;
-        s.canToggleGallery = false;
-        s.galleryHasRendered = false;
-        s.galleryEl = null;
-        s.galleryWrapper = null;
-        s.galleryToggleEl = null;
-        s.galleryTargetModal = null;
-        s.currentItemCard = null;
-        try { document.body.style.overflow = ''; } catch (e) {}
-        try {
-            const c = s.modal ? s.modal.querySelector('.modal-content') : null;
-            if (c) c.classList.remove('no-side-padding');
-        } catch (e) {}
+        const finalizeReset = () => {
+            if (s.videoFrame) s.videoFrame.src = "";
+            const ex = document.getElementById("big-image-view");
+            if (ex) ex.remove();
+            const modalBody = document.querySelector(".modal-body-split");
+            if (modalBody) modalBody.scrollTop = 0;
+            const modalContent = document.querySelector(".modal-content");
+            if (modalContent) modalContent.scrollTop = 0;
+            const gal = document.getElementById("modal-gallery");
+            if (gal) gal.scrollLeft = 0;
+            if (s.modal) s.modal.classList.remove('gallery-collapsed');
+            s.galleryCollapsed = false;
+            s.canToggleGallery = false;
+            s.galleryHasRendered = false;
+            s.galleryEl = null;
+            s.galleryWrapper = null;
+            s.galleryToggleEl = null;
+            s.galleryTargetModal = null;
+            s.currentItemCard = null;
+            try { document.body.style.overflow = ''; } catch (e) {}
+            try {
+                const c = s.modal ? s.modal.querySelector('.modal-content') : null;
+                if (c) c.classList.remove('no-side-padding');
+            } catch (e) {}
+        };
+
+        this.fadeOutModal(s.modal, finalizeReset);
     }
 
     resetSecModal() {
         const s = this.s;
-        if (s.secModal) s.secModal.style.display = "none";
-        s.currentToolsContext = [];
-        s.currentToolIndex = -1;
-        try { document.body.style.overflow = ''; } catch (e) {}
-        try {
-            const c = s.secModal ? s.secModal.querySelector('.modal-content') : null;
-            if (c) c.classList.remove('no-side-padding');
-        } catch (e) {}
+        const finalizeReset = () => {
+            s.currentToolsContext = [];
+            s.currentToolIndex = -1;
+            try { document.body.style.overflow = ''; } catch (e) {}
+            try {
+                const c = s.secModal ? s.secModal.querySelector('.modal-content') : null;
+                if (c) c.classList.remove('no-side-padding');
+            } catch (e) {}
+        };
+
+        this.fadeOutModal(s.secModal, finalizeReset);
     }
 
     showVideo(id, isVertical = false) {
@@ -181,6 +231,11 @@ class ModalManager {
             s.videoFrame.style.display = "none";
             s.videoFrame.src = "";
         }
+        if (s.mediaContainer) {
+            s.mediaContainer.style.paddingBottom = '56.25%';
+            s.mediaContainer.style.maxWidth = '';
+            s.mediaContainer.style.margin = '';
+        }
         const ex = document.getElementById("big-image-view");
         if (ex) ex.remove();
         const mediaSkeleton = document.querySelector('.media-skeleton');
@@ -201,7 +256,7 @@ class ModalManager {
             const nextIndex = (currentIndex + direction + s.achievementVideos.length) % s.achievementVideos.length;
             s.currentAchievementVideoIndex = nextIndex;
             const nextVideo = s.achievementVideos[nextIndex];
-            if (nextVideo) this.openModalForItem(nextVideo);
+            if (nextVideo) this.openModalForItemWithTransition(nextVideo, direction);
             return;
         }
         
@@ -223,7 +278,7 @@ class ModalManager {
         const currentIndex = visibleItems.indexOf(s.currentItemCard);
         const nextIndex = (currentIndex + direction + visibleItems.length) % visibleItems.length;
         s.currentItemCard = visibleItems[nextIndex];
-        this.openModalForItem(s.currentItemCard);
+        this.openModalForItemWithTransition(s.currentItemCard, direction);
     }
 
     navigateTool(direction) {
@@ -238,7 +293,91 @@ class ModalManager {
     }
 
     openModalForItemWithTransition(cardOrData, direction, typeOverride = null, toolsContext = null) {
+        const s = this.s;
+        const isSkill = (cardOrData instanceof HTMLElement)
+            ? cardOrData.classList.contains('skill-item')
+            : (typeOverride === 'skill');
+        const useSecondary = isSkill && s.modal && s.modal.style.display === "flex" && s.secModal && toolsContext;
+        const targetModal = useSecondary ? s.secModal : s.modal;
+        const transitionTarget = targetModal ? targetModal.querySelector('.modal-info-pane') : null;
+        const modalContent = targetModal ? targetModal.querySelector('.modal-content') : null;
+        const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!transitionTarget || prefersReducedMotion) {
+            this.openModalForItem(cardOrData, typeOverride, toolsContext);
+            return;
+        }
+
+        const fadeMs = 140;
+        const sizeMorphMs = 220;
+        const cleanupMs = Math.max(fadeMs, sizeMorphMs) + 40;
+
+        const transitionHost = transitionTarget.parentElement;
+        if (!transitionHost) {
+            this.openModalForItem(cardOrData, typeOverride, toolsContext);
+            return;
+        }
+
+        const previousModalOverflowY = targetModal ? targetModal.style.overflowY : '';
+        const previousInfoOverflowY = transitionTarget.style.overflowY;
+        if (targetModal) targetModal.style.overflowY = 'hidden';
+        transitionTarget.style.overflowY = 'hidden';
+
+        let startHeight = null;
+        if (modalContent) {
+            const measuredStart = modalContent.getBoundingClientRect().height;
+            if (Number.isFinite(measuredStart) && measuredStart > 0) {
+                startHeight = measuredStart;
+                modalContent.style.height = `${startHeight}px`;
+            }
+        }
+
+        transitionHost.querySelectorAll('.modal-transition-snapshot').forEach(node => node.remove());
+        const snapshot = transitionTarget.cloneNode(true);
+        snapshot.classList.add('modal-transition-snapshot');
+        snapshot.style.position = 'absolute';
+        snapshot.style.top = `${transitionTarget.offsetTop}px`;
+        snapshot.style.left = `${transitionTarget.offsetLeft}px`;
+        snapshot.style.width = `${transitionTarget.offsetWidth}px`;
+        snapshot.style.height = `${transitionTarget.offsetHeight}px`;
+        snapshot.style.margin = '0';
+        snapshot.style.pointerEvents = 'none';
+        snapshot.style.zIndex = '30';
+        snapshot.style.opacity = '1';
+        snapshot.style.transition = `opacity ${fadeMs}ms ease`;
+        snapshot.style.overflow = 'hidden';
+        transitionHost.appendChild(snapshot);
+
+        transitionTarget.style.transition = 'none';
+        transitionTarget.style.opacity = '0';
         this.openModalForItem(cardOrData, typeOverride, toolsContext);
+
+        requestAnimationFrame(() => {
+            if (modalContent && Number.isFinite(startHeight)) {
+                modalContent.style.height = 'auto';
+                const measuredEnd = modalContent.getBoundingClientRect().height;
+                const endHeight = Number.isFinite(measuredEnd) && measuredEnd > 0 ? measuredEnd : startHeight;
+                modalContent.style.height = `${startHeight}px`;
+                void modalContent.offsetHeight;
+                modalContent.style.transition = `height ${sizeMorphMs}ms ease`;
+                modalContent.style.height = `${endHeight}px`;
+                setTimeout(() => {
+                    modalContent.style.transition = '';
+                    modalContent.style.height = '';
+                }, cleanupMs);
+            }
+
+            transitionTarget.style.transition = `opacity ${fadeMs}ms ease`;
+            transitionTarget.style.opacity = '1';
+            snapshot.style.opacity = '0';
+            setTimeout(() => {
+                transitionTarget.style.transition = '';
+                transitionTarget.style.opacity = '';
+                transitionTarget.style.overflowY = previousInfoOverflowY || '';
+                if (targetModal) targetModal.style.overflowY = previousModalOverflowY || '';
+                snapshot.remove();
+            }, cleanupMs);
+        });
     }
 
     openModalForItem(cardOrData, typeOverride = null, toolsContext = null) {
@@ -707,7 +846,7 @@ class ModalManager {
         }
 
         if (targetModal) {
-            targetModal.style.display = "flex";
+            this.fadeInModal(targetModal);
             targetModal.style.zIndex = 99999;
             try { document.body.style.overflow = 'hidden'; } catch (e) {}
             const content = targetModal.querySelector('.modal-content');

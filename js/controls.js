@@ -3,6 +3,12 @@ class ControlsManager {
         this.s = state;
     }
 
+    syncDropdownScrollLock() {
+        if (typeof window !== 'undefined' && typeof window.syncDropdownScrollLock === 'function') {
+            window.syncDropdownScrollLock();
+        }
+    }
+
     initControlSkeletons() {
         const s = this.s;
         if (s.searchContainer) s.searchContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px;"></div>';
@@ -159,6 +165,7 @@ class ControlsManager {
                 if (c !== container) c.classList.remove('open');
             });
             container.classList.toggle('open');
+            this.syncDropdownScrollLock();
         });
 
         container.appendChild(trigger);
@@ -187,6 +194,7 @@ class ControlsManager {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
                 container.classList.remove('open');
+                this.syncDropdownScrollLock();
                 onChange(opt.id);
                 this.renderSingleSelect(container, options, opt.id, onChange);
             });
@@ -198,6 +206,7 @@ class ControlsManager {
             const isOpen = container.classList.contains('open');
             document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
             if (!isOpen) container.classList.add('open');
+            this.syncDropdownScrollLock();
         });
 
         container.appendChild(trigger);

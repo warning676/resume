@@ -51,9 +51,11 @@ class Renderer {
                 <div class="portfolio-card skeleton-item">
                     <div class="card-thumb"><div class="skeleton-element" style="width: 100%; height: 100%;"></div></div>
                     <div class="card-content">
-                        <div class="skeleton-element" style="width: 80%; height: 18px; margin-bottom: 10px; border-radius: 4px;"></div>
-                        <div class="skeleton-element" style="width: 40%; height: 14px; border-radius: 4px;"></div>
-                        <div class="skeleton-element" style="width: 55%; height: 12px; margin-top: 10px; border-radius: 4px;"></div>
+                        <div class="card-info">
+                            <div class="skeleton-element" style="width: 80%; height: 18px; margin-bottom: 10px; border-radius: 4px;"></div>
+                            <div class="skeleton-element" style="width: 40%; height: 14px; border-radius: 4px;"></div>
+                            <div class="skeleton-element" style="width: 55%; height: 12px; margin-top: 10px; border-radius: 4px;"></div>
+                        </div>
                     </div>
                 </div>`;
         }

@@ -17,12 +17,13 @@ nav {
 }
 
 .nav-container {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
     align-items: center;
     padding: 10px 0;
     max-width: 1500px;
     margin: 0 auto;
+    width: 100%;
 }
 
 .nav-brand {
@@ -31,12 +32,14 @@ nav {
     color: #ffffff;
     letter-spacing: 1px;
     text-transform: uppercase;
+    justify-self: start;
 }
 
 .nav-links {
     display: flex;
     gap: 20px;
-    position: relative;
+    position: static;
+    justify-self: center;
 }
 
 .nav-links a {
@@ -60,15 +63,24 @@ nav {
     text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 900px) {
     .nav-container {
+        display: flex;
         flex-direction: column;
         gap: 15px;
         align-items: center;
         padding: 15px 0;
     }
 
+    .nav-brand {
+        justify-self: center;
+        text-align: center;
+    }
+
     .nav-links {
+        position: static;
+        left: auto;
+        transform: none;
         gap: 12px;
         flex-wrap: wrap;
         justify-content: center;
