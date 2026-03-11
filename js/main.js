@@ -889,12 +889,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.addEventListener('keydown', (e) => {
                 if (state.secModal && state.secModal.style.display === 'flex') {
-                    if (e.key === 'ArrowLeft') state.modalManager?.navigateTool(-1);
-                    if (e.key === 'ArrowRight') state.modalManager?.navigateTool(1);
+                    if (state.currentToolsContext.length > 1) {
+                        if (e.key === 'ArrowLeft') state.modalManager?.navigateTool(-1);
+                        if (e.key === 'ArrowRight') state.modalManager?.navigateTool(1);
+                    }
                     if (e.key === 'Escape') state.modalManager?.resetSecModal();
                 } else if (state.modal && state.modal.style.display === 'flex') {
-                    if (e.key === 'ArrowLeft') state.modalManager?.navigateItem(-1);
-                    if (e.key === 'ArrowRight') state.modalManager?.navigateItem(1);
+                    if (state.showModalNavArrows) {
+                        if (e.key === 'ArrowLeft') state.modalManager?.navigateItem(-1);
+                        if (e.key === 'ArrowRight') state.modalManager?.navigateItem(1);
+                    }
                     if (e.key === 'Escape') state.modalManager?.resetModal();
                 }
             });
