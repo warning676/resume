@@ -695,7 +695,7 @@ class ModalManager {
                         awardItem.innerHTML = `
                             <div style="background: #000000; padding: 0; margin-bottom: 8px;">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 2px;">
-                                    <strong style="color: #ffffff; font-size: 0.85rem;">${award.award}</strong>
+                                    <span class="awards-badge" style="cursor: default; font-size: 0.8rem; padding: 5px 11px;">${award.award}</span>
                                     <span style="color: #ffffff; font-size: 0.75rem; white-space: nowrap; opacity: 0.7;">${award.date}</span>
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 2px;">
