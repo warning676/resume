@@ -272,6 +272,7 @@ class DataService {
             'Icon': 'icon',
             'Certified Status': 'certified',
             'Certification Name': 'certName',
+            'Certification Details': 'certName',
         };
         const normalizeHeader = (label) => {
             const raw = (label || '').toString().trim();

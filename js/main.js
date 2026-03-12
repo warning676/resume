@@ -20,6 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
         secCloseBtn: null,
         secPrevBtn: null,
         secNextBtn: null,
+        externalLinkModal: null,
+        externalLinkTitleEl: null,
+        externalLinkCategoryEl: null,
+        externalLinkUrlEl: null,
+        externalLinkResolve: null,
         skillsList: null,
         achievementsList: null,
         portfolioGrid: null,
@@ -135,6 +140,126 @@ document.addEventListener('DOMContentLoaded', () => {
         return search ? `${path}${search}` : path;
     };
 
+    const normalizeCanonicalUrl = () => {
+        const currentRoute = resolveRoute(window.location.pathname);
+        const currentSearch = window.location.search || '';
+        const canonicalUrl = buildUrl(currentRoute, currentSearch);
+        const currentUrl = `${window.location.pathname}${currentSearch}`;
+        if (currentUrl !== canonicalUrl) {
+            window.history.replaceState(null, '', canonicalUrl);
+        }
+    };
+
+    normalizeCanonicalUrl();
+
+    const getExternalLinkTarget = (url) => {
+        const raw = String(url || '').trim();
+        if (!raw) return '';
+        try {
+            const parsed = new URL(raw, window.location.origin);
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                return parsed.href;
+            }
+        } catch (err) {
+        }
+        return '';
+    };
+
+    const syncExternalLinkModalScrollLock = (locked) => {
+        const body = document.body;
+        const html = document.documentElement;
+        if (!body || !html) return;
+
+        if (locked) {
+            body.style.overflow = 'hidden';
+            html.style.overflow = 'hidden';
+            return;
+        }
+
+        const searchModal = document.getElementById('global-search-modal');
+        const searchModalOpen = !!(searchModal && searchModal.classList.contains('active'));
+        const mainModalOpen = !!(state.modal && state.modal.style.display === 'flex');
+        const secModalOpen = !!(state.secModal && state.secModal.style.display === 'flex');
+        const hasOpenDropdown = !!document.querySelector('.custom-select-container.open, .multi-select-container.open');
+        if (searchModalOpen || mainModalOpen || secModalOpen || hasOpenDropdown) return;
+
+        body.style.overflow = '';
+        html.style.overflow = '';
+    };
+
+    const closeExternalLinkModal = (confirmed) => {
+        if (!state.externalLinkModal) return;
+        if (state.externalLinkModal._fadeTimer) {
+            clearTimeout(state.externalLinkModal._fadeTimer);
+            state.externalLinkModal._fadeTimer = null;
+        }
+
+        const resolver = state.externalLinkResolve;
+        state.externalLinkResolve = null;
+        state.externalLinkModal.style.transition = 'opacity 160ms ease';
+        state.externalLinkModal.style.opacity = '0';
+        state.externalLinkModal._fadeTimer = setTimeout(() => {
+            state.externalLinkModal.classList.remove('active');
+            state.externalLinkModal.style.display = 'none';
+            state.externalLinkModal.style.opacity = '';
+            state.externalLinkModal._fadeTimer = null;
+            syncExternalLinkModalScrollLock(false);
+            if (resolver) resolver(!!confirmed);
+        }, 170);
+    };
+
+    const showExternalLinkModal = (url, title, category) => {
+        if (!state.externalLinkModal) return Promise.resolve(false);
+        if (state.externalLinkModal._fadeTimer) {
+            clearTimeout(state.externalLinkModal._fadeTimer);
+            state.externalLinkModal._fadeTimer = null;
+        }
+        if (state.externalLinkResolve) {
+            state.externalLinkResolve(false);
+            state.externalLinkResolve = null;
+        }
+
+        if (state.externalLinkTitleEl) {
+            const safeTitle = String(title || '').trim();
+            state.externalLinkTitleEl.textContent = safeTitle ? `Title: ${safeTitle}` : 'Title: External Link';
+        }
+
+        if (state.externalLinkCategoryEl) {
+            const safeCategory = String(category || '').trim();
+            state.externalLinkCategoryEl.textContent = safeCategory ? `Category: ${safeCategory}` : '';
+            state.externalLinkCategoryEl.style.display = safeCategory ? 'block' : 'none';
+        }
+
+        if (state.externalLinkUrlEl) {
+            state.externalLinkUrlEl.textContent = url;
+        }
+
+        state.externalLinkModal.style.display = 'flex';
+        state.externalLinkModal.classList.add('active');
+        state.externalLinkModal.style.transition = 'opacity 160ms ease';
+        state.externalLinkModal.style.opacity = '0';
+        requestAnimationFrame(() => {
+            state.externalLinkModal.style.opacity = '1';
+        });
+        syncExternalLinkModalScrollLock(true);
+
+        return new Promise(resolve => {
+            state.externalLinkResolve = resolve;
+        });
+    };
+
+    const openExternalLinkWithPrompt = async (url, title, category) => {
+        const target = getExternalLinkTarget(url);
+        if (!target) return false;
+        const confirmed = await showExternalLinkModal(target, title, category);
+        if (!confirmed) return false;
+        window.open(target, '_blank', 'noopener,noreferrer');
+        return true;
+    };
+
+    window.resolveExternalLinkTarget = getExternalLinkTarget;
+    window.openExternalLinkWithPrompt = openExternalLinkWithPrompt;
+
     const fragmentCache = new Map();
 
     const updateNavLinks = () => {
@@ -212,6 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
         state.secCloseBtn = document.querySelector(".sec-close-button");
         state.secPrevBtn = document.getElementById("sec-modal-prev");
         state.secNextBtn = document.getElementById("sec-modal-next");
+        state.externalLinkModal = document.getElementById('external-link-modal');
+        state.externalLinkTitleEl = document.getElementById('external-link-title');
+        state.externalLinkCategoryEl = document.getElementById('external-link-category');
+        state.externalLinkUrlEl = document.getElementById('external-link-url');
         state.skillsList = document.getElementById('skills-list');
         state.achievementsList = document.getElementById('achievements-list');
         state.portfolioGrid = document.getElementById("portfolio-grid");
@@ -477,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const targetUrl = new URL(href, window.location.origin);
                             const route = resolveRoute(targetUrl.pathname);
                             if (routes[route]) navigate(route, targetUrl.search);
-                            else window.location.href = href;
+                            else openExternalLinkWithPrompt(targetUrl.href, decoded || projectNameAttr || 'External Link');
                         }
                     }
                 });
@@ -736,9 +865,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const isSNHU = collegeSchoolNames.some(schoolName => school.includes(schoolName));
             const isERHS = highSchoolNames.some(schoolName => school.includes(schoolName));
 
-            if (type.includes('president') && (isSNHU || !school)) grouped.presidents.push(item);
-            else if (type.includes('honor') && (isSNHU || !school)) grouped.honorRoll.push(item);
-            else if (type.includes('nomination') && (isERHS || !school)) grouped.nominations.push(item);
+            if (type.includes('president') && (isSNHU || !school)) grouped.presidents.push({ ...item, category: "President's List" });
+            else if (type.includes('honor') && (isSNHU || !school)) grouped.honorRoll.push({ ...item, category: 'Honor Roll' });
+            else if (type.includes('nomination') && (isERHS || !school)) grouped.nominations.push({ ...item, category: 'Nominations' });
         });
 
         const renderInlineItems = (container, items, textColor = '#58a6ff') => {
@@ -757,12 +886,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasLink) {
                     const anchor = document.createElement('a');
                     anchor.href = item.link;
-                    anchor.target = '_blank';
+                    anchor.target = '_self';
                     anchor.rel = 'noopener noreferrer';
                     anchor.style.color = textColor;
                     anchor.style.textDecoration = 'none';
                     anchor.style.fontSize = '0.9rem';
                     anchor.textContent = item.name;
+                    anchor.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        openExternalLinkWithPrompt(item.link, item.name || 'External Link', item.category || 'Achievement');
+                    });
                     container.appendChild(anchor);
                     return;
                 }
@@ -853,6 +986,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.secPrevBtn) state.secPrevBtn.onclick = (e) => { e.stopPropagation(); state.modalManager?.navigateTool(-1); };
         if (state.secNextBtn) state.secNextBtn.onclick = (e) => { e.stopPropagation(); state.modalManager?.navigateTool(1); };
 
+        const externalCancelBtn = document.getElementById('external-link-cancel');
+        const externalStayBtn = document.getElementById('external-link-stay');
+        const externalContinueBtn = document.getElementById('external-link-continue');
+
+        if (externalCancelBtn) externalCancelBtn.onclick = () => closeExternalLinkModal(false);
+        if (externalStayBtn) externalStayBtn.onclick = () => closeExternalLinkModal(false);
+        if (externalContinueBtn) externalContinueBtn.onclick = () => closeExternalLinkModal(true);
+
         if (state.prevBtn) {
             state.prevBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -887,7 +1028,9 @@ document.addEventListener('DOMContentLoaded', () => {
             bound = true;
 
             document.addEventListener('keydown', (e) => {
-                if (state.secModal && state.secModal.style.display === 'flex') {
+                if (state.externalLinkModal && state.externalLinkModal.classList.contains('active')) {
+                    if (e.key === 'Escape') closeExternalLinkModal(false);
+                } else if (state.secModal && state.secModal.style.display === 'flex') {
                     if (state.currentToolsContext.length > 1) {
                         if (e.key === 'ArrowLeft') state.modalManager?.navigateTool(-1);
                         if (e.key === 'ArrowRight') state.modalManager?.navigateTool(1);
@@ -929,6 +1072,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.modalManager?.resetModal();
                 } else if (event.target === state.secModal && modalMousedownTarget === state.secModal) {
                     state.modalManager?.resetSecModal();
+                } else if (event.target === state.externalLinkModal && modalMousedownTarget === state.externalLinkModal) {
+                    closeExternalLinkModal(false);
                 }
                 modalMousedownTarget = null;
             };

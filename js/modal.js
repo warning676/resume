@@ -6,6 +6,28 @@ class ModalManager {
         this.modalTransitionToken = 0;
     }
 
+    syncPageScrollLock(locked) {
+        const s = this.s;
+        const body = document.body;
+        const html = document.documentElement;
+        if (!body || !html) return;
+
+        if (locked) {
+            body.style.overflow = 'hidden';
+            html.style.overflow = 'hidden';
+            return;
+        }
+
+        const mainModalOpen = !!(s.modal && s.modal.style.display === 'flex');
+        const secModalOpen = !!(s.secModal && s.secModal.style.display === 'flex');
+        const searchModal = document.getElementById('global-search-modal');
+        const searchModalOpen = !!(searchModal && searchModal.classList.contains('active'));
+        if (mainModalOpen || secModalOpen || searchModalOpen) return;
+
+        body.style.overflow = '';
+        html.style.overflow = '';
+    }
+
     fadeInModal(modalEl) {
         if (!modalEl) return;
         if (modalEl._fadeTimer) {
@@ -211,7 +233,7 @@ class ModalManager {
             s.galleryToggleEl = null;
             s.galleryTargetModal = null;
             s.currentItemCard = null;
-            try { document.body.style.overflow = ''; } catch (e) {}
+            this.syncPageScrollLock(false);
             try {
                 const c = s.modal ? s.modal.querySelector('.modal-content') : null;
                 if (c) c.classList.remove('no-side-padding');
@@ -226,7 +248,7 @@ class ModalManager {
         const finalizeReset = () => {
             s.currentToolsContext = [];
             s.currentToolIndex = -1;
-            try { document.body.style.overflow = ''; } catch (e) {}
+            this.syncPageScrollLock(false);
             try {
                 const c = s.secModal ? s.secModal.querySelector('.modal-content') : null;
                 if (c) c.classList.remove('no-side-padding');
@@ -522,10 +544,11 @@ class ModalManager {
             const certContainer = document.getElementById(prefix + 'modal-skill-cert-container');
             const certName = document.getElementById(prefix + 'modal-skill-cert-name');
             if (certContainer && certName) {
-                const isCertified = data.certified === "true" || data.certified === true;
-                if (isCertified && data.certName) {
+                const isCertified = data.certified === true || String(data.certified || '').toLowerCase() === 'true';
+                const fallbackCertName = data.certName || data.name || (cardOrData instanceof HTMLElement ? cardOrData.getAttribute('data-cert-name') : '') || '-';
+                if (isCertified) {
                     certContainer.style.display = "block";
-                    certName.innerText = data.certName;
+                    certName.innerText = fallbackCertName;
                 } else {
                     certContainer.style.display = "none";
                     certName.innerText = "-";
@@ -627,7 +650,7 @@ class ModalManager {
                         if (skillMatch && skillMatch.certified) {
                             const cert = document.createElement('span');
                             cert.className = 'grid-certified-badge';
-                            cert.title = skillMatch.certName || 'Certified';
+                            cert.title = skillMatch.certName || skillMatch.name || 'Certified';
                             cert.innerText = 'CERTIFIED';
                             tag.appendChild(cert);
                         }
@@ -900,7 +923,7 @@ class ModalManager {
         if (targetModal) {
             this.fadeInModal(targetModal);
             targetModal.style.zIndex = 99999;
-            try { document.body.style.overflow = 'hidden'; } catch (e) {}
+            this.syncPageScrollLock(true);
             const content = targetModal.querySelector('.modal-content');
             if (content) content.style.display = 'flex';
             this.adjustModalPadding(targetModal);

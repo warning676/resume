@@ -72,10 +72,10 @@
 }
 
 .modal-skill .modal-content {
-    width: 600px;
+    width: 680px;
     max-width: 90%;
-    padding-left: 70px;
-    padding-right: 70px;
+    padding-left: 74px;
+    padding-right: 74px;
 }
 
 .modal-skill .modal-body-split {
@@ -85,6 +85,98 @@
 .modal-skill .modal-info-pane {
     max-width: none;
     padding: 30px 0;
+}
+
+.external-link-modal {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.external-link-modal-content {
+    width: min(92vw, 520px);
+    max-width: 520px;
+    padding: 24px 24px 20px 24px;
+    border-radius: 10px;
+}
+
+.external-link-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.external-link-header h3 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+.external-link-message {
+    margin: 0 0 8px 0;
+    color: #c9d1d9;
+    font-size: 0.95rem;
+}
+
+.external-link-title {
+    margin: 0 0 6px 0;
+    color: #e1e4e8;
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.external-link-category {
+    margin: 0 0 6px 0;
+    color: #e1e4e8;
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.external-link-url {
+    margin: 0;
+    color: #58a6ff;
+    font-size: 0.85rem;
+    word-break: break-all;
+    line-height: 1.35;
+}
+
+.external-link-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.external-link-btn {
+    border: 1px solid #30363d;
+    background: #000000;
+    color: #e1e4e8;
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.external-link-btn:hover {
+    border-color: #58a6ff;
+}
+
+.external-link-btn.primary {
+    background: #0d1117;
+    border-color: #58a6ff;
+    color: #58a6ff;
+}
+
+.external-link-btn.primary:hover {
+    background: #111a24;
+    color: #79c0ff;
 }
 
 .modal-nav-btn {

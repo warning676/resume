@@ -174,10 +174,10 @@ class Renderer {
             item.setAttribute('data-name', skill.name);
             item.setAttribute('data-info', skill.info || '');
             item.setAttribute('data-certified', skill.certified ? "true" : "false");
-            item.setAttribute('data-cert-name', skill.certName || "");
+            item.setAttribute('data-cert-name', skill.certName || skill.name || "");
             item.setAttribute('data-badge', skill.badge || "");
 
-            const certifiedBadge = skill.certified ? `<span class="grid-certified-badge" title="${skill.certName ? skill.certName : skill.name}">CERTIFIED</span>` : '';
+            const certifiedBadge = skill.certified ? `<span class="grid-certified-badge" title="${skill.certName || skill.name}">CERTIFIED</span>` : '';
             const iconSrc = skill.resolvedIcon || this.fixImagePath(skill.icon);
             item.innerHTML = `
                 <span class="skill-icon-wrap">

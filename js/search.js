@@ -8,7 +8,30 @@ let globalSearchData = {
 let globalSearchDataLoadPromise = null;
 let globalSearchRequestId = 0;
 let globalSearchLatestQuery = '';
+let renderedSearchResults = [];
 const searchModalFadeMs = 180;
+
+function syncPageScrollLock(locked) {
+    const body = document.body;
+    const html = document.documentElement;
+    if (!body || !html) return;
+
+    if (locked) {
+        body.style.overflow = 'hidden';
+        html.style.overflow = 'hidden';
+        return;
+    }
+
+    const searchModal = document.getElementById('global-search-modal');
+    const searchModalOpen = !!(searchModal && searchModal.classList.contains('active'));
+    const mainModalOpen = !!(document.getElementById('infoModal') && document.getElementById('infoModal').style.display === 'flex');
+    const secModalOpen = !!(document.getElementById('secondaryModal') && document.getElementById('secondaryModal').style.display === 'flex');
+    const hasOpenDropdown = !!document.querySelector('.custom-select-container.open, .multi-select-container.open');
+    if (searchModalOpen || mainModalOpen || secModalOpen || hasOpenDropdown) return;
+
+    body.style.overflow = '';
+    html.style.overflow = '';
+}
 
 function initializeGlobalSearch() {
     const searchBtn = document.getElementById('global-search-btn');
@@ -110,6 +133,7 @@ function openGlobalSearch() {
     requestAnimationFrame(() => {
         searchModal.style.opacity = '1';
     });
+    syncPageScrollLock(true);
     searchInput.value = '';
     
     if (searchResults) {
@@ -135,6 +159,7 @@ function closeGlobalSearch() {
 
     if (!searchModal.classList.contains('active')) {
         searchModal.style.opacity = '';
+        syncPageScrollLock(false);
     } else {
         searchModal.style.transition = `opacity ${searchModalFadeMs}ms ease`;
         searchModal.style.opacity = '0';
@@ -142,6 +167,7 @@ function closeGlobalSearch() {
             searchModal.classList.remove('active');
             searchModal.style.opacity = '';
             searchModal._fadeTimer = null;
+            syncPageScrollLock(false);
         }, searchModalFadeMs + 20);
     }
     
@@ -471,12 +497,10 @@ function getSearchResultDescription(result) {
     }
 
     const parts = [];
-    const typeValue = String(result.data.type || '').trim();
     const schoolValue = String(result.data.school || '').trim();
     const dateValue = String(result.data.date || '').trim();
 
     if (schoolValue) parts.push(schoolValue);
-    if (typeValue) parts.push(typeValue);
     if (dateValue) parts.push(dateValue);
 
     if (parts.length > 0) return parts.join(' • ');
@@ -485,6 +509,7 @@ function getSearchResultDescription(result) {
 
 function renderSearchResults(results, query) {
     const searchResults = document.getElementById('search-results');
+    renderedSearchResults = results;
     
     if (results.length === 0) {
         searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">No results found</div><div class="search-no-results-hint">Try different keywords</div></div>';
@@ -495,8 +520,12 @@ function renderSearchResults(results, query) {
         Showing results for "<span style="color: #58a6ff;">${escapeHtml(query)}</span>" (${results.length} ${results.length === 1 ? 'result' : 'results'})
     </div>`;
 
-    html += results.map(result => {
-        const title = result.data.name || 'Untitled';
+    html += results.map((result, index) => {
+        const rawTitle = result.data.name || 'Untitled';
+        const achievementCategory = String(result.data.type || '').trim();
+        const title = result.type === 'achievement' && achievementCategory
+            ? `${achievementCategory}: ${rawTitle}`.trim()
+            : rawTitle;
         const description = getSearchResultDescription(result);
         const highlightedTitle = highlightMatch(title, query);
         const highlightedDesc = highlightMatch(description, query);
@@ -534,7 +563,7 @@ function renderSearchResults(results, query) {
             : '';
         
         return `
-            <div class="search-result-item" onclick="navigateToSearchResult('${result.route}', '${escapeHtml(title)}', '${result.type}')">
+            <div class="search-result-item" onclick="navigateToSearchResultByIndex(${index})">
                 <div class="search-result-main${thumbnailUrl ? ' has-media' : ''}">
                     ${mediaHtml}
                     <div class="search-result-body">
@@ -550,6 +579,134 @@ function renderSearchResults(results, query) {
     }).join('');
 
     searchResults.innerHTML = html;
+}
+
+function getAchievementLink(item) {
+    if (!item) return '';
+    const rawLink = String(item.link || item.url || '').trim();
+    if (!rawLink) return '';
+    try {
+        const parsed = new URL(rawLink, window.location.origin);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            return parsed.href;
+        }
+    } catch (err) {
+    }
+    return '';
+}
+
+function normalizeAchievementText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function findAchievementEntryElement(title, options = {}) {
+    const normalizedTitle = normalizeAchievementText(title);
+    if (!normalizedTitle) return null;
+
+    const { preferLink = false } = options;
+    const linkSelectors = [
+        '#presidents-list-items a',
+        '#honor-roll-items a',
+        '#nominations-items a'
+    ];
+    const textSelectors = [
+        '#presidents-list-items span',
+        '#honor-roll-items span',
+        '#nominations-items span'
+    ];
+
+    const selectors = preferLink
+        ? [...linkSelectors, ...textSelectors]
+        : [...linkSelectors, ...textSelectors];
+
+    const candidates = Array.from(document.querySelectorAll(selectors.join(', ')));
+    return candidates.find((el) => {
+        if (preferLink && el.tagName !== 'A') return false;
+        const text = normalizeAchievementText(el.textContent || '');
+        if (!text || text === 'no entries yet') return false;
+        return text === normalizedTitle || text.includes(normalizedTitle) || normalizedTitle.includes(text);
+    }) || null;
+}
+
+function scrollToAchievementEntry(title) {
+    const target = findAchievementEntryElement(title);
+    if (!target) return false;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    return true;
+}
+
+function centerAndClickAchievementLink(title) {
+    const targetLink = findAchievementEntryElement(title, { preferLink: true });
+    if (!targetLink || targetLink.tagName !== 'A') return false;
+
+    targetLink.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    setTimeout(() => {
+        targetLink.click();
+    }, 340);
+    return true;
+}
+
+async function navigateToSearchResultByIndex(index) {
+    const result = renderedSearchResults[index];
+    if (!result) return;
+
+    if (result.type === 'achievement') {
+        const achievementRoute = '/achievements';
+        const openAchievementLink = async () => {
+            closeGlobalSearch();
+
+            const externalLink = getAchievementLink(result.data);
+            const achievementTitle = result.data.name || '';
+            const achievementCategory = result.data.type || 'Achievement';
+
+            if (externalLink) {
+                const focusAndClick = () => {
+                    const clicked = centerAndClickAchievementLink(achievementTitle);
+                    if (clicked) return;
+
+                    if (typeof window.openExternalLinkWithPrompt === 'function') {
+                        window.openExternalLinkWithPrompt(externalLink, achievementTitle || 'Achievement Link', achievementCategory);
+                    } else {
+                        window.open(externalLink, '_blank', 'noopener,noreferrer');
+                    }
+                };
+
+                if (window.location.pathname !== achievementRoute && !window.location.pathname.endsWith(achievementRoute)) {
+                    navigateTo(achievementRoute);
+                    waitForDataToLoad().then(() => {
+                        setTimeout(focusAndClick, 300);
+                    });
+                    return;
+                }
+
+                waitForDataToLoad().then(focusAndClick);
+                return;
+            }
+
+            const scrollToResultEntry = () => {
+                scrollToAchievementEntry(achievementTitle);
+            };
+
+            if (window.location.pathname !== achievementRoute && !window.location.pathname.endsWith(achievementRoute)) {
+                navigateTo(achievementRoute);
+                waitForDataToLoad().then(() => {
+                    setTimeout(scrollToResultEntry, 300);
+                });
+                return;
+            }
+
+            waitForDataToLoad().then(scrollToResultEntry);
+        };
+
+        await openAchievementLink();
+        return;
+    }
+
+    navigateToSearchResult(result.route, result.data.name || '', result.type);
 }
 
 function highlightMatch(text, query) {
