@@ -2084,6 +2084,12 @@ body.dropdown-scroll-lock {
     color: #ffb800;
 }
 
+.search-result-type.type-activity {
+    background-color: rgba(45, 212, 191, 0.2);
+    border: 1px solid rgba(45, 212, 191, 0.5);
+    color: #2dd4bf;
+}
+
 .search-result-type.type-certified {
     background-color: rgba(100, 220, 100, 0.2);
     border: 1px solid rgba(100, 220, 100, 0.5);

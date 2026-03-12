@@ -2,7 +2,8 @@ let globalSearchData = {
     videos: [],
     games: [],
     skills: [],
-    achievements: []
+    achievements: [],
+    activities: []
 };
 
 let globalSearchDataLoadPromise = null;
@@ -137,7 +138,7 @@ function openGlobalSearch() {
     searchInput.value = '';
     
     if (searchResults) {
-        searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">Start typing to search</div><div class="search-no-results-hint">Search across all projects, skills, and achievements</div></div>';
+        searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">Start typing to search</div><div class="search-no-results-hint">Search across all projects, skills, achievements, and activities</div></div>';
     }
     
     searchInput.focus();
@@ -201,6 +202,11 @@ async function loadAllSearchData() {
         const achievementsData = await window.dataService.loadSheet('Achievements');
         globalSearchData.achievements = achievementsData.data || [];
     }
+
+    if (globalSearchData.activities.length === 0) {
+        const activitiesData = await window.dataService.loadSheet('Activities');
+        globalSearchData.activities = activitiesData.data || [];
+    }
 }
 
 function ensureGlobalSearchDataLoaded() {
@@ -235,7 +241,7 @@ function performSearch(query) {
     const searchResults = document.getElementById('search-results');
     
     if (!query || query.trim().length === 0) {
-        searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">Start typing to search</div><div class="search-no-results-hint">Search across all projects, skills, and achievements</div></div>';
+        searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">Start typing to search</div><div class="search-no-results-hint">Search across all projects, skills, achievements, and activities</div></div>';
         return;
     }
     
@@ -354,6 +360,24 @@ function performSearch(query) {
                 data: item,
                 score: score,
                 route: '/achievements'
+            });
+        }
+    });
+
+    globalSearchData.activities.forEach(item => {
+        let score = getMatchScore(item, queryLower, ['name', 'school', 'type', 'description', 'status', 'role']);
+        score += getLinkMatchScore(item, queryLower, ['link']);
+
+        if (queryLower.includes('activity') || queryLower.includes('club') || queryLower.includes('participat')) {
+            score += 15;
+        }
+
+        if (score > 0) {
+            results.push({
+                type: 'activity',
+                data: item,
+                score: score,
+                route: '/activities'
             });
         }
     });
@@ -492,6 +516,17 @@ function resolveSearchResultThumbnail(result) {
 function getSearchResultDescription(result) {
     if (!result || !result.data) return '';
 
+    if (result.type === 'activity') {
+        const parts = [];
+        const schoolValue = String(result.data.school || '').trim();
+        const startValue = String(result.data.startdate || result.data.started || '').trim();
+        const endValue = String(result.data.enddate || result.data.ended || '').trim();
+        if (schoolValue) parts.push(schoolValue);
+        if (startValue && endValue) parts.push(`${startValue} - ${endValue}`);
+        else if (startValue) parts.push(`${startValue} - Present`);
+        return parts.length > 0 ? parts.join(' • ') : String(result.data.description || '').trim();
+    }
+
     if (result.type !== 'achievement') {
         return result.data.info || result.data.badge || '';
     }
@@ -538,6 +573,8 @@ function renderSearchResults(results, query) {
         let typeName = result.type.charAt(0).toUpperCase() + result.type.slice(1);
         if (result.type === 'achievement') {
             typeName = 'Achievement';
+        } else if (result.type === 'activity') {
+            typeName = 'Activity';
         }
         badges.push(`<span class="search-result-type ${typeClass}">${typeName}</span>`);
         
@@ -582,6 +619,20 @@ function renderSearchResults(results, query) {
 }
 
 function getAchievementLink(item) {
+    if (!item) return '';
+    const rawLink = String(item.link || item.url || '').trim();
+    if (!rawLink) return '';
+    try {
+        const parsed = new URL(rawLink, window.location.origin);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            return parsed.href;
+        }
+    } catch (err) {
+    }
+    return '';
+}
+
+function getActivityLink(item) {
     if (!item) return '';
     const rawLink = String(item.link || item.url || '').trim();
     if (!rawLink) return '';
@@ -706,7 +757,86 @@ async function navigateToSearchResultByIndex(index) {
         return;
     }
 
+    if (result.type === 'activity') {
+        const activityRoute = '/activities';
+        const activityTitle = result.data.name || '';
+        const activityCategory = result.data.type || 'Activity';
+        const activityLink = getActivityLink(result.data);
+        closeGlobalSearch();
+
+        const focusAndClick = () => {
+            const clicked = centerAndClickActivityLink(activityTitle);
+            if (clicked) return;
+
+            if (activityLink) {
+                if (typeof window.openExternalLinkWithPrompt === 'function') {
+                    window.openExternalLinkWithPrompt(activityLink, activityTitle || 'Activity Link', activityCategory);
+                } else {
+                    window.open(activityLink, '_blank', 'noopener,noreferrer');
+                }
+                return;
+            }
+
+            scrollToActivityEntry(activityTitle);
+        };
+
+        if (window.location.pathname !== activityRoute && !window.location.pathname.endsWith(activityRoute)) {
+            navigateTo(activityRoute);
+            waitForDataToLoad().then(() => {
+                setTimeout(focusAndClick, 300);
+            });
+            return;
+        }
+
+        waitForDataToLoad().then(focusAndClick);
+        return;
+    }
+
     navigateToSearchResult(result.route, result.data.name || '', result.type);
+}
+
+function normalizeActivityText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function findActivityCardByName(name) {
+    const normalizedName = normalizeActivityText(name);
+    if (!normalizedName) return null;
+
+    const cards = Array.from(document.querySelectorAll('.activity-card[data-activity-name]'));
+    return cards.find((card) => {
+        const cardName = normalizeActivityText(card.getAttribute('data-activity-name') || '');
+        return cardName === normalizedName || cardName.includes(normalizedName) || normalizedName.includes(cardName);
+    }) || null;
+}
+
+function findActivityLinkElement(name) {
+    const targetCard = findActivityCardByName(name);
+    if (!targetCard) return null;
+    const link = targetCard.querySelector('a.activity-external-link');
+    return link && link.tagName === 'A' ? link : null;
+}
+
+function scrollToActivityEntry(name) {
+    const targetCard = findActivityCardByName(name);
+    if (!targetCard) return false;
+    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    return true;
+}
+
+function centerAndClickActivityLink(name) {
+    const targetLink = findActivityLinkElement(name);
+    if (!targetLink) return false;
+
+    targetLink.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    setTimeout(() => {
+        targetLink.click();
+    }, 340);
+    return true;
 }
 
 function highlightMatch(text, query) {
@@ -747,10 +877,12 @@ function waitForDataToLoad() {
         const checkInterval = setInterval(() => {
             const hasPortfolioCards = document.querySelectorAll('.portfolio-card[data-name]').length > 0;
             const hasSkillItems = document.querySelectorAll('.skill-item[data-name]').length > 0;
+            const hasActivityCards = document.querySelectorAll('.activity-card[data-activity-name]').length > 0;
             const notSkeletons = !document.querySelector('.skeleton-card, .skeleton-item');
             const hasSearchInput = document.getElementById('portfolio-search');
+            const hasActivitiesContainer = !!document.getElementById('activities-list');
             
-            if ((hasPortfolioCards || hasSkillItems || notSkeletons) && hasSearchInput) {
+            if ((hasPortfolioCards || hasSkillItems || hasActivityCards || notSkeletons) && (hasSearchInput || hasActivitiesContainer)) {
                 clearInterval(checkInterval);
                 resolve();
             }

@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const routes = {
         '/': { fragment: 'html/pages/bio.html', title: 'BIO' },
         '/bio': { fragment: 'html/pages/bio.html', title: 'BIO' },
+        '/activities': { fragment: 'html/pages/activities.html', title: 'ACTIVITIES' },
         '/achievements': { fragment: 'html/pages/achievements.html', title: 'ACHIEVEMENTS' },
         '/technical': { fragment: 'html/pages/technical.html', title: 'TECHNICAL' },
         '/videos': { fragment: 'html/pages/videos.html', title: 'VIDEOS' },
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         externalLinkResolve: null,
         skillsList: null,
         achievementsList: null,
+        activitiesList: null,
         portfolioGrid: null,
         noResults: null,
         toolSelectContainer: null,
@@ -99,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lower.endsWith('/html/videos.html') || lower.endsWith('/videos.html')) return '/videos';
         if (lower.endsWith('/html/games.html') || lower.endsWith('/games.html')) return '/games';
         if (lower.endsWith('/html/technical.html') || lower.endsWith('/technical.html')) return '/technical';
+        if (lower.endsWith('/html/activities.html') || lower.endsWith('/activities.html')) return '/activities';
         if (lower.endsWith('/html/achievements.html') || lower.endsWith('/achievements.html')) return '/achievements';
         if (lower.endsWith('/index.html')) return '/';
         return null;
@@ -343,6 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.externalLinkUrlEl = document.getElementById('external-link-url');
         state.skillsList = document.getElementById('skills-list');
         state.achievementsList = document.getElementById('achievements-list');
+        state.activitiesList = document.getElementById('activities-list');
         state.portfolioGrid = document.getElementById("portfolio-grid");
         state.noResults = document.getElementById("no-results");
         state.toolSelectContainer = document.getElementById('tool-select');
@@ -980,6 +984,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     };
 
+    const renderActivities = () => {
+        const container = state.activitiesList;
+        if (!container) return;
+
+        const rows = Array.isArray(state.allData?.Activities) ? state.allData.Activities : [];
+        if (!rows.length) {
+            container.innerHTML = '<p style="color: #8b949e; text-align: center; padding: 20px;">No activities added yet.</p>';
+            return;
+        }
+
+        const toText = (value) => (value ?? '').toString().trim();
+        const toDateRange = (startRaw, endRaw) => {
+            const start = toText(startRaw);
+            const end = toText(endRaw);
+            if (start && end) return `${start} - ${end}`;
+            if (start) return `${start} - Present`;
+            if (end) return end;
+            return '';
+        };
+        const isHttp = (url) => /^https?:\/\//i.test(toText(url));
+        const escapeHtml = (value) => String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
+        container.innerHTML = rows.map((row, index) => {
+            const name = toText(row.name) || 'Untitled Activity';
+            const school = toText(row.school);
+            const type = toText(row.type) || 'Activity';
+            const description = toText(row.description || row.info);
+            const link = toText(row.link);
+            const role = toText(row.role);
+            const status = toText(row.status);
+            const dateRange = toDateRange(row.startdate || row.started, row.enddate || row.ended);
+            const hasLink = isHttp(link);
+            const marginTop = index === 0 ? '0' : '14px';
+
+            const metaParts = [dateRange, role, status].filter(Boolean);
+            const metaLine = metaParts.length
+                ? `<p style="font-size: 0.85rem; color: #8b949e; margin: 10px 0 0 0;">${escapeHtml(metaParts.join(' • '))}</p>`
+                : '';
+
+            return `
+                <div class="achievement-card activity-card" data-activity-name="${escapeHtml(name)}" style="background: #000000; border: 1px solid #1f2428; margin-top: ${marginTop};">
+                    <div class="achievement-info">
+                        <span class="software-tag">${escapeHtml(type.toUpperCase())}</span>
+                        <h3>${escapeHtml(name)}</h3>
+                        <p style="font-size: 0.92rem; color: #8b949e; margin: 6px 0 0 0;">${escapeHtml(school || 'Organization not specified')}</p>
+                        ${metaLine}
+                        <p style="margin-top: 12px; line-height: 1.55; color: #e1e4e8;">${escapeHtml(description || 'Description coming soon.')}</p>
+                        ${hasLink ? `<a class="activity-external-link" href="${escapeHtml(link)}" data-title="${escapeHtml(name)}" data-category="${escapeHtml(type || 'Activity')}" style="display: inline-flex; align-items: center; margin-top: 12px; color: #58a6ff; text-decoration: none; font-weight: 600;">View Activity</a>` : ''}
+                    </div>
+                </div>`;
+        }).join('');
+
+        container.querySelectorAll('.activity-external-link').forEach(anchor => {
+            anchor.addEventListener('click', (e) => {
+                e.preventDefault();
+                const url = anchor.getAttribute('href') || '';
+                const title = anchor.getAttribute('data-title') || 'External Link';
+                const category = anchor.getAttribute('data-category') || 'Activity';
+                openExternalLinkWithPrompt(url, title, category);
+            });
+        });
+    };
+
     const bindModalButtons = () => {
         if (state.closeBtn) state.closeBtn.onclick = () => state.modalManager?.resetModal();
         if (state.secCloseBtn) state.secCloseBtn.onclick = () => state.modalManager?.resetSecModal();
@@ -1101,6 +1173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!state.allData.Achievements) sheetsNeeded.push('Achievements');
             if (!state.allData.School) sheetsNeeded.push('School');
         }
+        if (route === '/activities' && !state.allData.Activities) sheetsNeeded.push('Activities');
         
         if (sheetsNeeded.length === 0) {
             return Promise.resolve({ data: state.allData, allCached: true });
@@ -1150,6 +1223,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (state.currentRoute === '/' || state.currentRoute === '/bio') {
                     renderBioEducation();
+                }
+
+                if (state.currentRoute === '/activities') {
+                    renderActivities();
                 }
 
                 if (state.portfolioGrid) {

@@ -325,8 +325,20 @@ class DataService {
                         
                         return processedPath;
                     }).filter(s => s);
-                } else if (key === 'date' || key === 'lastUsed' || key === 'started') {
+                } else if (key === 'date' || key === 'lastUsed' || key === 'started' || key === 'startdate' || key === 'enddate' || key === 'ended') {
                     val = (cell && cell.f) ? cell.f : val;
+                    if (typeof val === 'string') {
+                        const gvizDateMatch = val.match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})\)$/);
+                        if (gvizDateMatch) {
+                            const year = Number.parseInt(gvizDateMatch[1], 10);
+                            const monthIndex = Number.parseInt(gvizDateMatch[2], 10);
+                            const day = Number.parseInt(gvizDateMatch[3], 10);
+                            const dateObj = new Date(year, monthIndex, day);
+                            if (!Number.isNaN(dateObj.getTime())) {
+                                val = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                            }
+                        }
+                    }
                 } else if (key === 'certified' && cell) {
                     val = cell.v === true || String(cell.f).toUpperCase() === 'TRUE';
                 } else if (key === 'icon' && val && typeof val === 'string') {
