@@ -482,6 +482,7 @@ footer[data-include="html/footer.html"] {
     border-radius: 6px;
     margin-top: 20px;
     transition: border-color 0.3s ease;
+    touch-action: manipulation;
 }
 
 .achievement-info h3 {
@@ -562,6 +563,7 @@ footer[data-include="html/footer.html"] {
     flex-direction: column;
     height: 100%;
     transition: all 0.2s ease;
+    touch-action: manipulation;
 }
 
 .portfolio-card:hover {
