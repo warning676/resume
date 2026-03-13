@@ -123,6 +123,23 @@ class FilterManager {
             }
         });
         if (s.noResults) s.noResults.style.display = visibleCount === 0 ? "block" : "none";
+        const statusEl = document.getElementById('page-search-status');
+        if (statusEl) {
+            const hasSkeleton = !!s.portfolioGrid.querySelector('.skeleton-item');
+            const rawQuery = s.searchQuery ? s.searchQuery.trim() : '';
+            if (rawQuery && hasSkeleton) {
+                const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = `<div class="page-search-status-inner"><span class="page-search-spinner"></span><span>Loading results for "<span style="color:#58a6ff;">${safe}</span>"\u2026</span></div>`;
+            } else if (rawQuery) {
+                const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = `Showing ${visibleCount} ${visibleCount === 1 ? 'result' : 'results'} for "<span style="color:#58a6ff;">${safe}</span>"`;
+            } else {
+                statusEl.style.display = 'none';
+                statusEl.innerHTML = '';
+            }
+        }
     }
 
     filterSkills() {
@@ -153,6 +170,23 @@ class FilterManager {
             }
         });
         if (s.noResults) s.noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        const statusEl = document.getElementById('page-search-status');
+        if (statusEl) {
+            const hasSkeleton = !!s.skillsList.querySelector('.skeleton-item');
+            const rawQuery = s.searchQuery ? s.searchQuery.trim() : '';
+            if (rawQuery && hasSkeleton) {
+                const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = `<div class="page-search-status-inner"><span class="page-search-spinner"></span><span>Loading results for "<span style="color:#58a6ff;">${safe}</span>"\u2026</span></div>`;
+            } else if (rawQuery) {
+                const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = `Showing ${visibleCount} ${visibleCount === 1 ? 'result' : 'results'} for "<span style="color:#58a6ff;">${safe}</span>"`;
+            } else {
+                statusEl.style.display = 'none';
+                statusEl.innerHTML = '';
+            }
+        }
     }
 
     sortSkills() {
@@ -187,15 +221,15 @@ class FilterManager {
         const order = s.selectedOrder;
         const cards = Array.from(s.portfolioGrid.querySelectorAll('.portfolio-card'));
         cards.sort((a, b) => {
-            let valA, valB;
             if (sortBy === 'name') {
-                valA = a.getAttribute('data-name').toLowerCase();
-                valB = b.getAttribute('data-name').toLowerCase();
+                const valA = a.getAttribute('data-name').toLowerCase();
+                const valB = b.getAttribute('data-name').toLowerCase();
+                return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
             } else {
-                valA = new Date(a.getAttribute('data-date').replace(/-/g, '\/')).getTime();
-                valB = new Date(b.getAttribute('data-date').replace(/-/g, '\/')).getTime();
+                const valA = new Date(a.getAttribute('data-date').replace(/-/g, '\/')).getTime();
+                const valB = new Date(b.getAttribute('data-date').replace(/-/g, '\/')).getTime();
+                return order === 'asc' ? (valA - valB) : (valB - valA);
             }
-            return order === 'asc' ? (valA - valB) : (valB - valA);
         });
         cards.forEach(card => s.portfolioGrid.appendChild(card));
     }

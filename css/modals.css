@@ -125,7 +125,6 @@
     margin: 0 0 6px 0;
     color: #e1e4e8;
     font-size: 0.9rem;
-    font-weight: 700;
     line-height: 1.35;
 }
 
@@ -133,14 +132,13 @@
     margin: 0 0 6px 0;
     color: #e1e4e8;
     font-size: 0.9rem;
-    font-weight: 700;
     line-height: 1.35;
 }
 
 .external-link-url {
     margin: 0;
-    color: #58a6ff;
-    font-size: 0.85rem;
+    color: #e1e4e8;
+    font-size: 0.9rem;
     word-break: break-all;
     line-height: 1.35;
 }

@@ -3,6 +3,49 @@ class ControlsManager {
         this.s = state;
     }
 
+    ensureDropdownBestVisibility(container) {
+        if (!container || !container.classList.contains('open')) return;
+
+        requestAnimationFrame(() => {
+            if (!container.classList.contains('open')) return;
+
+            const dropdown = container.querySelector('.custom-select-dropdown, .multi-select-dropdown');
+            const trigger = container.querySelector('.custom-select-trigger, .multi-select-trigger');
+            if (!dropdown || !trigger) return;
+
+            const viewportTop = 12;
+            const viewportBottom = window.innerHeight - 12;
+            const minDropdownHeight = 120;
+            const triggerRect = trigger.getBoundingClientRect();
+            const spaceBelow = Math.max(0, viewportBottom - triggerRect.bottom - 5);
+            const spaceAbove = Math.max(0, triggerRect.top - viewportTop - 5);
+            const openUpward = spaceAbove > spaceBelow && spaceAbove >= minDropdownHeight;
+
+            dropdown.style.overflowY = 'auto';
+            dropdown.style.maxHeight = `${Math.max(minDropdownHeight, openUpward ? spaceAbove : spaceBelow)}px`;
+            dropdown.style.top = openUpward ? 'auto' : '100%';
+            dropdown.style.bottom = openUpward ? '100%' : 'auto';
+            dropdown.style.marginTop = openUpward ? '0' : '5px';
+            dropdown.style.marginBottom = openUpward ? '5px' : '0';
+
+            const dropdownRect = dropdown.getBoundingClientRect();
+
+            let delta = 0;
+
+            if (dropdownRect.bottom > viewportBottom) {
+                delta = dropdownRect.bottom - viewportBottom;
+            }
+
+            if (triggerRect.top - delta < viewportTop) {
+                delta = triggerRect.top - viewportTop;
+            }
+
+            if (delta !== 0) {
+                window.scrollBy({ top: delta, behavior: 'smooth' });
+            }
+        });
+    }
+
     syncDropdownScrollLock() {
         if (typeof window !== 'undefined' && typeof window.syncDropdownScrollLock === 'function') {
             window.syncDropdownScrollLock();
@@ -170,6 +213,7 @@ class ControlsManager {
             });
             container.classList.remove('skip-animation');
             container.classList.toggle('open');
+            this.ensureDropdownBestVisibility(container);
             this.syncDropdownScrollLock();
         });
 
@@ -178,6 +222,7 @@ class ControlsManager {
         
         if (wasOpen) {
             container.classList.add('open');
+            this.ensureDropdownBestVisibility(container);
         }
     }
 
@@ -215,6 +260,7 @@ class ControlsManager {
             const isOpen = container.classList.contains('open');
             document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
             if (!isOpen) container.classList.add('open');
+            this.ensureDropdownBestVisibility(container);
             this.syncDropdownScrollLock();
         });
 

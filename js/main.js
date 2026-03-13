@@ -224,17 +224,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (state.externalLinkTitleEl) {
             const safeTitle = String(title || '').trim();
-            state.externalLinkTitleEl.textContent = safeTitle ? `Title: ${safeTitle}` : 'Title: External Link';
+            const safeTitleText = safeTitle || 'External Link';
+            state.externalLinkTitleEl.innerHTML = `<strong>Title:</strong> ${safeTitleText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}`;
         }
 
         if (state.externalLinkCategoryEl) {
             const safeCategory = String(category || '').trim();
-            state.externalLinkCategoryEl.textContent = safeCategory ? `Category: ${safeCategory}` : '';
+            state.externalLinkCategoryEl.innerHTML = safeCategory ? `<strong>Category:</strong> ${safeCategory.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}` : '';
             state.externalLinkCategoryEl.style.display = safeCategory ? 'block' : 'none';
         }
 
         if (state.externalLinkUrlEl) {
-            state.externalLinkUrlEl.textContent = url;
+            const safeUrl = String(url || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            state.externalLinkUrlEl.innerHTML = `<strong style="color:#e1e4e8;">Link:</strong> <span style="color:#58a6ff;">${safeUrl}</span>`;
         }
 
         state.externalLinkModal.style.display = 'flex';
