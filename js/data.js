@@ -255,6 +255,7 @@ class DataService {
             'Name': 'name',
             'Type': 'type',
             'School': 'school',
+            'School Abbreviation': 'schoolAbbreviation',
             'Location': 'location',
             'Started': 'started',
             'Status': 'status',
@@ -345,6 +346,13 @@ class DataService {
                     val = this.convertGoogleDriveUrl(val);
                 } else if (key === 'awards' && val && typeof val === 'string') {
                     val = this.parseAwards(val);
+                } else if (key === 'info' && typeof val === 'string') {
+                    val = val
+                        .replace(/\\r\\n/g, '\n')
+                        .replace(/\\n/g, '\n')
+                        .replace(/\\r/g, '\n')
+                        .replace(/\r\n/g, '\n')
+                        .replace(/\r/g, '\n');
                 }
                 item[key] = val;
             });

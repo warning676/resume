@@ -19,15 +19,17 @@
 #modal-tools .software-tag {
     display: inline-flex;
     align-items: center;
-    background: #000000;
+    background: transparent;
     border: 1px solid #30363d !important;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.7rem;
+    padding: 8px 13px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
     color: #e1e4e8;
-    min-height: 28px;
+    min-height: 34px;
     margin-bottom: 0;
-    transition: all 0.2s ease;
+    transform-origin: center;
+    transition: transform 0.24s cubic-bezier(0, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease;
     white-space: normal;
     word-wrap: break-word;
     line-height: 1.4;
@@ -90,7 +92,12 @@
 }
 
 #modal-tools .clickable-tool:hover {
-    background: #1f2428 !important;
+    background: #30363d !important;
     border-color: #58a6ff !important;
-    color: #58a6ff !important;
+    color: #ffffff !important;
+}
+
+#modal-tools .clickable-tool:active {
+    border-color: #58a6ff !important;
+    transform: scale(0.955);
 }

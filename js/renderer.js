@@ -167,6 +167,14 @@ class Renderer {
         skills.forEach(skill => {
             if (isAchievementsPage && !skill.certified) return;
             if (skill.badge) categories.set(skill.badge, skill.badge);
+            const normalizedLevel = (skill.level || '').toLowerCase().trim();
+            const levelBadgeClass = normalizedLevel === 'beginner'
+                ? 'proficiency-beginner'
+                : normalizedLevel === 'intermediate'
+                    ? 'proficiency-intermediate'
+                    : normalizedLevel === 'advanced'
+                        ? 'proficiency-advanced'
+                        : 'proficiency-unknown';
 
             const item = document.createElement('div');
             item.className = 'grid-structure skill-item';
@@ -188,7 +196,7 @@ class Renderer {
                     <span class="skill-name">${skill.name}${certifiedBadge}</span>
                     <span class="type-badge">${skill.badge}</span>
                 </span>
-                <span class="level">${skill.level}</span>
+                <span class="level proficiency-badge ${levelBadgeClass}">${skill.level || '-'}</span>
                 <span class="last-used">${skill.lastUsed}</span>`;
 
             const iconImg = item.querySelector('.skill-icon');

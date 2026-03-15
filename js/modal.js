@@ -147,6 +147,20 @@ class ModalManager {
         img.src = finalSrc;
     }
 
+    getProficiencyBadgeClass(level) {
+        const normalizedLevel = String(level || '').toLowerCase().trim();
+        if (normalizedLevel === 'beginner') return 'proficiency-beginner';
+        if (normalizedLevel === 'intermediate') return 'proficiency-intermediate';
+        if (normalizedLevel === 'advanced') return 'proficiency-advanced';
+        return 'proficiency-unknown';
+    }
+
+    applyProficiencyBadge(levelElement, levelValue) {
+        if (!levelElement) return;
+        levelElement.classList.remove('proficiency-beginner', 'proficiency-intermediate', 'proficiency-advanced', 'proficiency-unknown');
+        levelElement.classList.add('proficiency-badge', this.getProficiencyBadgeClass(levelValue));
+    }
+
     buildGallerySkeletons(gallery, count) {
         if (!gallery || count <= 0) return;
         gallery.innerHTML = '';
@@ -167,11 +181,11 @@ class ModalManager {
         const gPrev = document.createElement('button');
         gPrev.id = "gallery-prev";
         gPrev.className = "gallery-nav-btn prev";
-        gPrev.innerHTML = "&#10094;";
+        gPrev.setAttribute('aria-label', 'Previous gallery item');
         const gNext = document.createElement('button');
         gNext.id = "gallery-next";
         gNext.className = "gallery-nav-btn next";
-        gNext.innerHTML = "&#10095;";
+        gNext.setAttribute('aria-label', 'Next gallery item');
         const wrapper = document.createElement('div');
         wrapper.className = 'gallery-container-wrapper';
         gallery.parentNode.insertBefore(wrapper, gallery);
@@ -536,7 +550,11 @@ class ModalManager {
             if (sType) sType.innerText = data.badge || (cardOrData instanceof HTMLElement ? cardOrData.querySelector('.type-badge').innerText : "");
 
             const sLevel = document.getElementById(prefix + 'modal-skill-level');
-            if (sLevel) sLevel.innerText = data.level || (cardOrData instanceof HTMLElement ? cardOrData.querySelector('.level').innerText : "-");
+            if (sLevel) {
+                const levelValue = data.level || (cardOrData instanceof HTMLElement ? cardOrData.querySelector('.level').innerText : "-");
+                sLevel.innerText = levelValue;
+                this.applyProficiencyBadge(sLevel, levelValue);
+            }
 
             const sLast = document.getElementById(prefix + 'modal-skill-last');
             if (sLast) sLast.innerText = data.lastUsed || (cardOrData instanceof HTMLElement ? cardOrData.querySelector('.last-used').innerText : "-");
@@ -960,11 +978,17 @@ class ModalManager {
             const prev = s.secPrevBtn;
             const next = s.secNextBtn;
             try {
-                const prevVis = prev ? getComputedStyle(prev).visibility : 'hidden';
-                const nextVis = next ? getComputedStyle(next).visibility : 'hidden';
+                const prevStyles = prev ? getComputedStyle(prev) : null;
+                const nextStyles = next ? getComputedStyle(next) : null;
+                const prevHidden = !prevStyles || prevStyles.display === 'none' || prevStyles.visibility === 'hidden';
+                const nextHidden = !nextStyles || nextStyles.display === 'none' || nextStyles.visibility === 'hidden';
                 if (content) {
-                    if (prevVis === 'hidden' && nextVis === 'hidden') content.classList.add('no-side-padding');
+                    const hadTransition = content.style.transition;
+                    content.style.transition = 'none';
+                    if (prevHidden && nextHidden) content.classList.add('no-side-padding');
                     else content.classList.remove('no-side-padding');
+                    void content.offsetWidth;
+                    content.style.transition = hadTransition;
                 }
             } catch (e) {}
         } else {

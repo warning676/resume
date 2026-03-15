@@ -524,7 +524,7 @@ function getSearchResultDescription(result) {
         if (schoolValue) parts.push(schoolValue);
         if (startValue && endValue) parts.push(`${startValue} - ${endValue}`);
         else if (startValue) parts.push(`${startValue} - Present`);
-        return parts.length > 0 ? parts.join(' • ') : String(result.data.description || '').trim();
+        return parts.length > 0 ? parts.join('\n') : String(result.data.description || '').trim();
     }
 
     if (result.type !== 'achievement') {
@@ -534,11 +534,13 @@ function getSearchResultDescription(result) {
     const parts = [];
     const schoolValue = String(result.data.school || '').trim();
     const dateValue = String(result.data.date || '').trim();
+    const infoValue = String(result.data.info || '').trim();
 
     if (schoolValue) parts.push(schoolValue);
     if (dateValue) parts.push(dateValue);
+    if (infoValue) parts.push(infoValue);
 
-    if (parts.length > 0) return parts.join(' • ');
+    if (parts.length > 0) return parts.join('\n');
     return result.data.info || result.data.badge || '';
 }
 
@@ -608,7 +610,7 @@ function renderSearchResults(results, query) {
                             ${badgesHtml}
                         </div>
                         <div class="search-result-title">${highlightedTitle}</div>
-                        ${highlightedDesc ? `<div class="search-result-info">${highlightedDesc}</div>` : ''}
+                        ${highlightedDesc ? `<div class="search-result-info" style="white-space: pre-line;">${highlightedDesc}</div>` : ''}
                     </div>
                 </div>
             </div>
@@ -713,6 +715,7 @@ async function navigateToSearchResultByIndex(index) {
             const externalLink = getAchievementLink(result.data);
             const achievementTitle = result.data.name || '';
             const achievementCategory = result.data.type || 'Achievement';
+            const achievementInfo = result.data.info || '';
 
             if (externalLink) {
                 const focusAndClick = () => {
@@ -720,7 +723,7 @@ async function navigateToSearchResultByIndex(index) {
                     if (clicked) return;
 
                     if (typeof window.openExternalLinkWithPrompt === 'function') {
-                        window.openExternalLinkWithPrompt(externalLink, achievementTitle || 'Achievement Link', achievementCategory);
+                        window.openExternalLinkWithPrompt(externalLink, achievementTitle || 'Achievement Link', achievementCategory, achievementInfo);
                     } else {
                         window.open(externalLink, '_blank', 'noopener,noreferrer');
                     }

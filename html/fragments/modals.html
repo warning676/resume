@@ -1,7 +1,7 @@
 <div id="infoModal" class="modal">
     <div class="modal-content">
-        <button id="modal-prev" class="modal-nav-btn prev" aria-label="Previous project">&#10094;</button>
-        <button id="modal-next" class="modal-nav-btn next" aria-label="Next project">&#10095;</button>
+        <button id="modal-prev" class="modal-nav-btn prev" aria-label="Previous project"></button>
+        <button id="modal-next" class="modal-nav-btn next" aria-label="Next project"></button>
 
         <div class="modal-header">
             <div id="project-header" style="display: block;">
@@ -11,7 +11,7 @@
                 <img id="modal-skill-icon" src="" alt="" style="width: 32px; height: 32px; object-fit: contain;">
                 <h2 id="modal-title-main">Skill Details</h2>
             </div>
-            <button class="close-button">&times;</button>
+            <button class="close-button"></button>
         </div>
         <div id="modal-split-body" class="modal-body-split">
             <div class="modal-media-pane">
@@ -57,7 +57,7 @@
                         <div>
                             <small
                                 style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem; font-weight: bold; margin-bottom: 4px;">Proficiency</small>
-                            <strong id="modal-skill-level" style="color: #58a6ff;">-</strong>
+                            <strong id="modal-skill-level" class="proficiency-badge proficiency-unknown">-</strong>
                         </div>
                         <div>
                             <small
@@ -88,15 +88,15 @@
 
 <div id="secondaryModal" class="modal" style="z-index: 2000;">
     <div class="modal-content">
-        <button id="sec-modal-prev" class="sec-modal-nav-btn prev" title="Previous Tool">&#10094;</button>
-        <button id="sec-modal-next" class="sec-modal-nav-btn next" title="Next Tool">&#10095;</button>
+        <button id="sec-modal-prev" class="sec-modal-nav-btn prev" title="Previous Tool"></button>
+        <button id="sec-modal-next" class="sec-modal-nav-btn next" title="Next Tool"></button>
         <div class="modal-header">
             <div style="display: flex; align-items: center; gap: 15px;">
                 <img id="sec-modal-skill-icon" src="" alt=""
                     style="width: 32px; height: 32px; object-fit: contain;">
                 <h2 id="sec-modal-title-main">Skill Details</h2>
             </div>
-            <button class="sec-close-button">&times;</button>
+            <button class="sec-close-button"></button>
         </div>
         <div class="modal-body-split">
             <div class="modal-info-pane" style="padding: 20px; max-width: none; width: 100%;">
@@ -113,7 +113,7 @@
                     <div>
                         <small
                             style="color: #8b949e; display: block; text-transform: uppercase; font-size: 0.7rem; font-weight: bold; margin-bottom: 4px;">Proficiency</small>
-                        <strong id="sec-modal-skill-level" style="color: #58a6ff;">-</strong>
+                        <strong id="sec-modal-skill-level" class="proficiency-badge proficiency-unknown">-</strong>
                     </div>
                     <div>
                         <small
@@ -138,11 +138,12 @@
     <div class="modal-content external-link-modal-content">
         <div class="external-link-header">
             <h3>Leave Portfolio?</h3>
-            <button id="external-link-cancel" class="close-button" aria-label="Close external link confirmation">&times;</button>
+            <button id="external-link-cancel" class="close-button" aria-label="Close external link confirmation"></button>
         </div>
         <p class="external-link-message">You are about to open an external website in a new tab.</p>
         <p id="external-link-category" class="external-link-category"></p>
         <p id="external-link-title" class="external-link-title"></p>
+        <p id="external-link-info" class="external-link-title" style="display: none; white-space: pre-line;"></p>
         <p id="external-link-url" class="external-link-url"></p>
         <div class="external-link-actions">
             <button id="external-link-stay" class="external-link-btn secondary" type="button">Stay Here</button>

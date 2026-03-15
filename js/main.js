@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         externalLinkModal: null,
         externalLinkTitleEl: null,
         externalLinkCategoryEl: null,
+        externalLinkInfoEl: null,
         externalLinkUrlEl: null,
         externalLinkResolve: null,
         skillsList: null,
@@ -211,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 170);
     };
 
-    const showExternalLinkModal = (url, title, category) => {
+    const showExternalLinkModal = (url, title, category, info) => {
         if (!state.externalLinkModal) return Promise.resolve(false);
         if (state.externalLinkModal._fadeTimer) {
             clearTimeout(state.externalLinkModal._fadeTimer);
@@ -234,6 +235,17 @@ document.addEventListener('DOMContentLoaded', () => {
             state.externalLinkCategoryEl.style.display = safeCategory ? 'block' : 'none';
         }
 
+        if (state.externalLinkInfoEl) {
+            const safeInfo = String(info || '').trim();
+            const safeInfoText = safeInfo
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+            state.externalLinkInfoEl.innerHTML = safeInfo ? `<strong>Info:</strong> ${safeInfoText}` : '';
+            state.externalLinkInfoEl.style.display = safeInfo ? 'block' : 'none';
+        }
+
         if (state.externalLinkUrlEl) {
             const safeUrl = String(url || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             state.externalLinkUrlEl.innerHTML = `<strong style="color:#e1e4e8;">Link:</strong> <span style="color:#58a6ff;">${safeUrl}</span>`;
@@ -253,10 +265,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const openExternalLinkWithPrompt = async (url, title, category) => {
+    const openExternalLinkWithPrompt = async (url, title, category, info) => {
         const target = getExternalLinkTarget(url);
         if (!target) return false;
-        const confirmed = await showExternalLinkModal(target, title, category);
+        const confirmed = await showExternalLinkModal(target, title, category, info);
         if (!confirmed) return false;
         window.open(target, '_blank', 'noopener,noreferrer');
         return true;
@@ -345,6 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.externalLinkModal = document.getElementById('external-link-modal');
         state.externalLinkTitleEl = document.getElementById('external-link-title');
         state.externalLinkCategoryEl = document.getElementById('external-link-category');
+        state.externalLinkInfoEl = document.getElementById('external-link-info');
         state.externalLinkUrlEl = document.getElementById('external-link-url');
         state.skillsList = document.getElementById('skills-list');
         state.achievementsList = document.getElementById('achievements-list');
@@ -744,6 +757,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const nominationsContainer = document.getElementById('nominations-items');
         if (!presidentsContainer || !honorRollContainer || !nominationsContainer) return;
 
+        const scrollToFocusedSchoolCard = () => {
+            const params = new URLSearchParams(window.location.search || '');
+            const focusSchool = String(params.get('focusSchool') || '').toLowerCase();
+            if (!focusSchool) return;
+
+            const targetId = focusSchool === 'highschool'
+                ? 'achievement-highschool-card'
+                : focusSchool === 'college'
+                    ? 'achievement-college-card'
+                    : '';
+            if (!targetId) return;
+
+            const targetCard = document.getElementById(targetId);
+            if (targetCard) {
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+            }
+        };
+
         const rows = Array.isArray(state.allData?.Achievements) ? state.allData.Achievements : [];
         const grouped = {
             presidents: [],
@@ -773,11 +804,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const findSchoolProfile = (predicate, fallbackName) => {
             const row = schoolRows.find(predicate);
             const name = (row?.school || row?.name || fallbackName || '').toString().trim();
+            const abbreviation = (row?.schoolAbbreviation || '').toString().trim();
             const gpa = formatGpa(row?.gpa);
             return {
                 name,
                 normalizedName: normalizeText(name),
-                tag: toTag(name),
+                tag: abbreviation || toTag(name),
                 gpa
             };
         };
@@ -866,8 +898,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const school = (row?.school || '').toString().trim().toLowerCase();
             const name = (row?.name || '').toString().trim();
             const link = (row?.link || '').toString().trim();
+            const info = (row?.info || '').toString().trim();
             if (!name) return;
-            const item = { name, link };
+            const item = { name, link, info };
             const isSNHU = collegeSchoolNames.some(schoolName => school.includes(schoolName));
             const isERHS = highSchoolNames.some(schoolName => school.includes(schoolName));
 
@@ -888,35 +921,49 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             items.forEach(item => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'achievement-inline-item';
+
                 const hasLink = /^https?:\/\//i.test(item.link);
                 if (hasLink) {
                     const anchor = document.createElement('a');
                     anchor.href = item.link;
                     anchor.target = '_self';
                     anchor.rel = 'noopener noreferrer';
-                    anchor.style.color = textColor;
-                    anchor.style.textDecoration = 'none';
-                    anchor.style.fontSize = '0.9rem';
+                    anchor.className = 'inline-action-button';
+                    anchor.style.setProperty('--inline-action-color', textColor);
                     anchor.textContent = item.name;
                     anchor.addEventListener('click', (e) => {
                         e.preventDefault();
-                        openExternalLinkWithPrompt(item.link, item.name || 'External Link', item.category || 'Achievement');
+                        openExternalLinkWithPrompt(item.link, item.name || 'External Link', item.category || 'Achievement', item.info || '');
                     });
-                    container.appendChild(anchor);
-                    return;
+                    wrapper.appendChild(anchor);
+                } else {
+                    const plain = document.createElement('span');
+                    plain.style.color = '#e1e4e8';
+                    plain.style.fontSize = '0.9rem';
+                    plain.textContent = item.name;
+                    wrapper.appendChild(plain);
                 }
 
-                const plain = document.createElement('span');
-                plain.style.color = '#e1e4e8';
-                plain.style.fontSize = '0.9rem';
-                plain.textContent = item.name;
-                container.appendChild(plain);
+                if (item.info) {
+                    const info = document.createElement('span');
+                    info.style.color = '#8b949e';
+                    info.style.fontSize = '0.82rem';
+                    info.style.whiteSpace = 'pre-line';
+                    info.style.lineHeight = '1.4';
+                    info.textContent = item.info;
+                    wrapper.appendChild(info);
+                }
+
+                container.appendChild(wrapper);
             });
         };
 
         renderInlineItems(presidentsContainer, grouped.presidents, '#58a6ff');
         renderInlineItems(honorRollContainer, grouped.honorRoll, '#58a6ff');
         renderInlineItems(nominationsContainer, grouped.nominations, '#e1e4e8');
+        scrollToFocusedSchoolCard();
     };
 
     const renderBioEducation = () => {
@@ -956,18 +1003,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         educationList.innerHTML = rows.map((row, index) => {
             const schoolName = (row?.school || row?.name || '').toString().trim();
+            const schoolAbbreviation = (row?.schoolAbbreviation || '').toString().trim();
             const location = (row?.location || '').toString().trim();
             const started = (row?.started || '').toString().trim();
             const status = (row?.status || '').toString().trim();
             const gpa = formatGpa(row?.gpa);
-            const tag = getTag(schoolName);
+            const tag = schoolAbbreviation || getTag(schoolName);
             const program = getProgram(schoolName);
+            const normalizedSchoolName = schoolName.toLowerCase();
+            const focusSchool = normalizedSchoolName.includes('high school') ? 'highschool' : 'college';
             const marginTop = index === 0 ? '20px' : '12px';
             const gpaRow = gpa
                 ? `<div style="font-size: 0.9rem; color: #8b949e; margin-top: 10px;">
-                <span><strong style="color: #58a6ff;">GPA:</strong> ${gpa}</span>
+                <span><strong style="color: #58a6ff;">Cumulative GPA:</strong> ${gpa}</span>
             </div>`
                 : '';
+            const achievementsLinkRow = `<div style="font-size: 0.9rem; margin-top: 10px;">
+                <a href="#" class="education-achievements-link inline-action-button" data-focus-school="${focusSchool}">View Achievements</a>
+            </div>`;
 
             return `
     <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428; margin-top: ${marginTop};">
@@ -981,9 +1034,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span><strong style="color: #58a6ff;">Status:</strong> ${status}</span>
             </div>
             ${gpaRow}
+            ${achievementsLinkRow}
         </div>
     </div>`;
         }).join('');
+
+        educationList.querySelectorAll('.education-achievements-link').forEach(link => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                const focusSchool = String(link.getAttribute('data-focus-school') || '').toLowerCase();
+                if (!focusSchool) return;
+                navigate('/achievements', `?focusSchool=${encodeURIComponent(focusSchool)}`);
+            });
+        });
     };
 
     const renderActivities = () => {
@@ -1029,6 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const metaLine = metaParts.length
                 ? `<p style="font-size: 0.85rem; color: #8b949e; margin: 10px 0 0 0;">${escapeHtml(metaParts.join(' • '))}</p>`
                 : '';
+            const safeDescription = escapeHtml(description || 'Description coming soon.').replace(/\n/g, '<br>');
 
             return `
                 <div class="achievement-card activity-card" data-activity-name="${escapeHtml(name)}" style="background: #000000; border: 1px solid #1f2428; margin-top: ${marginTop};">
@@ -1037,8 +1101,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3>${escapeHtml(name)}</h3>
                         <p style="font-size: 0.92rem; color: #8b949e; margin: 6px 0 0 0;">${escapeHtml(school || 'Organization not specified')}</p>
                         ${metaLine}
-                        <p style="margin-top: 12px; line-height: 1.55; color: #e1e4e8;">${escapeHtml(description || 'Description coming soon.')}</p>
-                        ${hasLink ? `<a class="activity-external-link" href="${escapeHtml(link)}" data-title="${escapeHtml(name)}" data-category="${escapeHtml(type || 'Activity')}" style="display: inline-flex; align-items: center; margin-top: 12px; color: #58a6ff; text-decoration: none; font-weight: 600;">View Activity</a>` : ''}
+                        <p style="margin-top: 12px; line-height: 1.55; color: #e1e4e8; white-space: pre-line;">${safeDescription}</p>
+                        ${hasLink ? `<a class="activity-external-link inline-action-button" href="${escapeHtml(link)}" data-title="${escapeHtml(name)}" data-category="${escapeHtml(type || 'Activity')}" style="margin-top: 12px;">View Activity</a>` : ''}
                     </div>
                 </div>`;
         }).join('');

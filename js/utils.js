@@ -18,8 +18,9 @@ class Utils {
     }
 
     static getProficiencyValue(level) {
-        const scores = { 'Advanced': 3, 'Intermediate': 2, 'Beginner': 1 };
-        return scores[level] || 0;
+        const normalizedLevel = String(level || '').trim().toLowerCase();
+        const scores = { advanced: 3, intermediate: 2, beginner: 1 };
+        return scores[normalizedLevel] || 0;
     }
 
     static extractYouTubeID(input) {
