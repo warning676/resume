@@ -4,22 +4,9 @@ header[data-include="html/nav.html"] {
     top: 0;
     background-color: #050505;
     z-index: 1000;
-    border-bottom: none;
+    border-bottom: 1px solid #1f2428;
     margin-bottom: 20px;
     min-height: 60px;
-}
-
-header[data-include="nav.html"]::after,
-header[data-include="html/nav.html"]::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    width: 100vw;
-    height: 1px;
-    transform: translateX(-50%);
-    background: #30363d;
-    pointer-events: none;
 }
 
 nav {
