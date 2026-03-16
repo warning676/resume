@@ -87,6 +87,11 @@
     padding: 30px 0;
 }
 
+.courses-modal-content.no-side-padding {
+    width: min(820px, 88vw);
+    max-width: 820px;
+}
+
 .external-link-modal {
     align-items: center;
     justify-content: center;

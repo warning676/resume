@@ -29,32 +29,38 @@ class Renderer {
         container.style.display = isPortfolioGrid ? 'grid' : 'block';
 
         if (isSkillsGrid) {
-            container.innerHTML = '<div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>';
-        } else {
-            container.innerHTML = '';
+            const rowWidths = [
+                [126, 96, 94, 82],
+                [142, 112, 102, 76],
+                [118, 88, 90, 84],
+                [134, 104, 98, 78],
+            ];
+            let rows = '';
+            for (let i = 0; i < count; i++) {
+                const w = rowWidths[i % rowWidths.length];
+                rows += `<tr class="courses-skeleton-row">
+                    <td><div style="display:flex;align-items:center;gap:10px;"><div class="skeleton-element" style="width:32px;height:32px;border-radius:8px;"></div><div><div class="skeleton-element" style="width:${w[0]}px;height:14px;border-radius:999px;margin-bottom:7px;"></div><div class="skeleton-element" style="width:${Math.round(w[0]*0.65)}px;height:11px;border-radius:999px;"></div></div></div></td>
+                    <td><div class="skeleton-element" style="width:${w[1]}px;height:14px;border-radius:999px;"></div></td>
+                    <td><div class="skeleton-element" style="width:${w[2]}px;height:18px;border-radius:999px;"></div></td>
+                    <td><div class="skeleton-element" style="width:${w[3]}px;height:14px;border-radius:999px;"></div></td>
+                </tr>`;
+            }
+            container.innerHTML = `<div class="courses-table-shell skills-table-shell"><table class="courses-table skills-table"><thead><tr><th>Skill</th><th>Category</th><th>Proficiency</th><th>Last Used</th></tr></thead><tbody class="skills-table-body">${rows}</tbody></table></div>`;
+            return;
         }
 
+        container.innerHTML = '';
+
         let skeletonContent = '';
-        if (isSkillsGrid) {
-            skeletonContent = `
-                <div class="grid-structure skill-item skeleton-item">
-                    <div class="skeleton-element" style="width: 32px; height: 32px; border-radius: 4px;"></div>
-                    <div class="skill-meta">
-                        <div class="skeleton-element" style="width: 120px; height: 14px; margin-bottom: 6px; border-radius: 4px;"></div>
-                        <div class="skeleton-element" style="width: 70px; height: 10px; border-radius: 4px;"></div>
-                    </div>
-                    <div class="skeleton-element" style="width: 90px; height: 14px; border-radius: 4px;"></div>
-                    <div class="skeleton-element" style="width: 70px; height: 14px; border-radius: 4px;"></div>
-                </div>`;
-        } else if (isPortfolioGrid) {
+        if (isPortfolioGrid) {
             skeletonContent = `
                 <div class="portfolio-card skeleton-item">
                     <div class="card-thumb"><div class="skeleton-element" style="width: 100%; height: 100%;"></div></div>
                     <div class="card-content">
                         <div class="card-info">
-                            <div class="skeleton-element" style="width: 80%; height: 18px; margin-bottom: 10px; border-radius: 4px;"></div>
-                            <div class="skeleton-element" style="width: 40%; height: 14px; border-radius: 4px;"></div>
-                            <div class="skeleton-element" style="width: 55%; height: 12px; margin-top: 10px; border-radius: 4px;"></div>
+                            <div class="skeleton-element" style="width: 78%; height: 18px; margin-bottom: 10px; border-radius: 999px;"></div>
+                            <div class="skeleton-element" style="width: 42%; height: 14px; border-radius: 999px;"></div>
+                            <div class="skeleton-element" style="width: 56%; height: 12px; margin-top: 12px; border-radius: 999px;"></div>
                         </div>
                     </div>
                 </div>`;
@@ -166,8 +172,8 @@ class Renderer {
                     <thead>
                         <tr>
                             <th>Skill</th>
-                            <th>Category</th>
-                            <th>Proficiency</th>
+                            <th><span class="table-header-chip"><span class="table-header-label">Category</span><span class="column-header-filter-indicator" data-filter-scope="skills" data-filter-key="type" aria-hidden="true"></span></span></th>
+                            <th><span class="table-header-chip"><span class="table-header-label">Proficiency</span><span class="column-header-filter-indicator" data-filter-scope="skills" data-filter-key="level" aria-hidden="true"></span></span></th>
                             <th>Last Used</th>
                         </tr>
                     </thead>

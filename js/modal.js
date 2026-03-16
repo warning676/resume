@@ -15,6 +15,7 @@ class ModalManager {
         if (locked) {
             body.style.overflow = 'hidden';
             html.style.overflow = 'hidden';
+            body.classList.add('modal-open');
             return;
         }
 
@@ -22,10 +23,13 @@ class ModalManager {
         const secModalOpen = !!(s.secModal && s.secModal.style.display === 'flex');
         const searchModal = document.getElementById('global-search-modal');
         const searchModalOpen = !!(searchModal && searchModal.classList.contains('active'));
-        if (mainModalOpen || secModalOpen || searchModalOpen) return;
+        const coursesModal = document.getElementById('courses-modal');
+        const coursesModalOpen = !!(coursesModal && coursesModal.style.display === 'flex');
+        if (mainModalOpen || secModalOpen || searchModalOpen || coursesModalOpen) return;
 
         body.style.overflow = '';
         html.style.overflow = '';
+        body.classList.remove('modal-open');
     }
 
     fadeInModal(modalEl) {

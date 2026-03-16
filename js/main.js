@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedTools: ['all'],
         selectedSort: null,
         selectedOrder: 'desc',
-        selectedCourseSort: 'id',
+        selectedCourseSort: 'status',
         selectedCourseOrder: 'asc',
         searchQuery: '',
         courseSearchQuery: '',
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.selectedCategories = ['all'];
         state.selectedTools = ['all'];
         state.selectedOrder = 'desc';
-        state.selectedCourseSort = 'id';
+        state.selectedCourseSort = 'status';
         state.selectedCourseOrder = 'asc';
         state.selectedCourseColumnValues = {};
         state.selectedSkillColumnValues = {};
@@ -454,7 +454,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const getSkeletonKey = () => {
         if (state.portfolioGrid) return `portfolio:${state.currentRoute}`;
         if (state.skillsList) return `skills:${state.currentRoute}`;
+        if (state.coursesTableBody) return `courses:${state.currentRoute}`;
         return null;
+    };
+
+    const showCoursesSkeleton = (count) => {
+        if (!state.coursesTableBody || count <= 0) return;
+        const rowWidths = [
+            [190, 126, 92, 94, 72, 60],
+            [222, 138, 84, 102, 76, 58],
+            [204, 120, 98, 88, 70, 62],
+            [208, 126, 98, 96, 72, 62],
+        ];
+        let html = '';
+        for (let i = 0; i < count; i++) {
+            const w = rowWidths[i % rowWidths.length];
+            html += `<tr class="courses-skeleton-row">
+                <td><div class="skeleton-element" style="width:44px;height:14px;border-radius:999px;"></div></td>
+                <td><div class="skeleton-element" style="width:${w[0]}px;height:14px;border-radius:999px;"></div></td>
+                <td><div class="skeleton-element" style="width:${w[1]}px;height:14px;border-radius:999px;"></div></td>
+                <td><div class="skeleton-element" style="width:${w[2]}px;height:14px;border-radius:999px;"></div></td>
+                <td><div class="skeleton-element" style="width:${w[3]}px;height:18px;border-radius:999px;"></div></td>
+                <td><div class="skeleton-element" style="width:${w[4]}px;height:18px;border-radius:999px;"></div></td>
+                <td><div class="skeleton-element" style="width:${w[5]}px;height:14px;border-radius:999px;"></div></td>
+            </tr>`;
+        }
+        state.coursesTableBody.innerHTML = html;
     };
 
     const getStoredCount = (key) => {
@@ -492,6 +517,11 @@ document.addEventListener('DOMContentLoaded', () => {
             state.didPrimeSkeletons = true;
             state.primedSkeletonCount = cachedCount;
             state.primedSkeletonTarget = 'skills';
+        } else if (state.coursesTableBody) {
+            showCoursesSkeleton(cachedCount);
+            state.didPrimeSkeletons = true;
+            state.primedSkeletonCount = cachedCount;
+            state.primedSkeletonTarget = 'courses';
         }
     };
 
@@ -1214,6 +1244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (locked) {
             body.style.overflow = 'hidden';
             html.style.overflow = 'hidden';
+            body.classList.add('modal-open');
             return;
         }
 
@@ -1227,6 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         body.style.overflow = '';
         html.style.overflow = '';
+        body.classList.remove('modal-open');
     };
 
     const closeAllColumnFilterMenus = () => {
@@ -1246,10 +1278,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const NONE_FILTER_VALUE = '__NONE__';
 
+    const formatFilterValueLabel = (value) => {
+        const text = toText(value);
+        if (!text) return '';
+        return text.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+    };
+
+    const getColumnFilterScope = (button) => {
+        const id = button?.id || '';
+        if (id.startsWith('courses-')) return 'courses';
+        if (id.startsWith('skills-')) return 'skills';
+        if (id.startsWith('portfolio-')) return 'portfolio';
+        return '';
+    };
+
+    const isActiveColumnFilterSelection = (selectedMap, key) => {
+        const values = selectedMap?.[key];
+        return Array.isArray(values) && values.length > 0 && !values.includes('all');
+    };
+
+    const hasActiveColumnFilters = (definitions, selectedMap) => {
+        return (definitions || []).some(definition => isActiveColumnFilterSelection(selectedMap, definition.key));
+    };
+
+    const resetColumnFilterSelections = (definitions, selectedMap) => {
+        (definitions || []).forEach(definition => {
+            delete selectedMap[definition.key];
+        });
+    };
+
+    const syncColumnFilterVisualState = (button, menu, definitions, selectedMap, onChange) => {
+        if (!button || !menu) return;
+
+        const hasActiveFilters = hasActiveColumnFilters(definitions, selectedMap);
+        button.classList.toggle('has-active-filters', hasActiveFilters);
+
+        const scope = getColumnFilterScope(button);
+        if (scope) {
+            document.querySelectorAll(`.column-header-filter-indicator[data-filter-scope="${scope}"]`).forEach(indicator => {
+                const isActive = isActiveColumnFilterSelection(selectedMap, indicator.dataset.filterKey || '');
+                indicator.classList.toggle('is-active', isActive);
+            });
+        }
+
+        const filterGroup = menu.parentElement;
+        if (!filterGroup) return;
+
+        let resetButton = filterGroup.querySelector('.filter-reset-button');
+        if (!resetButton) {
+            resetButton = document.createElement('button');
+            resetButton.type = 'button';
+            resetButton.className = 'filter-reset-button';
+            resetButton.textContent = 'Reset';
+            filterGroup.insertBefore(resetButton, menu);
+        }
+
+        resetButton.style.display = hasActiveFilters ? '' : 'none';
+        resetButton.onclick = (event) => {
+            event.stopPropagation();
+            resetColumnFilterSelections(definitions, selectedMap);
+            onChange();
+            renderColumnFilterMenu(button, menu, definitions, selectedMap, onChange);
+        };
+    };
+
     const renderColumnFilterMenu = (button, menu, definitions, selectedMap, onChange, activeKey) => {
         if (!button || !menu) return;
 
         const selected = selectedMap || {};
+        const wasOpen = menu.classList.contains('open');
         const usableDefinitions = (definitions || []).map(definition => {
             const rawValues = (definition.values || []).map(value => toText(value));
             const hasMissing = rawValues.some(value => !value);
@@ -1257,6 +1354,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const values = hasMissing ? [NONE_FILTER_VALUE, ...normalizedValues] : normalizedValues;
             return { ...definition, values };
         }).filter(definition => definition.values.length > 0);
+
+        syncColumnFilterVisualState(button, menu, usableDefinitions, selected, onChange);
+
+        menu.classList.toggle('skip-animation', wasOpen);
 
         menu.innerHTML = '';
 
@@ -1272,11 +1373,23 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'column-filter-item';
             item.dataset.filterKey = definition.key;
             if (activeKey && definition.key === activeKey) item.classList.add('active');
+            const definitionIsActive = isActiveColumnFilterSelection(selected, definition.key);
 
             const label = document.createElement('button');
             label.type = 'button';
             label.className = 'column-filter-column-label';
-            label.textContent = definition.label;
+            label.classList.toggle('has-active-filter', definitionIsActive);
+
+            const labelText = document.createElement('span');
+            labelText.className = 'column-filter-label-text';
+            labelText.textContent = definition.label;
+
+            const labelIndicator = document.createElement('span');
+            labelIndicator.className = `column-filter-menu-indicator${definitionIsActive ? ' is-active' : ''}`;
+            labelIndicator.setAttribute('aria-hidden', 'true');
+
+            label.appendChild(labelText);
+            label.appendChild(labelIndicator);
             item.appendChild(label);
 
             const subMenu = document.createElement('div');
@@ -1292,18 +1405,14 @@ document.addEventListener('DOMContentLoaded', () => {
             allCheckbox.type = 'checkbox';
             allCheckbox.checked = isAllMode;
             const allText = document.createElement('span');
+            allText.className = 'column-filter-value-text';
             allText.textContent = 'All';
             allRow.appendChild(allCheckbox);
             allRow.appendChild(allText);
             allRow.addEventListener('click', (event) => {
                 event.stopPropagation();
                 event.preventDefault();
-                allCheckbox.checked = !allCheckbox.checked;
-                if (isAllMode) {
-                    selected[definition.key] = [];
-                } else {
-                    selected[definition.key] = ['all'];
-                }
+                selected[definition.key] = ['all'];
                 onChange();
                 renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key);
             });
@@ -1318,7 +1427,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkbox.checked = isAllMode || (Array.isArray(keySelected) && keySelected.includes(value));
 
                 const text = document.createElement('span');
-                text.textContent = value === NONE_FILTER_VALUE ? 'None' : value;
+                text.className = 'column-filter-value-text';
+                text.textContent = value === NONE_FILTER_VALUE ? 'None' : formatFilterValueLabel(value);
 
                 row.appendChild(checkbox);
                 row.appendChild(text);
@@ -1326,10 +1436,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.addEventListener('click', (event) => {
                     event.stopPropagation();
                     event.preventDefault();
-                    checkbox.checked = !checkbox.checked;
                     let currentValues;
                     if (isAllMode) {
-                        currentValues = individualValues.filter(v => v !== value);
+                        currentValues = [value];
                     } else {
                         currentValues = Array.from(Array.isArray(keySelected) ? keySelected : []);
                         const idx = currentValues.indexOf(value);
@@ -1337,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         else currentValues.push(value);
                     }
                     if (currentValues.length === 0) {
-                        selected[definition.key] = [];
+                        selected[definition.key] = ['all'];
                     } else if (currentValues.length === individualValues.length) {
                         selected[definition.key] = ['all'];
                     } else {
@@ -1365,6 +1474,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const closeMenu = () => {
             menu.classList.remove('open');
+            menu.classList.remove('skip-animation');
             menu.querySelectorAll('.column-filter-item').forEach(node => node.classList.remove('active'));
             button.setAttribute('aria-expanded', 'false');
             syncCoursesModalScrollLock(false);
@@ -1398,6 +1508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 closeAllColumnFilterMenus();
                 syncDropdownScrollLock();
                 if (isOpen || usableDefinitions.length === 0) return;
+                menu.classList.remove('skip-animation');
                 menu.classList.add('open');
                 menu.dataset.submenuHovered = 'false';
                 button.setAttribute('aria-expanded', 'true');
@@ -1491,8 +1602,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const sortKey = state.selectedCourseSort || 'id';
         const sortOrder = state.selectedCourseOrder || 'asc';
         const sorted = [...courses];
+        const statusOrder = {
+            completed: 0,
+            'in progress': 1,
+            upcoming: 2
+        };
 
         const valueFor = (course, key) => {
+            if (key === 'status') {
+                const normalized = toText(course.status).toLowerCase();
+                return normalized in statusOrder ? statusOrder[normalized] : Number.MAX_SAFE_INTEGER;
+            }
             if (key === 'credits') {
                 const numeric = Number.parseFloat(course.credits);
                 return Number.isFinite(numeric) ? numeric : Number.NEGATIVE_INFINITY;
@@ -1548,8 +1668,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.coursesModalType) state.coursesModalType.textContent = course.type || '-';
         if (state.coursesModalStatus) state.coursesModalStatus.innerHTML = buildCourseBadge(course.status || '-', getCourseStatusBadgeClass(course.status));
         if (state.coursesModalGrade) state.coursesModalGrade.innerHTML = buildCourseBadge(course.grade || '-', getCourseGradeBadgeClass(course.grade));
-        if (state.coursesModalCredits) state.coursesModalCredits.textContent = course.credits || '-';
+        if (state.coursesModalCredits) {
+            if (course.credits) {
+                state.coursesModalCredits.textContent = course.credits;
+                state.coursesModalCredits.style.color = '';
+            } else {
+                state.coursesModalCredits.textContent = '-';
+                state.coursesModalCredits.style.color = '#8b949e';
+            }
+        }
         if (state.coursesModalInfo) state.coursesModalInfo.textContent = course.info || 'No course information available.';
+        updateCoursesModalNavState();
+    };
+
+    const updateCoursesModalNavState = () => {
+        const canNavigate = state.filteredCourses.length > 1;
+        if (state.coursesModalPrev) {
+            state.coursesModalPrev.style.display = canNavigate ? '' : 'none';
+            state.coursesModalPrev.disabled = !canNavigate;
+        }
+        if (state.coursesModalNext) {
+            state.coursesModalNext.style.display = canNavigate ? '' : 'none';
+            state.coursesModalNext.disabled = !canNavigate;
+        }
+        const content = state.coursesModal ? state.coursesModal.querySelector('.courses-modal-content') : null;
+        if (content) {
+            content.classList.toggle('no-side-padding', !canNavigate);
+        }
     };
 
     const openCoursesModal = (index) => {
@@ -1557,6 +1702,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (index < 0 || index >= state.filteredCourses.length) return;
 
         populateCoursesModal(index);
+        updateCoursesModalNavState();
 
         if (state.coursesModal._closeTimer) {
             clearTimeout(state.coursesModal._closeTimer);
@@ -1584,9 +1730,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const navigateCoursesModal = (delta) => {
         const visibleIndexes = getVisibleCourseIndexes();
-        if (!visibleIndexes.length || state.currentCourseIndex < 0) return;
+        if (visibleIndexes.length <= 1 || state.currentCourseIndex < 0) return;
         const nextIndex = (state.currentCourseIndex + delta + visibleIndexes.length) % visibleIndexes.length;
         const body = state.coursesModal?.querySelector('.courses-modal-body');
+        const titleWrap = state.coursesModal?.querySelector('.modal-header > div');
 
         if (!body) {
             openCoursesModal(nextIndex);
@@ -1595,16 +1742,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const outClass = delta > 0 ? 'courses-swap-out-next' : 'courses-swap-out-prev';
         const inClass = delta > 0 ? 'courses-swap-in-next' : 'courses-swap-in-prev';
+        const transitionTargets = [titleWrap, body].filter(Boolean);
 
-        body.classList.remove('courses-swap-out-next', 'courses-swap-out-prev', 'courses-swap-in-next', 'courses-swap-in-prev');
-        body.classList.add(outClass);
+        transitionTargets.forEach(target => {
+            target.classList.remove('courses-swap-out-next', 'courses-swap-out-prev', 'courses-swap-in-next', 'courses-swap-in-prev');
+            target.classList.add(outClass);
+        });
 
         setTimeout(() => {
             populateCoursesModal(nextIndex);
-            body.classList.remove(outClass);
-            body.classList.add(inClass);
+            transitionTargets.forEach(target => {
+                target.classList.remove(outClass);
+                target.classList.add(inClass);
+            });
             setTimeout(() => {
-                body.classList.remove(inClass);
+                transitionTargets.forEach(target => {
+                    target.classList.remove(inClass);
+                });
             }, 170);
         }, 140);
     };
@@ -1631,7 +1785,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${escapeHtml(course.type || '-')}</td>
                     <td>${statusBadge}</td>
                     <td>${gradeBadge}</td>
-                    <td>${escapeHtml(course.credits || '-')}</td>
+                    <td>${course.credits ? escapeHtml(course.credits) : '<span style="color:#8b949e;">-</span>'}</td>
                 </tr>`;
         }).join('');
 
@@ -1682,6 +1836,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         state.filteredCourses = sortCourses(filtered);
         if (state.currentCourseIndex >= state.filteredCourses.length) state.currentCourseIndex = state.filteredCourses.length - 1;
+        if (state.coursesModal?.style.display === 'flex') {
+            if (!state.filteredCourses.length || state.currentCourseIndex < 0) {
+                closeCoursesModal();
+            } else {
+                populateCoursesModal(state.currentCourseIndex);
+            }
+        }
         renderCoursesTable();
     };
 
@@ -1690,11 +1851,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (state.courseSortSelectContainer && state.controlsManager) {
             const sortOptions = [
+                { id: 'status', label: 'Status' },
                 { id: 'id', label: 'ID' },
                 { id: 'name', label: 'Name' },
                 { id: 'school', label: 'School' },
                 { id: 'type', label: 'Type' },
-                { id: 'status', label: 'Status' },
                 { id: 'grade', label: 'Grade' },
                 { id: 'credits', label: 'Credits Earned' }
             ];
@@ -1837,8 +1998,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (state.externalLinkModal && state.externalLinkModal.classList.contains('active')) {
                     if (e.key === 'Escape') closeExternalLinkModal(false);
                 } else if (state.coursesModal && state.coursesModal.style.display === 'flex') {
-                    if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
-                    if (e.key === 'ArrowRight') navigateCoursesModal(1);
+                    if (state.filteredCourses.length > 1) {
+                        if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
+                        if (e.key === 'ArrowRight') navigateCoursesModal(1);
+                    }
                     if (e.key === 'Escape') closeCoursesModal();
                 } else if (state.secModal && state.secModal.style.display === 'flex') {
                     if (state.currentToolsContext.length > 1) {
@@ -1978,6 +2141,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (state.currentRoute === '/courses') {
+                    const allCoursesCount = normalizeCourses(data.Courses || []).length;
+                    setStoredCount(state.skeletonKey, allCoursesCount);
                     renderCourses();
                 }
 
@@ -2199,7 +2364,67 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="skeleton-element" style="width: 260px; height: 34px; border-radius: 6px; margin-bottom: 10px;"></div>
                 <div class="skeleton-element" style="width: 420px; max-width: 90%; height: 14px; border-radius: 4px;"></div>
             </div>
-            <div class="skeleton-element" style="width: 100%; height: 420px; border-radius: 8px; margin-top: 16px;"></div>
+            ${(route === '/courses' || route === '/technical') ? `
+            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:24px; margin-bottom:18px;">
+                <div class="skeleton-element" style="flex:1 1 320px; min-width:240px; height: 36px; border-radius: 10px;"></div>
+                <div class="skeleton-element" style="width: 150px; height: 36px; border-radius: 10px;"></div>
+                <div class="skeleton-element" style="width: 164px; height: 36px; border-radius: 10px;"></div>
+                <div class="skeleton-element" style="width: 36px; height: 36px; border-radius: 10px;"></div>
+            </div>
+            <div class="courses-table-shell" style="margin-top:0;">
+                <table class="courses-table" style="min-width:820px;">
+                    <thead>
+                        <tr>
+                            <th><div class="skeleton-element" style="width:36px; height:12px; border-radius:999px;"></div></th>
+                            <th><div class="skeleton-element" style="width:76px; height:12px; border-radius:999px;"></div></th>
+                            <th><div class="skeleton-element" style="width:64px; height:12px; border-radius:999px;"></div></th>
+                            <th><div class="skeleton-element" style="width:52px; height:12px; border-radius:999px;"></div></th>
+                            <th><div class="skeleton-element" style="width:62px; height:12px; border-radius:999px;"></div></th>
+                            <th><div class="skeleton-element" style="width:54px; height:12px; border-radius:999px;"></div></th>
+                            <th><div class="skeleton-element" style="width:96px; height:12px; border-radius:999px;"></div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="skeleton-element" style="width:44px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:180px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:120px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:96px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:88px; height:18px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:70px; height:18px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:64px; height:14px; border-radius:999px;"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div class="skeleton-element" style="width:44px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:220px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:138px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:86px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:102px; height:18px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:76px; height:18px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:58px; height:14px; border-radius:999px;"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div class="skeleton-element" style="width:44px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:194px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:114px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:104px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:92px; height:18px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:68px; height:18px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:60px; height:14px; border-radius:999px;"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div class="skeleton-element" style="width:44px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:208px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:126px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:98px; height:14px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:96px; height:18px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:72px; height:18px; border-radius:999px;"></div></td>
+                            <td><div class="skeleton-element" style="width:62px; height:14px; border-radius:999px;"></div></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>` : `
+            <div class="skeleton-element" style="width: 100%; height: 420px; border-radius: 10px; margin-top: 16px;"></div>`}
         `;
     };
 

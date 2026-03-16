@@ -3,10 +3,19 @@ class ControlsManager {
         this.s = state;
     }
 
+    formatOptionLabel(value) {
+        const text = String(value || '').trim();
+        if (!text) return '';
+        if (text === 'ALL' || text === 'ALL TOOLS' || text === 'ALL CATEGORIES') {
+            return text.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+        }
+        return text.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+    }
+
     ensureDropdownBestVisibility(container) {
         if (!container || !container.classList.contains('open')) return;
 
-        requestAnimationFrame(() => {
+        const positionDropdown = (pass = 0) => {
             if (!container.classList.contains('open')) return;
 
             const dropdown = container.querySelector('.custom-select-dropdown, .multi-select-dropdown');
@@ -15,21 +24,53 @@ class ControlsManager {
 
             const viewportTop = 12;
             const viewportBottom = window.innerHeight - 12;
-            const minDropdownHeight = 120;
             const triggerRect = trigger.getBoundingClientRect();
-            const spaceBelow = Math.max(0, viewportBottom - triggerRect.bottom - 5);
-            const spaceAbove = Math.max(0, triggerRect.top - viewportTop - 5);
-            const openUpward = spaceAbove > spaceBelow && spaceAbove >= minDropdownHeight;
+            const gap = 5;
+            let spaceBelow = Math.max(0, viewportBottom - triggerRect.bottom - gap);
+            let spaceAbove = Math.max(0, triggerRect.top - viewportTop - gap);
 
-            dropdown.style.overflowY = 'auto';
-            dropdown.style.maxHeight = `${Math.max(minDropdownHeight, openUpward ? spaceAbove : spaceBelow)}px`;
+            const previousMaxHeight = dropdown.style.maxHeight;
+            const previousOverflowY = dropdown.style.overflowY;
+            dropdown.style.maxHeight = 'none';
+            dropdown.style.overflowY = 'hidden';
+            const naturalHeight = Math.ceil(dropdown.scrollHeight);
+
+            if (pass === 0 && naturalHeight > spaceBelow && triggerRect.top > viewportTop) {
+                const desiredTop = viewportTop + gap;
+                const scrollDelta = triggerRect.top - desiredTop;
+                if (scrollDelta > 0) {
+                    window.scrollBy({ top: scrollDelta, behavior: 'auto' });
+                    requestAnimationFrame(() => positionDropdown(1));
+                    return;
+                }
+            }
+
+            if (pass > 0) {
+                const refreshedTriggerRect = trigger.getBoundingClientRect();
+                spaceBelow = Math.max(0, viewportBottom - refreshedTriggerRect.bottom - gap);
+                spaceAbove = Math.max(0, refreshedTriggerRect.top - viewportTop - gap);
+            }
+
+            const fitsBelow = naturalHeight <= spaceBelow;
+            const fitsAbove = naturalHeight <= spaceAbove;
+            const openUpward = !fitsBelow && (fitsAbove || spaceAbove > spaceBelow);
+            const availableSpace = openUpward ? spaceAbove : spaceBelow;
+            const resolvedMaxHeight = Math.max(0, Math.min(naturalHeight, availableSpace));
+
             dropdown.style.top = openUpward ? 'auto' : '100%';
             dropdown.style.bottom = openUpward ? '100%' : 'auto';
             dropdown.style.marginTop = openUpward ? '0' : '5px';
             dropdown.style.marginBottom = openUpward ? '5px' : '0';
+            dropdown.style.maxHeight = resolvedMaxHeight > 0 ? `${resolvedMaxHeight}px` : previousMaxHeight;
+            dropdown.style.overflowY = naturalHeight > availableSpace ? 'auto' : 'hidden';
+
+            if (resolvedMaxHeight <= 0) {
+                dropdown.style.maxHeight = previousMaxHeight;
+                dropdown.style.overflowY = previousOverflowY;
+                return;
+            }
 
             const dropdownRect = dropdown.getBoundingClientRect();
-
             let delta = 0;
 
             if (dropdownRect.bottom > viewportBottom) {
@@ -40,10 +81,13 @@ class ControlsManager {
                 delta = triggerRect.top - viewportTop;
             }
 
-            if (delta !== 0) {
-                window.scrollBy({ top: delta, behavior: 'smooth' });
+            if (delta !== 0 && pass === 0) {
+                window.scrollBy({ top: delta, behavior: 'auto' });
+                requestAnimationFrame(() => positionDropdown(1));
             }
-        });
+        };
+
+        requestAnimationFrame(() => positionDropdown());
     }
 
     syncDropdownScrollLock() {
@@ -54,11 +98,11 @@ class ControlsManager {
 
     initControlSkeletons() {
         const s = this.s;
-        if (s.searchContainer) s.searchContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px;"></div>';
-        if (s.sortSelectContainer) s.sortSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px;"></div>';
-        if (s.orderSelectContainer) s.orderSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px;"></div>';
-        if (s.typeSelectContainer) s.typeSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px; width: 140px;"></div>';
-        if (s.toolSelectContainer) s.toolSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 34px; border-radius: 6px; width: 140px;"></div>';
+        if (s.searchContainer) s.searchContainer.innerHTML = '<div class="skeleton-element" style="height: 36px; border-radius: 10px;"></div>';
+        if (s.sortSelectContainer) s.sortSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 36px; width: 150px; border-radius: 10px;"></div>';
+        if (s.orderSelectContainer) s.orderSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 36px; width: 164px; border-radius: 10px;"></div>';
+        if (s.typeSelectContainer) s.typeSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 36px; width: 152px; border-radius: 10px;"></div>';
+        if (s.toolSelectContainer) s.toolSelectContainer.innerHTML = '<div class="skeleton-element" style="height: 36px; width: 152px; border-radius: 10px;"></div>';
     }
 
     renderStaticControls() {
@@ -149,7 +193,7 @@ class ControlsManager {
             trigger.textContent = 'None Selected';
         } else if (selectedValues.length === 1) {
             const found = options.find(o => o.id === selectedValues[0]);
-            trigger.textContent = found ? found.label : selectedValues[0];
+            trigger.textContent = found ? this.formatOptionLabel(found.label) : this.formatOptionLabel(selectedValues[0]);
         } else {
             trigger.textContent = `${selectedValues.length} Selected`;
         }
@@ -169,7 +213,8 @@ class ControlsManager {
             checkbox.checked = checked;
 
             const label = document.createElement('span');
-            label.textContent = opt.label;
+            label.className = 'multi-select-item-label';
+            label.textContent = this.formatOptionLabel(opt.label);
 
             item.appendChild(checkbox);
             item.appendChild(label);
@@ -178,22 +223,20 @@ class ControlsManager {
                 e.stopPropagation();
 
                 if (opt.id === 'all') {
-                    if (isAllMode) {
-                        selectedValues.length = 0;
-                    } else {
-                        selectedValues.length = 0;
-                        selectedValues.push('all');
-                    }
+                    selectedValues.length = 0;
+                    selectedValues.push('all');
                 } else {
                     if (isAllMode) {
                         selectedValues.length = 0;
-                        individualIds.forEach(id => { if (id !== opt.id) selectedValues.push(id); });
+                        selectedValues.push(opt.id);
                     } else if (selectedValues.includes(opt.id)) {
                         selectedValues.splice(selectedValues.indexOf(opt.id), 1);
                     } else {
                         selectedValues.push(opt.id);
                     }
-                    if (hasAllOption && individualIds.every(id => selectedValues.includes(id))) {
+                    if (selectedValues.length === 0) {
+                        selectedValues.push('all');
+                    } else if (hasAllOption && individualIds.every(id => selectedValues.includes(id))) {
                         selectedValues.length = 0;
                         selectedValues.push('all');
                     }
@@ -231,6 +274,10 @@ class ControlsManager {
 
     renderSingleSelect(container, options, initialValue, onChange) {
         if (!container) return;
+        if (container._rebuildTimer) {
+            clearTimeout(container._rebuildTimer);
+            delete container._rebuildTimer;
+        }
         const wasOpen = container.classList.contains('open');
         container.innerHTML = '';
         container.className = 'custom-select-container' + (wasOpen ? ' open' : '');
@@ -250,10 +297,18 @@ class ControlsManager {
             item.textContent = opt.label;
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
+                const selectedLabel = opt.label;
+                const selectedId = opt.id;
                 container.classList.remove('open');
                 this.syncDropdownScrollLock();
-                onChange(opt.id);
-                this.renderSingleSelect(container, options, opt.id, onChange);
+                onChange(selectedId);
+                const triggerEl = container.querySelector('.custom-select-trigger');
+                if (triggerEl) triggerEl.textContent = selectedLabel;
+                if (container._rebuildTimer) clearTimeout(container._rebuildTimer);
+                container._rebuildTimer = setTimeout(() => {
+                    delete container._rebuildTimer;
+                    this.renderSingleSelect(container, options, selectedId, onChange);
+                }, 260);
             });
             dropdown.appendChild(item);
         });
