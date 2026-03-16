@@ -9,13 +9,22 @@
             <label>Order:</label>
             <div id="order-select"></div>
         </div>
-        <div class="filter-group">
+        <div class="filter-group" id="type-filter-group">
             <label>CATEGORY:</label>
             <div id="type-select"></div>
         </div>
-        <div class="filter-group">
+        <div class="filter-group" id="tool-filter-group">
             <label>TOOLS:</label>
             <div id="tool-select"></div>
+        </div>
+        <div class="filter-group course-filter-group" id="portfolio-filter-group" style="display:none;">
+            <label>FILTER:</label>
+            <button id="portfolio-filter-button" class="filter-icon-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="portfolio-filter-menu" aria-label="Filter videos and games">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                    <path d="M3 6h18M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </button>
+            <div id="portfolio-filter-menu" class="column-filter-menu" role="menu" aria-label="Portfolio column filters"></div>
         </div>
     </div>
 </div>

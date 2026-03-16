@@ -231,7 +231,7 @@ class DataService {
     }
 
     async loadAllData() {
-        const sheets = ['videos', 'games', 'skills', 'Achievements', 'School'];
+        const sheets = ['videos', 'games', 'skills', 'Achievements', 'School', 'Courses'];
         const data = {};
         let allCached = true;
         try {
@@ -346,13 +346,6 @@ class DataService {
                     val = this.convertGoogleDriveUrl(val);
                 } else if (key === 'awards' && val && typeof val === 'string') {
                     val = this.parseAwards(val);
-                } else if (key === 'info' && typeof val === 'string') {
-                    val = val
-                        .replace(/\\r\\n/g, '\n')
-                        .replace(/\\n/g, '\n')
-                        .replace(/\\r/g, '\n')
-                        .replace(/\r\n/g, '\n')
-                        .replace(/\r/g, '\n');
                 }
                 item[key] = val;
             });

@@ -208,6 +208,9 @@ class ControlsManager {
 
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (typeof window.closeAllColumnFilterMenus === 'function') {
+                window.closeAllColumnFilterMenus();
+            }
             document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => {
                 if (c !== container) c.classList.remove('open');
             });
@@ -257,6 +260,9 @@ class ControlsManager {
 
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (typeof window.closeAllColumnFilterMenus === 'function') {
+                window.closeAllColumnFilterMenus();
+            }
             const isOpen = container.classList.contains('open');
             document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
             if (!isOpen) container.classList.add('open');

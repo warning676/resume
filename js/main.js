@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/activities': { fragment: 'html/pages/activities.html', title: 'ACTIVITIES' },
         '/achievements': { fragment: 'html/pages/achievements.html', title: 'ACHIEVEMENTS' },
         '/technical': { fragment: 'html/pages/technical.html', title: 'TECHNICAL' },
+        '/courses': { fragment: 'html/pages/courses.html', title: 'COURSES' },
         '/videos': { fragment: 'html/pages/videos.html', title: 'VIDEOS' },
         '/games': { fragment: 'html/pages/games.html', title: 'GAMES' }
     };
@@ -30,20 +31,52 @@ document.addEventListener('DOMContentLoaded', () => {
         skillsList: null,
         achievementsList: null,
         activitiesList: null,
+        coursesTableBody: null,
         portfolioGrid: null,
         noResults: null,
         toolSelectContainer: null,
         typeSelectContainer: null,
         sortSelectContainer: null,
         orderSelectContainer: null,
+        courseSortSelectContainer: null,
+        courseOrderSelectContainer: null,
         searchContainer: null,
         searchInput: null,
+        coursesSearchInput: null,
+        coursesFilterButton: null,
+        coursesFilterMenu: null,
+        skillsFilterButton: null,
+        skillsFilterMenu: null,
+        portfolioFilterGroup: null,
+        portfolioFilterButton: null,
+        portfolioFilterMenu: null,
+        coursesModal: null,
+        coursesModalClose: null,
+        coursesModalPrev: null,
+        coursesModalNext: null,
+        coursesModalTitle: null,
+        coursesModalId: null,
+        coursesModalSchool: null,
+        coursesModalType: null,
+        coursesModalStatus: null,
+        coursesModalGrade: null,
+        coursesModalCredits: null,
+        coursesModalName: null,
+        coursesModalInfo: null,
 
         selectedCategories: ['all'],
         selectedTools: ['all'],
         selectedSort: null,
         selectedOrder: 'desc',
+        selectedCourseSort: 'id',
+        selectedCourseOrder: 'asc',
         searchQuery: '',
+        courseSearchQuery: '',
+        selectedCourseColumnValues: {},
+        selectedSkillColumnValues: {},
+        selectedPortfolioColumnValues: {},
+        filteredCourses: [],
+        currentCourseIndex: -1,
         currentItemCard: null,
         currentGalleryIndex: 0,
         currentToolsContext: [],
@@ -73,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isSkillsPage: false,
         isAchievementsPage: false,
         isPortfolioPage: false,
+        isCoursesPage: false,
         routeToken: 0,
 
         didPrimeSkeletons: false,
@@ -102,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lower.endsWith('/html/videos.html') || lower.endsWith('/videos.html')) return '/videos';
         if (lower.endsWith('/html/games.html') || lower.endsWith('/games.html')) return '/games';
         if (lower.endsWith('/html/technical.html') || lower.endsWith('/technical.html')) return '/technical';
+        if (lower.endsWith('/html/courses.html') || lower.endsWith('/courses.html')) return '/courses';
         if (lower.endsWith('/html/activities.html') || lower.endsWith('/activities.html')) return '/activities';
         if (lower.endsWith('/html/achievements.html') || lower.endsWith('/achievements.html')) return '/achievements';
         if (lower.endsWith('/index.html')) return '/';
@@ -200,12 +235,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const resolver = state.externalLinkResolve;
         state.externalLinkResolve = null;
+        const contentEl = state.externalLinkModal.querySelector('.external-link-modal-content');
         state.externalLinkModal.style.transition = 'opacity 160ms ease';
         state.externalLinkModal.style.opacity = '0';
+        if (contentEl) {
+            contentEl.style.transition = 'transform 160ms ease';
+            contentEl.style.transform = 'translateY(8px)';
+        }
         state.externalLinkModal._fadeTimer = setTimeout(() => {
             state.externalLinkModal.classList.remove('active');
             state.externalLinkModal.style.display = 'none';
             state.externalLinkModal.style.opacity = '';
+            if (contentEl) contentEl.style.transform = '';
             state.externalLinkModal._fadeTimer = null;
             syncExternalLinkModalScrollLock(false);
             if (resolver) resolver(!!confirmed);
@@ -255,8 +296,14 @@ document.addEventListener('DOMContentLoaded', () => {
         state.externalLinkModal.classList.add('active');
         state.externalLinkModal.style.transition = 'opacity 160ms ease';
         state.externalLinkModal.style.opacity = '0';
+        const contentEl = state.externalLinkModal.querySelector('.external-link-modal-content');
+        if (contentEl) {
+            contentEl.style.transition = 'transform 160ms ease';
+            contentEl.style.transform = 'translateY(8px)';
+        }
         requestAnimationFrame(() => {
             state.externalLinkModal.style.opacity = '1';
+            if (contentEl) contentEl.style.transform = 'translateY(0)';
         });
         syncExternalLinkModalScrollLock(true);
 
@@ -330,7 +377,15 @@ document.addEventListener('DOMContentLoaded', () => {
         state.selectedCategories = ['all'];
         state.selectedTools = ['all'];
         state.selectedOrder = 'desc';
+        state.selectedCourseSort = 'id';
+        state.selectedCourseOrder = 'asc';
+        state.selectedCourseColumnValues = {};
+        state.selectedSkillColumnValues = {};
+        state.selectedPortfolioColumnValues = {};
+        state.filteredCourses = [];
+        state.currentCourseIndex = -1;
         state.searchQuery = '';
+        state.courseSearchQuery = '';
         state.currentItemCard = null;
         state.currentGalleryIndex = 0;
         state.currentToolsContext = [];
@@ -362,14 +417,38 @@ document.addEventListener('DOMContentLoaded', () => {
         state.skillsList = document.getElementById('skills-list');
         state.achievementsList = document.getElementById('achievements-list');
         state.activitiesList = document.getElementById('activities-list');
+        state.coursesTableBody = document.getElementById('courses-table-body');
         state.portfolioGrid = document.getElementById("portfolio-grid");
         state.noResults = document.getElementById("no-results");
         state.toolSelectContainer = document.getElementById('tool-select');
         state.typeSelectContainer = document.getElementById('type-select');
         state.sortSelectContainer = document.getElementById('sort-select');
         state.orderSelectContainer = document.getElementById('order-select');
+        state.courseSortSelectContainer = document.getElementById('course-sort-select');
+        state.courseOrderSelectContainer = document.getElementById('course-order-select');
         state.searchContainer = document.querySelector('.search-box');
         state.searchInput = document.getElementById("portfolio-search");
+        state.coursesSearchInput = document.getElementById('courses-search-input');
+        state.coursesFilterButton = document.getElementById('courses-filter-button');
+        state.coursesFilterMenu = document.getElementById('courses-filter-menu');
+        state.skillsFilterButton = document.getElementById('skills-filter-button');
+        state.skillsFilterMenu = document.getElementById('skills-filter-menu');
+        state.portfolioFilterGroup = document.getElementById('portfolio-filter-group');
+        state.portfolioFilterButton = document.getElementById('portfolio-filter-button');
+        state.portfolioFilterMenu = document.getElementById('portfolio-filter-menu');
+        state.coursesModal = document.getElementById('courses-modal');
+        state.coursesModalClose = document.getElementById('courses-modal-close');
+        state.coursesModalPrev = document.getElementById('courses-modal-prev');
+        state.coursesModalNext = document.getElementById('courses-modal-next');
+        state.coursesModalTitle = document.getElementById('courses-modal-title');
+        state.coursesModalId = document.getElementById('courses-modal-id');
+        state.coursesModalSchool = document.getElementById('courses-modal-school');
+        state.coursesModalType = document.getElementById('courses-modal-type');
+        state.coursesModalStatus = document.getElementById('courses-modal-status');
+        state.coursesModalGrade = document.getElementById('courses-modal-grade');
+        state.coursesModalCredits = document.getElementById('courses-modal-credits');
+        state.coursesModalName = document.getElementById('courses-modal-name');
+        state.coursesModalInfo = document.getElementById('courses-modal-info');
     };
 
     const getSkeletonKey = () => {
@@ -1118,6 +1197,595 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const escapeHtml = (value) => String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const toText = (value) => (value ?? '').toString().trim();
+
+    const syncCoursesModalScrollLock = (locked) => {
+        const body = document.body;
+        const html = document.documentElement;
+        if (!body || !html) return;
+
+        if (locked) {
+            body.style.overflow = 'hidden';
+            html.style.overflow = 'hidden';
+            return;
+        }
+
+        const searchModal = document.getElementById('global-search-modal');
+        const searchModalOpen = !!(searchModal && searchModal.classList.contains('active'));
+        const mainModalOpen = !!(state.modal && state.modal.style.display === 'flex');
+        const secModalOpen = !!(state.secModal && state.secModal.style.display === 'flex');
+        const coursesModalOpen = !!(state.coursesModal && state.coursesModal.style.display === 'flex');
+        const hasOpenDropdown = !!document.querySelector('.custom-select-container.open, .multi-select-container.open, .column-filter-menu.open');
+        if (searchModalOpen || mainModalOpen || secModalOpen || coursesModalOpen || hasOpenDropdown) return;
+
+        body.style.overflow = '';
+        html.style.overflow = '';
+    };
+
+    const closeAllColumnFilterMenus = () => {
+        document.querySelectorAll('.column-filter-menu.open').forEach(menu => {
+            menu.classList.remove('open');
+        });
+        document.querySelectorAll('.column-filter-item.active').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelectorAll('.filter-icon-button[aria-expanded="true"]').forEach(button => {
+            button.setAttribute('aria-expanded', 'false');
+        });
+        syncCoursesModalScrollLock(false);
+    };
+
+    window.closeAllColumnFilterMenus = closeAllColumnFilterMenus;
+
+    const NONE_FILTER_VALUE = '__NONE__';
+
+    const renderColumnFilterMenu = (button, menu, definitions, selectedMap, onChange, activeKey) => {
+        if (!button || !menu) return;
+
+        const selected = selectedMap || {};
+        const usableDefinitions = (definitions || []).map(definition => {
+            const rawValues = (definition.values || []).map(value => toText(value));
+            const hasMissing = rawValues.some(value => !value);
+            const normalizedValues = Array.from(new Set(rawValues.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+            const values = hasMissing ? [NONE_FILTER_VALUE, ...normalizedValues] : normalizedValues;
+            return { ...definition, values };
+        }).filter(definition => definition.values.length > 0);
+
+        menu.innerHTML = '';
+
+        const activateDefinition = (definitionKey) => {
+            menu.querySelectorAll('.column-filter-item').forEach(node => {
+                if (node.dataset.filterKey === definitionKey) node.classList.add('active');
+                else node.classList.remove('active');
+            });
+        };
+
+        usableDefinitions.forEach(definition => {
+            const item = document.createElement('div');
+            item.className = 'column-filter-item';
+            item.dataset.filterKey = definition.key;
+            if (activeKey && definition.key === activeKey) item.classList.add('active');
+
+            const label = document.createElement('button');
+            label.type = 'button';
+            label.className = 'column-filter-column-label';
+            label.textContent = definition.label;
+            item.appendChild(label);
+
+            const subMenu = document.createElement('div');
+            subMenu.className = 'column-filter-submenu';
+
+            const keySelected = selected[definition.key];
+            const isAllMode = keySelected === undefined || (Array.isArray(keySelected) && keySelected.includes('all'));
+            const individualValues = definition.values;
+
+            const allRow = document.createElement('label');
+            allRow.className = 'column-filter-value-row';
+            const allCheckbox = document.createElement('input');
+            allCheckbox.type = 'checkbox';
+            allCheckbox.checked = isAllMode;
+            const allText = document.createElement('span');
+            allText.textContent = 'All';
+            allRow.appendChild(allCheckbox);
+            allRow.appendChild(allText);
+            allRow.addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                allCheckbox.checked = !allCheckbox.checked;
+                if (isAllMode) {
+                    selected[definition.key] = [];
+                } else {
+                    selected[definition.key] = ['all'];
+                }
+                onChange();
+                renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key);
+            });
+            subMenu.appendChild(allRow);
+
+            individualValues.forEach(value => {
+                const row = document.createElement('label');
+                row.className = 'column-filter-value-row';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = isAllMode || (Array.isArray(keySelected) && keySelected.includes(value));
+
+                const text = document.createElement('span');
+                text.textContent = value === NONE_FILTER_VALUE ? 'None' : value;
+
+                row.appendChild(checkbox);
+                row.appendChild(text);
+
+                row.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    checkbox.checked = !checkbox.checked;
+                    let currentValues;
+                    if (isAllMode) {
+                        currentValues = individualValues.filter(v => v !== value);
+                    } else {
+                        currentValues = Array.from(Array.isArray(keySelected) ? keySelected : []);
+                        const idx = currentValues.indexOf(value);
+                        if (idx >= 0) currentValues.splice(idx, 1);
+                        else currentValues.push(value);
+                    }
+                    if (currentValues.length === 0) {
+                        selected[definition.key] = [];
+                    } else if (currentValues.length === individualValues.length) {
+                        selected[definition.key] = ['all'];
+                    } else {
+                        selected[definition.key] = currentValues;
+                    }
+                    onChange();
+                    renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key);
+                });
+
+                subMenu.appendChild(row);
+            });
+
+            item.appendChild(subMenu);
+            item.addEventListener('click', () => {
+                activateDefinition(definition.key);
+            });
+            item.addEventListener('mouseenter', () => {
+                activateDefinition(definition.key);
+            });
+            item.addEventListener('focusin', () => {
+                activateDefinition(definition.key);
+            });
+            menu.appendChild(item);
+        });
+
+        const closeMenu = () => {
+            menu.classList.remove('open');
+            menu.querySelectorAll('.column-filter-item').forEach(node => node.classList.remove('active'));
+            button.setAttribute('aria-expanded', 'false');
+            syncCoursesModalScrollLock(false);
+            syncDropdownScrollLock();
+        };
+
+        if (!menu.dataset.boundColumnFilterMenu) {
+            menu.dataset.boundColumnFilterMenu = 'true';
+            menu.dataset.submenuHovered = 'false';
+            menu.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
+            menu.addEventListener('mouseover', (event) => {
+                if (event.target && event.target.closest('.column-filter-submenu')) {
+                    menu.dataset.submenuHovered = 'true';
+                }
+            });
+            menu.addEventListener('mouseleave', () => {
+                if (menu.dataset.submenuHovered === 'true') closeMenu();
+            });
+        }
+
+        if (!button.dataset.boundColumnFilter) {
+            button.dataset.boundColumnFilter = 'true';
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const isOpen = menu.classList.contains('open');
+                document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(container => {
+                    container.classList.remove('open');
+                });
+                closeAllColumnFilterMenus();
+                syncDropdownScrollLock();
+                if (isOpen || usableDefinitions.length === 0) return;
+                menu.classList.add('open');
+                menu.dataset.submenuHovered = 'false';
+                button.setAttribute('aria-expanded', 'true');
+                syncCoursesModalScrollLock(true);
+                syncDropdownScrollLock();
+            });
+        }
+    };
+
+    const renderSkillColumnFilter = () => {
+        if (!state.isSkillsPage || !state.skillsFilterButton || !state.skillsFilterMenu) return;
+        const skills = Array.isArray(state.allData?.skills) ? state.allData.skills : [];
+        const definitions = [
+            {
+                key: 'type',
+                label: 'Category',
+                values: skills.map(skill => toText(skill.badge))
+            },
+            {
+                key: 'level',
+                label: 'Proficiency',
+                values: skills.map(skill => toText(skill.level))
+            }
+        ];
+
+        renderColumnFilterMenu(
+            state.skillsFilterButton,
+            state.skillsFilterMenu,
+            definitions,
+            state.selectedSkillColumnValues,
+            () => state.filterSkills && state.filterSkills()
+        );
+    };
+
+    const renderPortfolioColumnFilter = (projects) => {
+        if (!state.isPortfolioPage || !state.portfolioFilterButton || !state.portfolioFilterMenu) return;
+        if (!(state.currentRoute === '/videos' || state.currentRoute === '/games')) return;
+
+        const list = Array.isArray(projects) ? projects : [];
+        const definitions = [
+            {
+                key: 'type',
+                label: 'Category',
+                values: list.map(project => toText(project.badge))
+            },
+            {
+                key: 'tools',
+                label: 'Tools',
+                values: list.flatMap(project => {
+                    const rawTools = toText(project.tools);
+                    if (!rawTools) return [''];
+                    return rawTools.split(',').map(value => toText(value));
+                })
+            }
+        ];
+
+        if (!('type' in state.selectedPortfolioColumnValues)) state.selectedPortfolioColumnValues.type = ['all'];
+        if (!('tools' in state.selectedPortfolioColumnValues)) state.selectedPortfolioColumnValues.tools = ['all'];
+
+        renderColumnFilterMenu(
+            state.portfolioFilterButton,
+            state.portfolioFilterMenu,
+            definitions,
+            state.selectedPortfolioColumnValues,
+            () => {
+                const selectedByColumn = state.selectedPortfolioColumnValues || {};
+                state.selectedCategories = Array.isArray(selectedByColumn.type) ? [...selectedByColumn.type] : ['all'];
+                state.selectedTools = Array.isArray(selectedByColumn.tools) ? [...selectedByColumn.tools] : ['all'];
+                if (!('type' in selectedByColumn)) state.selectedCategories = ['all'];
+                if (!('tools' in selectedByColumn)) state.selectedTools = ['all'];
+                if (state.filterCards) state.filterCards();
+            }
+        );
+    };
+
+    const normalizeCourses = (rows) => {
+        return (Array.isArray(rows) ? rows : []).map(row => {
+            const id = toText(row.id || row.courseid);
+            const name = toText(row.name);
+            const school = toText(row.school);
+            const type = toText(row.type);
+            const info = toText(row.info);
+            const status = toText(row.status);
+            const grade = toText(row.grade);
+            const credits = toText(row.creditsearned || row.credits || row.creditsEarned);
+            return { id, name, school, type, info, status, grade, credits };
+        }).filter(course => course.id || course.name || course.school || course.type || course.status || course.grade || course.credits || course.info);
+    };
+
+    const sortCourses = (courses) => {
+        const sortKey = state.selectedCourseSort || 'id';
+        const sortOrder = state.selectedCourseOrder || 'asc';
+        const sorted = [...courses];
+
+        const valueFor = (course, key) => {
+            if (key === 'credits') {
+                const numeric = Number.parseFloat(course.credits);
+                return Number.isFinite(numeric) ? numeric : Number.NEGATIVE_INFINITY;
+            }
+            return toText(course[key]).toLowerCase();
+        };
+
+        sorted.sort((a, b) => {
+            const aValue = valueFor(a, sortKey);
+            const bValue = valueFor(b, sortKey);
+            if (aValue === bValue) return (a.name || '').localeCompare(b.name || '');
+            if (sortOrder === 'desc') return aValue > bValue ? -1 : 1;
+            return aValue < bValue ? -1 : 1;
+        });
+
+        return sorted;
+    };
+
+    const getVisibleCourseIndexes = () => {
+        return state.filteredCourses.map((_, index) => index);
+    };
+
+    const getCourseStatusBadgeClass = (status) => {
+        const value = toText(status).toLowerCase();
+        if (value === 'completed') return 'proficiency-beginner';
+        if (value === 'in progress') return 'proficiency-intermediate';
+        if (value === 'upcoming') return 'proficiency-advanced';
+        return 'proficiency-unknown';
+    };
+
+    const getCourseGradeBadgeClass = (grade) => {
+        const value = toText(grade).toUpperCase();
+        if (!value) return 'proficiency-unknown';
+        if (value.startsWith('A') || value === 'P' || value === 'CR') return 'proficiency-beginner';
+        if (value.startsWith('B') || value.startsWith('C') || value === 'IP') return 'proficiency-intermediate';
+        return 'proficiency-advanced';
+    };
+
+    const buildCourseBadge = (value, badgeClass) => {
+        const label = toText(value) || '-';
+        if (label === '-') return `<span style="color:#8b949e;">-</span>`;
+        return `<span class="proficiency-badge ${badgeClass}">${escapeHtml(label)}</span>`;
+    };
+
+    const populateCoursesModal = (index) => {
+        if (!state.filteredCourses.length || index < 0 || index >= state.filteredCourses.length) return;
+        state.currentCourseIndex = index;
+        const course = state.filteredCourses[index];
+
+        if (state.coursesModalTitle) state.coursesModalTitle.textContent = course.name || 'Course Details';
+        if (state.coursesModalId) state.coursesModalId.textContent = course.id || '-';
+        if (state.coursesModalSchool) state.coursesModalSchool.textContent = course.school || '-';
+        if (state.coursesModalType) state.coursesModalType.textContent = course.type || '-';
+        if (state.coursesModalStatus) state.coursesModalStatus.innerHTML = buildCourseBadge(course.status || '-', getCourseStatusBadgeClass(course.status));
+        if (state.coursesModalGrade) state.coursesModalGrade.innerHTML = buildCourseBadge(course.grade || '-', getCourseGradeBadgeClass(course.grade));
+        if (state.coursesModalCredits) state.coursesModalCredits.textContent = course.credits || '-';
+        if (state.coursesModalInfo) state.coursesModalInfo.textContent = course.info || 'No course information available.';
+    };
+
+    const openCoursesModal = (index) => {
+        if (!state.coursesModal || !state.filteredCourses.length) return;
+        if (index < 0 || index >= state.filteredCourses.length) return;
+
+        populateCoursesModal(index);
+
+        if (state.coursesModal._closeTimer) {
+            clearTimeout(state.coursesModal._closeTimer);
+            state.coursesModal._closeTimer = null;
+        }
+
+        state.coursesModal.style.display = 'flex';
+        state.coursesModal.setAttribute('aria-hidden', 'false');
+        requestAnimationFrame(() => {
+            if (state.coursesModal) state.coursesModal.classList.add('open');
+        });
+        syncCoursesModalScrollLock(true);
+    };
+
+    const closeCoursesModal = () => {
+        if (!state.coursesModal) return;
+        state.coursesModal.classList.remove('open');
+        state.coursesModal.setAttribute('aria-hidden', 'true');
+        if (state.coursesModal._closeTimer) clearTimeout(state.coursesModal._closeTimer);
+        state.coursesModal._closeTimer = setTimeout(() => {
+            if (state.coursesModal) state.coursesModal.style.display = 'none';
+            syncCoursesModalScrollLock(false);
+        }, 190);
+    };
+
+    const navigateCoursesModal = (delta) => {
+        const visibleIndexes = getVisibleCourseIndexes();
+        if (!visibleIndexes.length || state.currentCourseIndex < 0) return;
+        const nextIndex = (state.currentCourseIndex + delta + visibleIndexes.length) % visibleIndexes.length;
+        const body = state.coursesModal?.querySelector('.courses-modal-body');
+
+        if (!body) {
+            openCoursesModal(nextIndex);
+            return;
+        }
+
+        const outClass = delta > 0 ? 'courses-swap-out-next' : 'courses-swap-out-prev';
+        const inClass = delta > 0 ? 'courses-swap-in-next' : 'courses-swap-in-prev';
+
+        body.classList.remove('courses-swap-out-next', 'courses-swap-out-prev', 'courses-swap-in-next', 'courses-swap-in-prev');
+        body.classList.add(outClass);
+
+        setTimeout(() => {
+            populateCoursesModal(nextIndex);
+            body.classList.remove(outClass);
+            body.classList.add(inClass);
+            setTimeout(() => {
+                body.classList.remove(inClass);
+            }, 170);
+        }, 140);
+    };
+
+    const renderCoursesTable = () => {
+        if (!state.coursesTableBody) return;
+        const courses = state.filteredCourses;
+
+        if (!courses.length) {
+            state.coursesTableBody.innerHTML = '<tr><td colspan="7" class="courses-loading-row">No matching courses found.</td></tr>';
+            const statusEl = document.getElementById('courses-search-status');
+            if (statusEl) { statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
+            return;
+        }
+
+        state.coursesTableBody.innerHTML = courses.map((course, index) => {
+            const statusBadge = buildCourseBadge(course.status || '-', getCourseStatusBadgeClass(course.status));
+            const gradeBadge = buildCourseBadge(course.grade || '-', getCourseGradeBadgeClass(course.grade));
+            return `
+                <tr class="course-row" data-course-index="${index}">
+                    <td>${escapeHtml(course.id || '-')}</td>
+                    <td title="${escapeHtml(course.name || '')}">${escapeHtml(course.name || '-')}</td>
+                    <td>${escapeHtml(course.school || '-')}</td>
+                    <td>${escapeHtml(course.type || '-')}</td>
+                    <td>${statusBadge}</td>
+                    <td>${gradeBadge}</td>
+                    <td>${escapeHtml(course.credits || '-')}</td>
+                </tr>`;
+        }).join('');
+
+        state.coursesTableBody.querySelectorAll('.course-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const index = Number.parseInt(row.getAttribute('data-course-index') || '-1', 10);
+                if (Number.isFinite(index) && index >= 0) openCoursesModal(index);
+            });
+        });
+
+        const statusEl = document.getElementById('courses-search-status');
+        if (statusEl) {
+            const rawQuery = state.courseSearchQuery ? state.courseSearchQuery.trim() : '';
+            if (rawQuery) {
+                const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = `Showing ${courses.length} ${courses.length === 1 ? 'result' : 'results'} for "<span style="color:#58a6ff;">${safe}</span>"`;
+            } else {
+                statusEl.style.display = 'none';
+                statusEl.innerHTML = '';
+            }
+        }
+    };
+
+    const applyCoursesFilterAndSort = () => {
+        const courses = normalizeCourses(state.allData?.Courses || []);
+        const selectedByColumn = state.selectedCourseColumnValues || {};
+        const query = toText(state.courseSearchQuery).toLowerCase();
+
+        const filtered = courses.filter(course => {
+            const matchesColumn = (key, courseValue) => {
+                const values = selectedByColumn[key];
+                if (values === undefined) return true;
+                if (Array.isArray(values) && values.includes('all')) return true;
+                if (!Array.isArray(values) || values.length === 0) return false;
+                const normalizedValue = toText(courseValue) || NONE_FILTER_VALUE;
+                return values.includes(normalizedValue);
+            };
+            if (!matchesColumn('school', course.school)) return false;
+            if (!matchesColumn('type', course.type)) return false;
+            if (!matchesColumn('status', course.status)) return false;
+            if (!matchesColumn('grade', course.grade)) return false;
+
+            if (!query) return true;
+            const searchBlob = `${course.id} ${course.name} ${course.school} ${course.type} ${course.info} ${course.status} ${course.grade} ${course.credits}`.toLowerCase();
+            return searchBlob.includes(query);
+        });
+
+        state.filteredCourses = sortCourses(filtered);
+        if (state.currentCourseIndex >= state.filteredCourses.length) state.currentCourseIndex = state.filteredCourses.length - 1;
+        renderCoursesTable();
+    };
+
+    const setupCoursesControls = () => {
+        if (!state.isCoursesPage) return;
+
+        if (state.courseSortSelectContainer && state.controlsManager) {
+            const sortOptions = [
+                { id: 'id', label: 'ID' },
+                { id: 'name', label: 'Name' },
+                { id: 'school', label: 'School' },
+                { id: 'type', label: 'Type' },
+                { id: 'status', label: 'Status' },
+                { id: 'grade', label: 'Grade' },
+                { id: 'credits', label: 'Credits Earned' }
+            ];
+            state.controlsManager.renderSingleSelect(state.courseSortSelectContainer, sortOptions, state.selectedCourseSort, (value) => {
+                state.selectedCourseSort = value;
+                applyCoursesFilterAndSort();
+            });
+        }
+
+        if (state.courseOrderSelectContainer && state.controlsManager) {
+            const orderOptions = [
+                { id: 'asc', label: 'Ascending' },
+                { id: 'desc', label: 'Descending' }
+            ];
+            state.controlsManager.renderSingleSelect(state.courseOrderSelectContainer, orderOptions, state.selectedCourseOrder, (value) => {
+                state.selectedCourseOrder = value;
+                applyCoursesFilterAndSort();
+            });
+        }
+
+        if (state.coursesSearchInput && !state.coursesSearchInput.dataset.boundCoursesSearch) {
+            state.coursesSearchInput.dataset.boundCoursesSearch = 'true';
+            state.coursesSearchInput.addEventListener('input', () => {
+                state.courseSearchQuery = state.coursesSearchInput.value || '';
+                applyCoursesFilterAndSort();
+            });
+            state.coursesSearchInput.value = state.courseSearchQuery || '';
+        }
+
+        if (state.coursesFilterButton && state.coursesFilterMenu) {
+            const courses = normalizeCourses(state.allData?.Courses || []);
+            const definitions = [
+                {
+                    key: 'school',
+                    label: 'School',
+                    values: courses.map(course => course.school)
+                },
+                {
+                    key: 'type',
+                    label: 'Type',
+                    values: courses.map(course => course.type)
+                },
+                {
+                    key: 'status',
+                    label: 'Status',
+                    values: courses.map(course => course.status)
+                },
+                {
+                    key: 'grade',
+                    label: 'Grade',
+                    values: courses.map(course => course.grade)
+                }
+            ];
+
+            renderColumnFilterMenu(
+                state.coursesFilterButton,
+                state.coursesFilterMenu,
+                definitions,
+                state.selectedCourseColumnValues,
+                applyCoursesFilterAndSort
+            );
+        }
+
+        if (!state.coursesModalClose?.dataset.boundCoursesModal) {
+            if (state.coursesModalClose) {
+                state.coursesModalClose.dataset.boundCoursesModal = 'true';
+                state.coursesModalClose.addEventListener('click', closeCoursesModal);
+            }
+            if (state.coursesModalPrev) {
+                state.coursesModalPrev.dataset.boundCoursesModal = 'true';
+                state.coursesModalPrev.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    navigateCoursesModal(-1);
+                });
+            }
+            if (state.coursesModalNext) {
+                state.coursesModalNext.dataset.boundCoursesModal = 'true';
+                state.coursesModalNext.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    navigateCoursesModal(1);
+                });
+            }
+        }
+    };
+
+    const renderCourses = () => {
+        if (!state.isCoursesPage || !state.coursesTableBody) return;
+        setupCoursesControls();
+        applyCoursesFilterAndSort();
+    };
+
     const bindModalButtons = () => {
         if (state.closeBtn) state.closeBtn.onclick = () => state.modalManager?.resetModal();
         if (state.secCloseBtn) state.secCloseBtn.onclick = () => state.modalManager?.resetSecModal();
@@ -1147,7 +1815,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const syncDropdownScrollLock = () => {
-        const hasOpenDropdown = !!document.querySelector('.custom-select-container.open, .multi-select-container.open');
+        const hasOpenDropdown = !!document.querySelector('.custom-select-container.open, .multi-select-container.open, .column-filter-menu.open');
         if (hasOpenDropdown) {
             document.body.classList.add('dropdown-scroll-lock');
             document.documentElement.classList.add('dropdown-scroll-lock');
@@ -1168,6 +1836,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.addEventListener('keydown', (e) => {
                 if (state.externalLinkModal && state.externalLinkModal.classList.contains('active')) {
                     if (e.key === 'Escape') closeExternalLinkModal(false);
+                } else if (state.coursesModal && state.coursesModal.style.display === 'flex') {
+                    if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
+                    if (e.key === 'ArrowRight') navigateCoursesModal(1);
+                    if (e.key === 'Escape') closeCoursesModal();
                 } else if (state.secModal && state.secModal.style.display === 'flex') {
                     if (state.currentToolsContext.length > 1) {
                         if (e.key === 'ArrowLeft') state.modalManager?.navigateTool(-1);
@@ -1184,7 +1856,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             document.addEventListener('click', (e) => {
-                document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
+                const clickedSelect = !!e.target.closest('.custom-select-container, .multi-select-container');
+                const clickedColumnFilter = !!e.target.closest('.column-filter-menu, .filter-icon-button');
+                if (!clickedSelect) {
+                    document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
+                }
+                if (!clickedColumnFilter) {
+                    closeAllColumnFilterMenus();
+                }
                 syncDropdownScrollLock();
 
                 const link = e.target.closest('a[data-route]');
@@ -1210,6 +1889,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.modalManager?.resetModal();
                 } else if (event.target === state.secModal && modalMousedownTarget === state.secModal) {
                     state.modalManager?.resetSecModal();
+                } else if (event.target === state.coursesModal && modalMousedownTarget === state.coursesModal) {
+                    closeCoursesModal();
                 } else if (event.target === state.externalLinkModal && modalMousedownTarget === state.externalLinkModal) {
                     closeExternalLinkModal(false);
                 }
@@ -1232,6 +1913,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!state.allData.skills) sheetsNeeded.push('skills');
         }
         if (route === '/technical' && !state.allData.skills) sheetsNeeded.push('skills');
+        if (route === '/courses' && !state.allData.Courses) sheetsNeeded.push('Courses');
         if ((route === '/' || route === '/bio') && !state.allData.School) sheetsNeeded.push('School');
         if (route === '/achievements') {
             if (!state.allData.videos) sheetsNeeded.push('videos');
@@ -1295,6 +1977,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderActivities();
                 }
 
+                if (state.currentRoute === '/courses') {
+                    renderCourses();
+                }
+
                 if (state.portfolioGrid) {
                     const pageType = state.currentRoute === '/games' ? 'games' : 'videos';
                     const projectData = data[pageType] || [];
@@ -1317,6 +2003,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (state.routeToken !== token) return;
                             try {
                                 state.renderer.renderProjects(projectData);
+                                renderPortfolioColumnFilter(projectData);
                             } catch (e) {
                                 if (state.portfolioGrid) {
                                     state.portfolioGrid.innerHTML = '<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">Unable to display projects. Please refresh the page.</p>';
@@ -1344,6 +2031,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }).then(() => {
                         if (state.routeToken !== token) return;
                         state.renderer.renderSkills(skillData);
+                        renderSkillColumnFilter();
                     });
                 }
             })
@@ -1358,7 +2046,13 @@ document.addEventListener('DOMContentLoaded', () => {
         state.isSkillsPage = !!state.skillsList;
         state.isAchievementsPage = route === '/achievements';
         state.isPortfolioPage = !!state.portfolioGrid;
-        state.selectedSort = state.isSkillsPage ? 'lastUsed' : 'date';
+        state.isCoursesPage = route === '/courses';
+        const isGamesOrVideosPage = route === '/videos' || route === '/games';
+        if (state.portfolioFilterGroup) state.portfolioFilterGroup.style.display = isGamesOrVideosPage ? 'flex' : 'none';
+        if (state.typeSelectContainer && state.typeSelectContainer.parentElement) state.typeSelectContainer.parentElement.style.display = isGamesOrVideosPage ? 'none' : 'flex';
+        if (state.toolSelectContainer && state.toolSelectContainer.parentElement) state.toolSelectContainer.parentElement.style.display = isGamesOrVideosPage ? 'none' : 'flex';
+        if (state.isSkillsPage) state.selectedSort = 'lastUsed';
+        else if (state.isPortfolioPage) state.selectedSort = 'date';
 
         state.modalManager = new ModalManager(state);
         state.filterManager = new FilterManager(state);
@@ -1374,8 +2068,10 @@ document.addEventListener('DOMContentLoaded', () => {
         state.updateToolFilter = (tools) => state.controlsManager.updateToolFilter(tools);
         state.runFiltering = () => state.filterManager.runFiltering();
 
-        state.controlsManager.initControlSkeletons();
-        state.controlsManager.renderStaticControls();
+        if (state.isSkillsPage || state.isPortfolioPage) {
+            state.controlsManager.initControlSkeletons();
+            state.controlsManager.renderStaticControls();
+        }
         primeSkeletons();
         bindModalButtons();
 

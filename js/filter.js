@@ -99,9 +99,12 @@ class FilterManager {
             const cardTools = (card.getAttribute('data-tools') || '').toLowerCase();
             const toolsList = cardTools.split(',').map(t => t.trim());
             const cardAwards = (card.getAttribute('data-awards') || '').toLowerCase();
+            const normalizedCardType = cardType || '__NONE__';
+            const normalizedSelectedTools = s.selectedTools.map(st => st.toLowerCase());
+            const hasNoTools = toolsList.filter(Boolean).length === 0;
 
-            const matchesType = s.selectedCategories.includes('all') || s.selectedCategories.includes(cardType);
-            const matchesTool = s.selectedTools.includes('all') || toolsList.some(t => s.selectedTools.map(st => st.toLowerCase()).includes(t));
+            const matchesType = s.selectedCategories.includes('all') || s.selectedCategories.includes(cardType) || s.selectedCategories.includes(normalizedCardType);
+            const matchesTool = s.selectedTools.includes('all') || toolsList.some(t => normalizedSelectedTools.includes(t)) || (hasNoTools && normalizedSelectedTools.includes('__none__'));
 
             const contentRaw = (card.innerText || '') + ' ' + cardTools + ' ' + (card.getAttribute('data-info') || '') + ' ' + cardAwards;
             const content = this.normalizeText(contentRaw);
@@ -162,14 +165,35 @@ class FilterManager {
                 matchesQuery = termsToCheck.every(term => this.fuzzyTermMatch(textTokens, term));
             }
             const matchesType = s.selectedCategories.includes('all') || s.selectedCategories.includes(item.dataset.type);
-            if (matchesQuery && matchesType) {
+            const selectedByColumn = s.selectedSkillColumnValues || {};
+            const itemType = (item.dataset.type || '').trim();
+            const itemLevel = (item.querySelector('.level')?.innerText || '').trim();
+            const normalizedType = itemType ? itemType.toLowerCase() : '__none__';
+            const normalizedLevel = itemLevel ? itemLevel.toLowerCase() : '__none__';
+            const normalizedTypeSelections = (selectedByColumn.type || []).map(value => String(value).toLowerCase());
+            const normalizedLevelSelections = (selectedByColumn.level || []).map(value => String(value).toLowerCase());
+            const matchesColumnType = !('type' in selectedByColumn) || normalizedTypeSelections.includes('all') || normalizedTypeSelections.includes(normalizedType);
+            const matchesColumnLevel = !('level' in selectedByColumn) || normalizedLevelSelections.includes('all') || normalizedLevelSelections.includes(normalizedLevel);
+
+            if (matchesQuery && matchesType && matchesColumnType && matchesColumnLevel) {
                 item.style.display = '';
                 visibleCount++;
             } else {
                 item.style.display = 'none';
             }
         });
-        if (s.noResults) s.noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        const tableBody = s.skillsList ? s.skillsList.querySelector('.skills-table-body') : null;
+        if (tableBody) {
+            const existingRow = tableBody.querySelector('.skills-no-results-row');
+            if (visibleCount === 0) {
+                if (!existingRow) tableBody.insertAdjacentHTML('beforeend', '<tr class="skills-no-results-row"><td colspan="4" class="courses-loading-row">No skills found.</td></tr>');
+            } else {
+                if (existingRow) existingRow.remove();
+            }
+            if (s.noResults) s.noResults.style.display = 'none';
+        } else {
+            if (s.noResults) s.noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
         const statusEl = document.getElementById('page-search-status');
         if (statusEl) {
             const hasSkeleton = !!s.skillsList.querySelector('.skeleton-item');
@@ -211,7 +235,8 @@ class FilterManager {
             if (valA === valB) return nameA.localeCompare(nameB);
             return order === 'desc' ? (valA > valB ? -1 : 1) : (valA < valB ? -1 : 1);
         });
-        items.forEach(item => s.skillsList.appendChild(item));
+        const target = s.skillsList.querySelector('.skills-table-body') || s.skillsList;
+        items.forEach(item => target.appendChild(item));
     }
 
     sortCards() {

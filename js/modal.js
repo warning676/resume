@@ -38,11 +38,17 @@ class ModalManager {
             modalEl.style.opacity = '1';
             return;
         }
+        const contentEl = modalEl.querySelector('.modal-content, .external-link-modal-content');
         modalEl.style.transition = `opacity ${this.modalFadeMs}ms ease`;
         modalEl.style.opacity = '0';
         modalEl.style.display = 'flex';
+        if (contentEl) {
+            contentEl.style.transition = `transform ${this.modalFadeMs}ms ease`;
+            contentEl.style.transform = 'translateY(8px)';
+        }
         requestAnimationFrame(() => {
             modalEl.style.opacity = '1';
+            if (contentEl) contentEl.style.transform = 'translateY(0)';
         });
     }
 
@@ -61,11 +67,17 @@ class ModalManager {
             if (typeof onDone === 'function') onDone();
             return;
         }
+        const contentEl = modalEl.querySelector('.modal-content, .external-link-modal-content');
         modalEl.style.transition = `opacity ${this.modalFadeMs}ms ease`;
         modalEl.style.opacity = '0';
+        if (contentEl) {
+            contentEl.style.transition = `transform ${this.modalFadeMs}ms ease`;
+            contentEl.style.transform = 'translateY(8px)';
+        }
         modalEl._fadeTimer = setTimeout(() => {
             modalEl.style.display = 'none';
             modalEl.style.opacity = '';
+            if (contentEl) contentEl.style.transform = '';
             modalEl._fadeTimer = null;
             if (typeof onDone === 'function') onDone();
         }, this.modalFadeMs + 20);

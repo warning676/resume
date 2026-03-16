@@ -160,8 +160,22 @@ class Renderer {
         if (!s.skillsList || !skills) return;
         const isAchievementsPage = !!s.isAchievementsPage;
 
-        s.skillsList.innerHTML = '<div class="grid-structure grid-header"><span>Skill</span><span>Proficiency</span><span>Last Used</span></div>';
+        s.skillsList.innerHTML = `
+            <div class="courses-table-shell skills-table-shell">
+                <table class="courses-table skills-table">
+                    <thead>
+                        <tr>
+                            <th>Skill</th>
+                            <th>Category</th>
+                            <th>Proficiency</th>
+                            <th>Last Used</th>
+                        </tr>
+                    </thead>
+                    <tbody class="skills-table-body"></tbody>
+                </table>
+            </div>`;
 
+        const tableBody = s.skillsList.querySelector('.skills-table-body');
         const categories = new Map();
 
         skills.forEach(skill => {
@@ -176,28 +190,33 @@ class Renderer {
                         ? 'proficiency-advanced'
                         : 'proficiency-unknown';
 
-            const item = document.createElement('div');
-            item.className = 'grid-structure skill-item';
+            const item = document.createElement('tr');
+            item.className = 'skill-item';
             item.setAttribute('data-type', skill.badge || '');
-            item.setAttribute('data-name', skill.name);
+            item.setAttribute('data-name', skill.name || '');
             item.setAttribute('data-info', skill.info || '');
-            item.setAttribute('data-certified', skill.certified ? "true" : "false");
-            item.setAttribute('data-cert-name', skill.certName || skill.name || "");
-            item.setAttribute('data-badge', skill.badge || "");
+            item.setAttribute('data-certified', skill.certified ? 'true' : 'false');
+            item.setAttribute('data-cert-name', skill.certName || skill.name || '');
+            item.setAttribute('data-badge', skill.badge || '');
 
             const certifiedBadge = skill.certified ? `<span class="grid-certified-badge" title="${skill.certName || skill.name}">CERTIFIED</span>` : '';
             const iconSrc = skill.resolvedIcon || this.fixImagePath(skill.icon);
+
             item.innerHTML = `
-                <span class="skill-icon-wrap">
-                    <span class="skill-icon-skeleton skeleton-element"></span>
-                    <img src="${iconSrc}" class="skill-icon" alt="${skill.name} icon" loading="lazy" onerror="this.style.opacity='0.5';">
-                </span>
-                <span class="skill-meta">
-                    <span class="skill-name">${skill.name}${certifiedBadge}</span>
-                    <span class="type-badge">${skill.badge}</span>
-                </span>
-                <span class="level proficiency-badge ${levelBadgeClass}">${skill.level || '-'}</span>
-                <span class="last-used">${skill.lastUsed}</span>`;
+                <td>
+                    <div class="skill-name-cell">
+                        <span class="skill-icon-wrap">
+                            <span class="skill-icon-skeleton skeleton-element"></span>
+                            <img src="${iconSrc}" class="skill-icon" alt="${skill.name} icon" loading="lazy" onerror="this.style.opacity='0.5';">
+                        </span>
+                        <span class="skill-meta">
+                            <span class="skill-name">${skill.name || '-'}${certifiedBadge}</span>
+                        </span>
+                    </div>
+                </td>
+                <td><span class="type-badge">${skill.badge || '-'}</span></td>
+                <td><span class="level proficiency-badge ${levelBadgeClass}">${skill.level || '-'}</span></td>
+                <td><span class="last-used">${skill.lastUsed || '-'}</span></td>`;
 
             const iconImg = item.querySelector('.skill-icon');
             const iconSkeleton = item.querySelector('.skill-icon-skeleton');
@@ -211,7 +230,7 @@ class Renderer {
             }
 
             item.addEventListener('click', () => s.openModalForItem(item));
-            s.skillsList.appendChild(item);
+            tableBody.appendChild(item);
         });
 
         s.updateTypeFilter(categories);
