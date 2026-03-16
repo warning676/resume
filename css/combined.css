@@ -68,19 +68,18 @@ hr {
 }
 header[data-include="nav.html"],
 header[data-include="html/nav.html"] {
-    position: static;
+    position: relative;
     top: 0;
     background-color: #000000;
     z-index: 1000;
     border-bottom: none;
     margin-bottom: 20px;
     min-height: 60px;
-    position: static;
     padding-bottom: 8px;
 }
 
 header {
-    position: static;
+    position: relative;
     top: 0;
     background-color: #000000;
     z-index: 1000;
