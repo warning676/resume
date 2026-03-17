@@ -1283,6 +1283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatFilterValueLabel = (value) => {
         const text = toText(value);
         if (!text) return '';
+        if (/^[A-Z0-9]{2,}$/.test(text)) return text;
         return text.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
     };
 
@@ -1460,8 +1461,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const clearButton = document.createElement('button');
         clearButton.type = 'button';
         clearButton.className = 'column-filter-clear-button';
-        clearButton.textContent = 'Clear Filters';
-        clearButton.disabled = !hasActiveColumnFilters(usableDefinitions, selected);
+        clearButton.style.display = 'flex';
+        clearButton.style.alignItems = 'center';
+        clearButton.style.justifyContent = 'flex-start';
+        clearButton.style.gap = '8px';
+        clearButton.style.paddingLeft = '8px';
+        clearButton.style.paddingRight = '8px';
+        clearButton.style.textAlign = 'left';
+
+        const iconWrap = document.createElement('span');
+        iconWrap.className = 'tool-icon-wrap';
+        iconWrap.style.width = '18px';
+        iconWrap.style.height = '18px';
+        iconWrap.style.minWidth = '18px';
+        iconWrap.style.marginLeft = 'auto';
+        iconWrap.style.display = 'flex';
+        iconWrap.style.alignItems = 'center';
+        iconWrap.style.justifyContent = 'center';
+        iconWrap.innerHTML = `
+            <svg class="tool-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path d="M18 6 6 18 M6 6 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>`;
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'column-filter-clear-text';
+        textSpan.textContent = 'Clear Filters';
+
+        clearButton.appendChild(textSpan);
+        clearButton.appendChild(iconWrap);
+
         clearButton.addEventListener('click', (event) => {
             event.stopPropagation();
             event.preventDefault();
@@ -1470,8 +1498,11 @@ document.addEventListener('DOMContentLoaded', () => {
             renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange);
         });
 
-        clearWrap.appendChild(clearButton);
-        menu.appendChild(clearWrap);
+        const hasAnyActive = hasActiveColumnFilters(usableDefinitions, selected);
+        if (hasAnyActive) {
+            clearWrap.appendChild(clearButton);
+            menu.appendChild(clearWrap);
+        }
 
         const closeMenu = () => {
             menu.classList.remove('open');
