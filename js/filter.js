@@ -219,12 +219,21 @@ class FilterManager {
         const sortBy = s.selectedSort;
         const order = s.selectedOrder;
         const items = Array.from(s.skillsList.querySelectorAll('.skill-item'));
+        if (!sortBy || !order) {
+            items.sort((a, b) => Number.parseInt(a.dataset.originalIndex || '0', 10) - Number.parseInt(b.dataset.originalIndex || '0', 10));
+            const target = s.skillsList.querySelector('.skills-table-body') || s.skillsList;
+            items.forEach(item => target.appendChild(item));
+            return;
+        }
         items.sort((a, b) => {
             let valA, valB;
             const nameA = a.dataset.name.toLowerCase().trim();
             const nameB = b.dataset.name.toLowerCase().trim();
             if (sortBy === 'name') {
                 valA = nameA; valB = nameB;
+            } else if (sortBy === 'type') {
+                valA = (a.dataset.type || '').toLowerCase().trim();
+                valB = (b.dataset.type || '').toLowerCase().trim();
             } else if (sortBy === 'proficiency') {
                 valA = Utils.getProficiencyValue(a.querySelector('.level').innerText);
                 valB = Utils.getProficiencyValue(b.querySelector('.level').innerText);
@@ -251,8 +260,11 @@ class FilterManager {
                 const valB = b.getAttribute('data-name').toLowerCase();
                 return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
             } else {
+                const nameA = (a.getAttribute('data-name') || '').toLowerCase();
+                const nameB = (b.getAttribute('data-name') || '').toLowerCase();
                 const valA = new Date(a.getAttribute('data-date').replace(/-/g, '\/')).getTime();
                 const valB = new Date(b.getAttribute('data-date').replace(/-/g, '\/')).getTime();
+                if (valA === valB) return nameA.localeCompare(nameB);
                 return order === 'asc' ? (valA - valB) : (valB - valA);
             }
         });

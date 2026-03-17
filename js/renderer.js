@@ -171,10 +171,10 @@ class Renderer {
                 <table class="courses-table skills-table">
                     <thead>
                         <tr>
-                            <th>Skill</th>
-                            <th><span class="table-header-chip"><span class="table-header-label">Category</span><span class="column-header-filter-indicator" data-filter-scope="skills" data-filter-key="type" aria-hidden="true"></span></span></th>
-                            <th><span class="table-header-chip"><span class="table-header-label">Proficiency</span><span class="column-header-filter-indicator" data-filter-scope="skills" data-filter-key="level" aria-hidden="true"></span></span></th>
-                            <th>Last Used</th>
+                            <th class="table-sort-header" data-sort-scope="skills" data-sort-key="name" tabindex="0" role="button" aria-label="Sort Skill"><span class="table-header-chip"><span class="table-header-label">Skill</span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
+                            <th class="table-sort-header" data-sort-scope="skills" data-sort-key="type" tabindex="0" role="button" aria-label="Sort Category"><span class="table-header-chip"><span class="table-header-meta"><span class="table-header-label">Category</span><span class="column-header-filter-indicator" data-filter-scope="skills" data-filter-key="type" aria-hidden="true"></span></span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
+                            <th class="table-sort-header" data-sort-scope="skills" data-sort-key="proficiency" tabindex="0" role="button" aria-label="Sort Proficiency"><span class="table-header-chip"><span class="table-header-meta"><span class="table-header-label">Proficiency</span><span class="column-header-filter-indicator" data-filter-scope="skills" data-filter-key="level" aria-hidden="true"></span></span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
+                            <th class="table-sort-header" data-sort-scope="skills" data-sort-key="lastUsed" tabindex="0" role="button" aria-label="Sort Last Used"><span class="table-header-chip"><span class="table-header-label">Last Used</span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
                         </tr>
                     </thead>
                     <tbody class="skills-table-body"></tbody>
@@ -184,7 +184,7 @@ class Renderer {
         const tableBody = s.skillsList.querySelector('.skills-table-body');
         const categories = new Map();
 
-        skills.forEach(skill => {
+        skills.forEach((skill, index) => {
             if (isAchievementsPage && !skill.certified) return;
             if (skill.badge) categories.set(skill.badge, skill.badge);
             const normalizedLevel = (skill.level || '').toLowerCase().trim();
@@ -204,6 +204,7 @@ class Renderer {
             item.setAttribute('data-certified', skill.certified ? 'true' : 'false');
             item.setAttribute('data-cert-name', skill.certName || skill.name || '');
             item.setAttribute('data-badge', skill.badge || '');
+            item.setAttribute('data-original-index', String(index));
 
             const certifiedBadge = skill.certified ? `<span class="grid-certified-badge" title="${skill.certName || skill.name}">CERTIFIED</span>` : '';
             const iconSrc = skill.resolvedIcon || this.fixImagePath(skill.icon);
@@ -241,5 +242,6 @@ class Renderer {
 
         s.updateTypeFilter(categories);
         s.sortSkills();
+        if (typeof s.syncSkillSortIndicators === 'function') s.syncSkillSortIndicators();
     }
 }

@@ -96,6 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateTypeFilter: null,
         updateToolFilter: null,
         runFiltering: null,
+        syncSkillSortIndicators: null,
+        syncCourseSortIndicators: null,
 
         modalManager: null,
         filterManager: null,
@@ -1320,26 +1322,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 indicator.classList.toggle('is-active', isActive);
             });
         }
-
-        const filterGroup = menu.parentElement;
-        if (!filterGroup) return;
-
-        let resetButton = filterGroup.querySelector('.filter-reset-button');
-        if (!resetButton) {
-            resetButton = document.createElement('button');
-            resetButton.type = 'button';
-            resetButton.className = 'filter-reset-button';
-            resetButton.textContent = 'Reset';
-            filterGroup.insertBefore(resetButton, menu);
-        }
-
-        resetButton.style.display = hasActiveFilters ? '' : 'none';
-        resetButton.onclick = (event) => {
-            event.stopPropagation();
-            resetColumnFilterSelections(definitions, selectedMap);
-            onChange();
-            renderColumnFilterMenu(button, menu, definitions, selectedMap, onChange);
-        };
     };
 
     const renderColumnFilterMenu = (button, menu, definitions, selectedMap, onChange, activeKey) => {
@@ -1472,6 +1454,25 @@ document.addEventListener('DOMContentLoaded', () => {
             menu.appendChild(item);
         });
 
+        const clearWrap = document.createElement('div');
+        clearWrap.className = 'column-filter-clear-wrap';
+
+        const clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.className = 'column-filter-clear-button';
+        clearButton.textContent = 'Clear Filters';
+        clearButton.disabled = !hasActiveColumnFilters(usableDefinitions, selected);
+        clearButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            resetColumnFilterSelections(usableDefinitions, selected);
+            onChange();
+            renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange);
+        });
+
+        clearWrap.appendChild(clearButton);
+        menu.appendChild(clearWrap);
+
         const closeMenu = () => {
             menu.classList.remove('open');
             menu.classList.remove('skip-animation');
@@ -1584,8 +1585,92 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     };
 
+    const syncTableSortButtons = (scope, sortKey, sortOrder) => {
+        document.querySelectorAll(`.table-sort-header[data-sort-scope="${scope}"]`).forEach(header => {
+            const isColumnActive = header.dataset.sortKey === sortKey && !!sortOrder;
+            header.classList.toggle('is-active', isColumnActive);
+            header.dataset.activeOrder = isColumnActive ? sortOrder : '';
+            header.setAttribute('aria-pressed', isColumnActive ? 'true' : 'false');
+            header.querySelectorAll('.table-sort-button').forEach(indicator => {
+                const indicatorOrder = indicator.dataset.sortOrder || '';
+                indicator.classList.toggle('is-active', isColumnActive && indicatorOrder === sortOrder);
+            });
+        });
+    };
+
+    const getDefaultSortState = (scope) => {
+        if (scope === 'courses') return { sortKey: 'status', sortOrder: 'asc' };
+        if (scope === 'skills') return { sortKey: 'lastUsed', sortOrder: 'desc' };
+        return { sortKey: null, sortOrder: null };
+    };
+
+    const isDefaultSortState = (scope, sortKey, sortOrder) => {
+        const defaultState = getDefaultSortState(scope);
+        return defaultState.sortKey === sortKey && defaultState.sortOrder === sortOrder;
+    };
+
+    const getNextSortState = (scope, currentKey, currentOrder, targetKey) => {
+        const defaultState = getDefaultSortState(scope);
+        if (currentKey !== targetKey || !currentOrder) return { sortKey: targetKey, sortOrder: 'asc' };
+        if (targetKey === defaultState.sortKey) {
+            if (isDefaultSortState(scope, currentKey, currentOrder)) {
+                return {
+                    sortKey: targetKey,
+                    sortOrder: defaultState.sortOrder === 'asc' ? 'desc' : 'asc'
+                };
+            }
+            return defaultState;
+        }
+        if (currentOrder === 'asc') return { sortKey: targetKey, sortOrder: 'desc' };
+        return getDefaultSortState(scope);
+    };
+
+    const bindSkillTableSortButtons = () => {
+        document.querySelectorAll('.table-sort-header[data-sort-scope="skills"]').forEach(header => {
+            if (header.dataset.boundSortClick === 'true') return;
+            header.dataset.boundSortClick = 'true';
+            const toggleSort = () => {
+                const nextState = getNextSortState('skills', state.selectedSort, state.selectedOrder, header.dataset.sortKey || '');
+                state.selectedSort = nextState.sortKey;
+                state.selectedOrder = nextState.sortOrder;
+                if (state.sortSkills) state.sortSkills();
+                if (state.syncSkillSortIndicators) state.syncSkillSortIndicators();
+            };
+            header.addEventListener('click', () => {
+                toggleSort();
+            });
+            header.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                toggleSort();
+            });
+        });
+    };
+
+    const bindCourseTableSortButtons = () => {
+        document.querySelectorAll('.table-sort-header[data-sort-scope="courses"]').forEach(header => {
+            if (header.dataset.boundSortClick === 'true') return;
+            header.dataset.boundSortClick = 'true';
+            const toggleSort = () => {
+                const nextState = getNextSortState('courses', state.selectedCourseSort, state.selectedCourseOrder, header.dataset.sortKey || '');
+                state.selectedCourseSort = nextState.sortKey;
+                state.selectedCourseOrder = nextState.sortOrder;
+                applyCoursesFilterAndSort();
+                if (state.syncCourseSortIndicators) state.syncCourseSortIndicators();
+            };
+            header.addEventListener('click', () => {
+                toggleSort();
+            });
+            header.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                toggleSort();
+            });
+        });
+    };
+
     const normalizeCourses = (rows) => {
-        return (Array.isArray(rows) ? rows : []).map(row => {
+        return (Array.isArray(rows) ? rows : []).map((row, index) => {
             const id = toText(row.id || row.courseid);
             const name = toText(row.name);
             const school = toText(row.school);
@@ -1594,7 +1679,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const status = toText(row.status);
             const grade = toText(row.grade);
             const credits = toText(row.creditsearned || row.credits || row.creditsEarned);
-            return { id, name, school, type, info, status, grade, credits };
+            return { id, name, school, type, info, status, grade, credits, originalIndex: index };
         }).filter(course => course.id || course.name || course.school || course.type || course.status || course.grade || course.credits || course.info);
     };
 
@@ -1602,6 +1687,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const sortKey = state.selectedCourseSort || 'id';
         const sortOrder = state.selectedCourseOrder || 'asc';
         const sorted = [...courses];
+        if (!state.selectedCourseSort || !state.selectedCourseOrder) {
+            sorted.sort((a, b) => (a.originalIndex || 0) - (b.originalIndex || 0));
+            return sorted;
+        }
         const statusOrder = {
             completed: 0,
             'in progress': 1,
@@ -1780,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
                 <tr class="course-row" data-course-index="${index}">
                     <td>${escapeHtml(course.id || '-')}</td>
-                    <td title="${escapeHtml(course.name || '')}">${escapeHtml(course.name || '-')}</td>
+                    <td>${escapeHtml(course.name || '-')}</td>
                     <td>${escapeHtml(course.school || '-')}</td>
                     <td>${escapeHtml(course.type || '-')}</td>
                     <td>${statusBadge}</td>
@@ -1849,32 +1938,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const setupCoursesControls = () => {
         if (!state.isCoursesPage) return;
 
-        if (state.courseSortSelectContainer && state.controlsManager) {
-            const sortOptions = [
-                { id: 'status', label: 'Status' },
-                { id: 'id', label: 'ID' },
-                { id: 'name', label: 'Name' },
-                { id: 'school', label: 'School' },
-                { id: 'type', label: 'Type' },
-                { id: 'grade', label: 'Grade' },
-                { id: 'credits', label: 'Credits Earned' }
-            ];
-            state.controlsManager.renderSingleSelect(state.courseSortSelectContainer, sortOptions, state.selectedCourseSort, (value) => {
-                state.selectedCourseSort = value;
-                applyCoursesFilterAndSort();
-            });
-        }
-
-        if (state.courseOrderSelectContainer && state.controlsManager) {
-            const orderOptions = [
-                { id: 'asc', label: 'Ascending' },
-                { id: 'desc', label: 'Descending' }
-            ];
-            state.controlsManager.renderSingleSelect(state.courseOrderSelectContainer, orderOptions, state.selectedCourseOrder, (value) => {
-                state.selectedCourseOrder = value;
-                applyCoursesFilterAndSort();
-            });
-        }
+        bindCourseTableSortButtons();
+        if (state.syncCourseSortIndicators) state.syncCourseSortIndicators();
 
         if (state.coursesSearchInput && !state.coursesSearchInput.dataset.boundCoursesSearch) {
             state.coursesSearchInput.dataset.boundCoursesSearch = 'true';
@@ -2196,6 +2261,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }).then(() => {
                         if (state.routeToken !== token) return;
                         state.renderer.renderSkills(skillData);
+                        bindSkillTableSortButtons();
+                        if (state.syncSkillSortIndicators) state.syncSkillSortIndicators();
                         renderSkillColumnFilter();
                     });
                 }
@@ -2232,6 +2299,8 @@ document.addEventListener('DOMContentLoaded', () => {
         state.updateTypeFilter = (cats) => state.controlsManager.updateTypeFilter(cats);
         state.updateToolFilter = (tools) => state.controlsManager.updateToolFilter(tools);
         state.runFiltering = () => state.filterManager.runFiltering();
+        state.syncSkillSortIndicators = () => syncTableSortButtons('skills', state.selectedSort, state.selectedOrder);
+        state.syncCourseSortIndicators = () => syncTableSortButtons('courses', state.selectedCourseSort, state.selectedCourseOrder);
 
         if (state.isSkillsPage || state.isPortfolioPage) {
             state.controlsManager.initControlSkeletons();

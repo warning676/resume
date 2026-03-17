@@ -967,7 +967,7 @@ body.dropdown-scroll-lock {
     max-height: 420px;
     overflow: hidden;
     display: block;
-    padding: 6px 0 0 0;
+    padding: 0;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -1014,8 +1014,8 @@ body.dropdown-scroll-lock {
     min-width: 16px;
     margin: 0;
     border-radius: 4px;
-    border: 1px solid #ffffff;
-    background: #7d8590;
+    border: 1px solid #58a6ff;
+    background: transparent;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1026,7 +1026,7 @@ body.dropdown-scroll-lock {
 
 .multi-select-item input[type="checkbox"]:checked,
 .column-filter-value-row input[type="checkbox"]:checked {
-    background: #ffffff;
+    background: #58a6ff;
 }
 
 .multi-select-item input[type="checkbox"]::after,
@@ -1037,7 +1037,7 @@ body.dropdown-scroll-lock {
     opacity: 0;
     transform: scale(0.75);
     transition: opacity 0.12s ease, transform 0.12s ease;
-    background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 5.25 4.1 7.35 8 2.9' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 5.25 4.1 7.35 8 2.9' stroke='white' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 .multi-select-item input[type="checkbox"]:checked::after,
@@ -1080,7 +1080,6 @@ body.dropdown-scroll-lock {
 
 .custom-select-dropdown > .custom-select-item:first-child,
 .multi-select-dropdown > .multi-select-item:first-child {
-    margin-top: -6px;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
 }
@@ -1853,6 +1852,12 @@ body.dropdown-scroll-lock {
     background-position: center;
     background-size: 14px 14px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23e1e4e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+    transform: translateX(0);
+    transition: transform 0.18s ease;
+}
+
+#external-link-continue:hover::after {
+    transform: translateX(1px);
 }
 
 .modal-nav-btn {
@@ -2548,7 +2553,7 @@ body.dropdown-scroll-lock {
     height: 34px;
     border-radius: 8px;
     border: 1px solid #30363d;
-    background: #050505;
+    background: #000000;
     color: #e1e4e8;
     display: inline-flex;
     align-items: center;
@@ -2572,26 +2577,6 @@ body.dropdown-scroll-lock {
     display: block;
 }
 
-.filter-reset-button {
-    border: 1px solid #30363d;
-    background: #050505;
-    color: #8b949e;
-    border-radius: 8px;
-    height: 34px;
-    padding: 0 12px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
-}
-
-.filter-reset-button:hover {
-    border-color: #58a6ff;
-    background: #161b22;
-    color: #e1e4e8;
-}
-
 .column-filter-menu {
     position: absolute;
     top: calc(100% + 6px);
@@ -2599,7 +2584,7 @@ body.dropdown-scroll-lock {
     width: 220px;
     border: 1px solid #30363d;
     border-radius: 8px;
-    background: #050505;
+    background: #000000;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
     opacity: 0;
     visibility: hidden;
@@ -2710,7 +2695,7 @@ body.dropdown-scroll-lock {
     overflow-y: auto;
     border: 1px solid #30363d;
     border-radius: 8px;
-    background: #050505;
+    background: #000000;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
     opacity: 0;
     visibility: hidden;
@@ -2771,15 +2756,117 @@ body.dropdown-scroll-lock {
     padding: 8px 10px;
 }
 
+.column-filter-clear-wrap {
+    border-top: 1px solid #30363d;
+    margin-top: 2px;
+    padding: 5px;
+}
+
+.column-filter-clear-button {
+    width: 100%;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    background: #000000;
+    color: #e1e4e8;
+    height: 32px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: normal;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.column-filter-clear-button:hover:not(:disabled) {
+    border-color: #58a6ff;
+    background: #161b22;
+    color: #e1e4e8;
+}
+
+.column-filter-clear-button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
 .table-header-label {
     display: inline-flex;
     align-items: center;
+    min-width: 0;
 }
 
-.table-header-chip {
+.table-header-meta {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
+}
+
+.table-header-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+}
+
+.table-sort-header {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.18s ease;
+}
+
+.table-sort-header:focus-visible {
+    outline: 1px solid #58a6ff;
+    outline-offset: -1px;
+}
+
+.table-sort-header:hover,
+.table-sort-header:focus-visible {
+    background: #161b22;
+}
+
+.table-sort-header:hover .table-sort-button,
+.table-sort-header:focus-visible .table-sort-button {
+    color: #8b949e;
+}
+
+.table-sort-header:hover .table-sort-button.is-active,
+.table-sort-header:focus-visible .table-sort-button.is-active {
+    color: #58a6ff;
+}
+
+.table-header-actions {
+    display: inline-flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    margin-left: auto;
+    line-height: 0;
+    align-self: center;
+}
+
+.table-sort-button {
+    width: 16px;
+    height: 11px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #6e7681;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.table-sort-button svg {
+    width: 12px;
+    height: 12px;
+    display: block;
+}
+
+.table-sort-button.is-active {
+    color: #58a6ff;
 }
 
 .skills-table-shell {
@@ -2814,9 +2901,11 @@ body.dropdown-scroll-lock {
 }
 
 .skills-table .type-badge {
-    color: #c9d1d9;
-    font-size: 0.72rem;
-    letter-spacing: 0.5px;
+    color: #e1e4e8;
+    font-size: 0.86rem;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
 }
 
 .skills-table .skill-icon-wrap {
@@ -2879,7 +2968,7 @@ body.dropdown-scroll-lock {
     text-transform: uppercase;
     letter-spacing: 0.45px;
     font-size: 0.74rem;
-    background: #050505;
+    background: #000000;
     white-space: nowrap;
 }
 
