@@ -1,0 +1,52 @@
+#courses-dashboard {
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 360px;
+}
+
+.courses-dashboard .dashboard-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.courses-dashboard .dashboard-label {
+    color: #58a6ff;
+    font-size: 0.9rem;
+}
+
+.courses-dashboard .dashboard-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.courses-dashboard .dashboard-item--stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding-top: 2px;
+}
+
+.courses-dashboard .dashboard-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.courses-dashboard .dashboard-progress {
+    background: #1f2428;
+    border-radius: 6px;
+    height: 12px;
+    overflow: hidden;
+}
+
+.courses-dashboard .dashboard-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg,#58a6ff,#3ea8ff);
+    width: 0%;
+    transition: width 800ms cubic-bezier(.2,.8,.2,1);
+    will-change: width;
+}

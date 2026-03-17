@@ -3,26 +3,26 @@
     <p>Tracking my progress toward a B.S. in Computer Science (Software Engineering).</p>
 </div>
 
-<div id="courses-dashboard" class="courses-dashboard" style="margin-top:22px; display:flex; flex-direction:column; gap:8px; width:360px;">
-    <div class="dashboard-item" style="display:flex;justify-content:space-between;">
-        <div class="dashboard-label" style="color:#58a6ff;">Cumulative GPA:</div>
-        <div id="courses-dashboard-gpa" class="dashboard-value" style="font-size:1.15rem; font-weight:600;">-</div>
+<div id="courses-dashboard" class="courses-dashboard">
+    <div class="dashboard-item">
+        <div class="dashboard-label">Cumulative GPA:</div>
+        <div id="courses-dashboard-gpa" class="dashboard-value">-</div>
     </div>
-    <div class="dashboard-item" style="display:flex;justify-content:space-between;">
-        <div class="dashboard-label" style="color:#58a6ff;">Academic Standing:</div>
-        <div id="courses-dashboard-standing" class="dashboard-value" style="font-size:1.05rem; font-weight:600;">-</div>
+    <div class="dashboard-item">
+        <div class="dashboard-label">Academic Standing:</div>
+        <div id="courses-dashboard-standing" class="dashboard-value">-</div>
     </div>
-    <div class="dashboard-item" style="display:flex;justify-content:space-between;">
-        <div class="dashboard-label" style="color:#58a6ff;">Credits Completed:</div>
-        <div id="courses-dashboard-credits" class="dashboard-value" style="font-size:1.05rem; font-weight:600;">-</div>
+    <div class="dashboard-item">
+        <div class="dashboard-label">Credits Completed:</div>
+        <div id="courses-dashboard-credits" class="dashboard-value">-</div>
     </div>
-    <div class="dashboard-item" style="display:flex;flex-direction:column;gap:12px;margin-top:6px;">
-        <div style="display:flex;justify-content:space-between;">
-            <div class="dashboard-label" style="color:#58a6ff;">Degree Progress:</div>
-            <div id="courses-dashboard-percent" class="dashboard-value" style="font-size:1.05rem; font-weight:600;">-</div>
+    <div class="dashboard-item dashboard-item--stacked">
+        <div class="dashboard-item-row">
+            <div class="dashboard-label">Degree Progress:</div>
+            <div id="courses-dashboard-percent" class="dashboard-value">-</div>
         </div>
-        <div style="background:#1f2428;border-radius:6px;height:12px;overflow:hidden;">
-            <div id="courses-dashboard-progress-fill" style="height:100%;background:linear-gradient(90deg,#58a6ff,#3ea8ff);width:0%;transition:width 800ms cubic-bezier(.2,.8,.2,1);will-change:width;"></div>
+        <div class="dashboard-progress">
+            <div id="courses-dashboard-progress-fill" class="dashboard-progress-fill"></div>
         </div>
     </div>
 </div>
