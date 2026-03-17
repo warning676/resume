@@ -451,6 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.coursesModalCredits = document.getElementById('courses-modal-credits');
         state.coursesModalName = document.getElementById('courses-modal-name');
         state.coursesModalInfo = document.getElementById('courses-modal-info');
+        state.coursesModalYear = document.getElementById('courses-modal-year');
     };
 
     const getSkeletonKey = () => {
@@ -463,10 +464,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const showCoursesSkeleton = (count) => {
         if (!state.coursesTableBody || count <= 0) return;
         const rowWidths = [
-            [190, 126, 92, 94, 72, 60],
-            [222, 138, 84, 102, 76, 58],
-            [204, 120, 98, 88, 70, 62],
-            [208, 126, 98, 96, 72, 62],
+            [190, 126, 92, 94, 60, 42, 60],
+            [222, 138, 84, 102, 58, 46, 58],
+            [204, 120, 98, 88, 62, 44, 62],
+            [208, 126, 98, 96, 62, 42, 62],
         ];
         let html = '';
         for (let i = 0; i < count; i++) {
@@ -476,9 +477,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><div class="skeleton-element" style="width:${w[0]}px;height:14px;border-radius:999px;"></div></td>
                 <td><div class="skeleton-element" style="width:${w[1]}px;height:14px;border-radius:999px;"></div></td>
                 <td><div class="skeleton-element" style="width:${w[2]}px;height:14px;border-radius:999px;"></div></td>
-                <td><div class="skeleton-element" style="width:${w[3]}px;height:18px;border-radius:999px;"></div></td>
-                <td><div class="skeleton-element" style="width:${w[4]}px;height:18px;border-radius:999px;"></div></td>
+                <td><div class="skeleton-element" style="width:${w[3]}px;height:14px;border-radius:999px;"></div></td>
+                <td><div class="skeleton-element" style="width:${w[4]}px;height:14px;border-radius:999px;"></div></td>
                 <td><div class="skeleton-element" style="width:${w[5]}px;height:14px;border-radius:999px;"></div></td>
+                <td><div class="skeleton-element" style="width:${w[6]}px;height:14px;border-radius:999px;"></div></td>
             </tr>`;
         }
         state.coursesTableBody.innerHTML = html;
@@ -1710,7 +1712,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const status = toText(row.status);
             const grade = toText(row.grade);
             const credits = toText(row.creditsearned || row.credits || row.creditsEarned);
-            return { id, name, school, type, info, status, grade, credits, originalIndex: index };
+            const completionYear = toText(row.completionyear || row.completionYear || row.year || row.completion);
+            return { id, name, school, type, info, status, completionYear, grade, credits, originalIndex: index };
         }).filter(course => course.id || course.name || course.school || course.type || course.status || course.grade || course.credits || course.info);
     };
 
@@ -1734,8 +1737,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return normalized in statusOrder ? statusOrder[normalized] : Number.MAX_SAFE_INTEGER;
             }
             if (key === 'credits') {
-                const numeric = Number.parseFloat(course.credits);
-                return Number.isFinite(numeric) ? numeric : Number.NEGATIVE_INFINITY;
+                const numeric = Number.parseFloat(toText(course.credits || ''));
+                return Number.isFinite(numeric) ? numeric : null;
+            }
+            if (key === 'completionyear' || key === 'completionYear') {
+                const numeric = Number.parseInt(toText(course.completionYear || course.completionyear || ''), 10);
+                return Number.isFinite(numeric) ? numeric : null;
             }
             return toText(course[key]).toLowerCase();
         };
@@ -1743,7 +1750,15 @@ document.addEventListener('DOMContentLoaded', () => {
         sorted.sort((a, b) => {
             const aValue = valueFor(a, sortKey);
             const bValue = valueFor(b, sortKey);
+
+            const isMissing = (v) => v === null || v === undefined || (typeof v === 'string' && String(v).trim() === '');
+
+            if (isMissing(aValue) && isMissing(bValue)) return (a.name || '').localeCompare(b.name || '');
+            if (isMissing(aValue)) return 1;
+            if (isMissing(bValue)) return -1;
+
             if (aValue === bValue) return (a.name || '').localeCompare(b.name || '');
+
             if (sortOrder === 'desc') return aValue > bValue ? -1 : 1;
             return aValue < bValue ? -1 : 1;
         });
@@ -1797,6 +1812,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.coursesModalCredits.style.color = '#8b949e';
             }
         }
+        if (state.coursesModalYear) state.coursesModalYear.textContent = course.completionYear || course.completionyear || '-';
         if (state.coursesModalInfo) state.coursesModalInfo.textContent = course.info || 'No course information available.';
         updateCoursesModalNavState();
     };
@@ -1888,7 +1904,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const courses = state.filteredCourses;
 
         if (!courses.length) {
-            state.coursesTableBody.innerHTML = '<tr><td colspan="7" class="courses-loading-row">No matching courses found.</td></tr>';
+            state.coursesTableBody.innerHTML = '<tr><td colspan="8" class="courses-loading-row">No matching courses found.</td></tr>';
             const statusEl = document.getElementById('courses-search-status');
             if (statusEl) { statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
             return;
@@ -1904,6 +1920,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${escapeHtml(course.school || '-')}</td>
                     <td>${escapeHtml(course.type || '-')}</td>
                     <td>${statusBadge}</td>
+                    <td>${course.completionYear ? escapeHtml(course.completionYear) : '<span style="color:#8b949e;">-</span>'}</td>
                     <td>${gradeBadge}</td>
                     <td>${course.credits ? escapeHtml(course.credits) : '<span style="color:#8b949e;">-</span>'}</td>
                 </tr>`;
@@ -1950,7 +1967,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!matchesColumn('grade', course.grade)) return false;
 
             if (!query) return true;
-            const searchBlob = `${course.id} ${course.name} ${course.school} ${course.type} ${course.info} ${course.status} ${course.grade} ${course.credits}`.toLowerCase();
+            const searchBlob = `${course.id} ${course.name} ${course.school} ${course.type} ${course.info} ${course.status} ${course.completionYear || ''} ${course.grade} ${course.credits}`.toLowerCase();
             return searchBlob.includes(query);
         });
 
