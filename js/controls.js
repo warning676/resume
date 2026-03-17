@@ -124,7 +124,13 @@ class ControlsManager {
             else s.sortCards();
         });
 
-        const orderOptions = [{ id: 'desc', label: 'Descending' }, { id: 'asc', label: 'Ascending' }];
+        let orderOptions = [
+            { id: 'asc', label: 'Ascending' },
+            { id: 'desc', label: 'Descending' }
+        ];
+
+        orderOptions.sort((a, b) => a.label.localeCompare(b.label));
+
         this.renderSingleSelect(s.orderSelectContainer, orderOptions, s.selectedOrder, (val) => {
             s.selectedOrder = val;
             if (s.isSkillsPage) s.sortSkills();

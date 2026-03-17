@@ -164,9 +164,7 @@ class DataService {
         
         const now = new Date();
         const options = {
-            timeZone: 'America/Los_Angeles',
-            weekday: 'short',
-            month: 'short',
+            month: 'long',
             day: 'numeric',
             year: 'numeric',
             hour: 'numeric',
