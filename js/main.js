@@ -928,19 +928,37 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const gpaEl = document.getElementById('courses-dashboard-gpa');
+        const standingEl = document.getElementById('courses-dashboard-standing');
         const creditsEl = document.getElementById('courses-dashboard-credits');
         const percentEl = document.getElementById('courses-dashboard-percent');
+        const progressFillEl = document.getElementById('courses-dashboard-progress-fill');
 
         if (gpaEl) {
             if (totalGpaCredits > 0) gpaEl.textContent = (totalPoints / totalGpaCredits).toFixed(1);
             else gpaEl.textContent = '-';
         }
+        if (standingEl) {
+            let standing = '-';
+            const c = Number.isFinite(totalCompletedCredits) ? totalCompletedCredits : NaN;
+            if (Number.isFinite(c)) {
+                if (c >= 90) standing = 'Senior';
+                else if (c >= 60) standing = 'Junior';
+                else if (c >= 30) standing = 'Sophomore';
+                else if (c >= 0) standing = 'Freshman';
+            }
+            standingEl.textContent = standing;
+        }
         if (creditsEl) {
-            creditsEl.textContent = `${String(totalCompletedCredits || 0)}/120`;
+            creditsEl.textContent = `${String(totalCompletedCredits || 0)} / 120`;
         }
         if (percentEl) {
             const pct = (totalCompletedCredits / 120) * 100;
             percentEl.textContent = Number.isFinite(pct) ? `${pct.toFixed(1)}%` : '-';
+        }
+        if (progressFillEl) {
+            const pct = (totalCompletedCredits / 120) * 100;
+            if (Number.isFinite(pct)) progressFillEl.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+            else progressFillEl.style.width = '0%';
         }
     }
 
