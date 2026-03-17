@@ -45,10 +45,10 @@
 }
 
 .skill-item {
-    padding: 0 15px;
+    padding: 10px 12px;
     border-bottom: 1px solid #161b22;
     cursor: pointer;
-    height: 55px;
+    height: auto;
     transition: background-color 0.2s ease;
 }
 

@@ -3,6 +3,21 @@
     <p>A list of courses I have completed, am currently taking, or plan to take.</p>
 </div>
 
+<div id="courses-dashboard" class="courses-dashboard" style="margin-top:22px; display:flex; flex-direction:column; gap:8px; width:360px;">
+    <div class="dashboard-item" style="display:flex;justify-content:space-between;">
+        <div class="dashboard-label" style="color:#58a6ff;">Cumulative GPA:</div>
+        <div id="courses-dashboard-gpa" class="dashboard-value" style="font-size:1.15rem; font-weight:600;">-</div>
+    </div>
+    <div class="dashboard-item" style="display:flex;justify-content:space-between;">
+        <div class="dashboard-label" style="color:#58a6ff;">Bachelor Degree Credits Completed:</div>
+        <div id="courses-dashboard-credits" class="dashboard-value" style="font-size:1.05rem; font-weight:600;">-</div>
+    </div>
+    <div class="dashboard-item" style="display:flex;justify-content:space-between;">
+        <div class="dashboard-label" style="color:#58a6ff;">Percent Complete:</div>
+        <div id="courses-dashboard-percent" class="dashboard-value" style="font-size:1.05rem; font-weight:600;">-</div>
+    </div>
+</div>
+
 <div class="courses-controls">
     <div class="search-box">
         <div class="search-container">
@@ -31,9 +46,9 @@
                 <th class="table-sort-header" data-sort-scope="courses" data-sort-key="school" tabindex="0" role="button" aria-label="Sort School"><span class="table-header-chip"><span class="table-header-meta"><span class="table-header-label">School</span><span class="column-header-filter-indicator" data-filter-scope="courses" data-filter-key="school" aria-hidden="true"></span></span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
                 <th class="table-sort-header" data-sort-scope="courses" data-sort-key="type" tabindex="0" role="button" aria-label="Sort Type"><span class="table-header-chip"><span class="table-header-meta"><span class="table-header-label">Type</span><span class="column-header-filter-indicator" data-filter-scope="courses" data-filter-key="type" aria-hidden="true"></span></span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
                 <th class="table-sort-header" data-sort-scope="courses" data-sort-key="status" tabindex="0" role="button" aria-label="Sort Status"><span class="table-header-chip"><span class="table-header-meta"><span class="table-header-label">Status</span><span class="column-header-filter-indicator" data-filter-scope="courses" data-filter-key="status" aria-hidden="true"></span></span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
+                <th class="table-sort-header" data-sort-scope="courses" data-sort-key="credits" tabindex="0" role="button" aria-label="Sort Credits"><span class="table-header-chip"><span class="table-header-label">Credits</span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
                 <th class="table-sort-header" data-sort-scope="courses" data-sort-key="completionyear" tabindex="0" role="button" aria-label="Sort Completion Year"><span class="table-header-chip"><span class="table-header-label">Completion Year</span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
                 <th class="table-sort-header" data-sort-scope="courses" data-sort-key="grade" tabindex="0" role="button" aria-label="Sort Grade"><span class="table-header-chip"><span class="table-header-meta"><span class="table-header-label">Grade</span><span class="column-header-filter-indicator" data-filter-scope="courses" data-filter-key="grade" aria-hidden="true"></span></span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
-                <th class="table-sort-header" data-sort-scope="courses" data-sort-key="credits" tabindex="0" role="button" aria-label="Sort Credits Earned"><span class="table-header-chip"><span class="table-header-label">Credits Earned</span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
             </tr>
         </thead>
         <tbody id="courses-table-body">
@@ -104,7 +119,7 @@
                     <strong id="courses-modal-grade">-</strong>
                 </div>
                 <div>
-                    <small>Credits Earned</small>
+                    <small>Credits</small>
                     <strong id="courses-modal-credits">-</strong>
                 </div>
                 <div>

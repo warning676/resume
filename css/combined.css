@@ -246,6 +246,9 @@ footer[data-include="html/footer.html"] {
     margin-left: 6px;
     padding: 2px 8px;
     border-radius: 999px;
+}
+
+.connection-status {
     border: 1px solid #30363d;
     color: #c9d1d9;
     background: #000000;
@@ -267,19 +270,6 @@ footer[data-include="html/footer.html"] {
 .connection-status.offline {
     color: #ff7b72;
     border-color: rgba(255, 123, 114, 0.5);
-}
-@keyframes skeleton-pulse {
-    0% {
-        background-color: #0d1117;
-    }
-
-    50% {
-        background-color: #161b22;
-    }
-
-    100% {
-        background-color: #0d1117;
-    }
 }
 
 .skeleton-element {
@@ -453,10 +443,10 @@ footer[data-include="html/footer.html"] {
 }
 
 .skill-item {
-    padding: 0 15px;
+    padding: 10px 12px;
     border-bottom: 1px solid #161b22;
     cursor: pointer;
-    height: 55px;
+    height: auto;
     transition: background-color 0.2s ease;
 }
 
@@ -2305,6 +2295,9 @@ body.dropdown-scroll-lock {
     transform-origin: center;
     transition: transform 0.24s cubic-bezier(0, 0, 0.2, 1), background-color 0.2s;
 }
+
+.input-clear-button { background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: background-color .2s ease, color .15s ease; }
+.input-clear-button:hover { background-color: #161b22; color: #fff; }
 
 .search-close-btn::before {
     content: '';

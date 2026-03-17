@@ -431,6 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.searchContainer = document.querySelector('.search-box');
         state.searchInput = document.getElementById("portfolio-search");
         state.coursesSearchInput = document.getElementById('courses-search-input');
+        state.globalSearchInput = document.getElementById('global-search-input');
         state.coursesFilterButton = document.getElementById('courses-filter-button');
         state.coursesFilterMenu = document.getElementById('courses-filter-menu');
         state.skillsFilterButton = document.getElementById('skills-filter-button');
@@ -453,6 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.coursesModalInfo = document.getElementById('courses-modal-info');
         state.coursesModalYear = document.getElementById('courses-modal-year');
     };
+
 
     const getSkeletonKey = () => {
         if (state.portfolioGrid) return `portfolio:${state.currentRoute}`;
@@ -864,6 +866,84 @@ document.addEventListener('DOMContentLoaded', () => {
         container.addEventListener('click', container._clickHandler);
     };
 
+    function gradeToPoints(grade) {
+        if (!grade) return null;
+        const g = String(grade).trim().toUpperCase();
+        if (g === 'A') return 4.0;
+        if (g === 'A-') return 3.7;
+        if (g === 'B+') return 3.3;
+        if (g === 'B') return 3.0;
+        if (g === 'B-') return 2.7;
+        if (g === 'C+') return 2.3;
+        if (g === 'C') return 2.0;
+        if (g === 'C-') return 1.7;
+        if (g === 'D+') return 1.3;
+        if (g === 'D') return 1.0;
+        if (g === 'D-') return 0.7;
+        if (g === 'F') return 0.0;
+        return null;
+    }
+
+    function computeGpaForSchoolIdentifiers(identifiers) {
+        const courses = normalizeCourses(state.allData?.Courses || []);
+        const ids = Array.isArray(identifiers) ? identifiers.map(s => (s||'').toString().trim().toLowerCase()).filter(Boolean) : [];
+        if (!ids.length) return null;
+        let totalPoints = 0;
+        let totalGpaCredits = 0;
+        courses.forEach(c => {
+            const school = (c.school || '').toString().trim().toLowerCase();
+            const matches = ids.some(id => school.includes(id));
+            if (!matches) return;
+            const status = (c.status || '').toString().trim().toLowerCase();
+            if (status !== 'completed') return;
+            const credits = Number.parseFloat(String(c.credits || '').replace(/[^0-9\.\-]/g, ''));
+            const grade = String(c.grade || '').trim();
+            if (grade.toUpperCase() === 'CR') return;
+            const pts = gradeToPoints(grade);
+            if (pts !== null && Number.isFinite(credits)) {
+                totalPoints += pts * credits;
+                totalGpaCredits += credits;
+            }
+        });
+        if (totalGpaCredits <= 0) return null;
+        return (totalPoints / totalGpaCredits);
+    }
+
+    function renderCoursesDashboard() {
+        const courses = normalizeCourses(state.allData?.Courses || []);
+        const completed = courses.filter(c => String(c.status || '').toLowerCase() === 'completed');
+        let totalPoints = 0;
+        let totalGpaCredits = 0;
+        let totalCompletedCredits = 0;
+        completed.forEach(c => {
+            const credits = Number.parseFloat(String(c.credits || '').replace(/[^0-9\.\-]/g, ''));
+            if (Number.isFinite(credits)) totalCompletedCredits += credits;
+            const grade = String(c.grade || '').trim();
+            if (grade.toUpperCase() === 'CR') return;
+            const pts = gradeToPoints(grade);
+            if (pts !== null && Number.isFinite(credits)) {
+                totalPoints += pts * credits;
+                totalGpaCredits += credits;
+            }
+        });
+
+        const gpaEl = document.getElementById('courses-dashboard-gpa');
+        const creditsEl = document.getElementById('courses-dashboard-credits');
+        const percentEl = document.getElementById('courses-dashboard-percent');
+
+        if (gpaEl) {
+            if (totalGpaCredits > 0) gpaEl.textContent = (totalPoints / totalGpaCredits).toFixed(1);
+            else gpaEl.textContent = '-';
+        }
+        if (creditsEl) {
+            creditsEl.textContent = `${String(totalCompletedCredits || 0)}/120`;
+        }
+        if (percentEl) {
+            const pct = (totalCompletedCredits / 120) * 100;
+            percentEl.textContent = Number.isFinite(pct) ? `${pct.toFixed(1)}%` : '-';
+        }
+    }
+
     const renderAcademicAchievements = () => {
         const presidentsContainer = document.getElementById('presidents-list-items');
         const honorRollContainer = document.getElementById('honor-roll-items');
@@ -918,7 +998,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = schoolRows.find(predicate);
             const name = (row?.school || row?.name || fallbackName || '').toString().trim();
             const abbreviation = (row?.schoolAbbreviation || '').toString().trim();
-            const gpa = formatGpa(row?.gpa);
+            const normalizedSchoolName = name.toLowerCase();
+            const computedGpaVal = computeGpaForSchoolIdentifiers([normalizedSchoolName]);
+            const gpa = (computedGpaVal !== null) ? String(Number(computedGpaVal.toFixed(1))) : formatGpa(row?.gpa);
             return {
                 name,
                 normalizedName: normalizeText(name),
@@ -964,24 +1046,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (collegeSchoolSkeletonEl) collegeSchoolSkeletonEl.style.display = 'none';
         if (highSchoolSkeletonEl) highSchoolSkeletonEl.style.display = 'none';
 
-        const collegeGpaEl = document.getElementById('achievement-college-gpa');
-        const collegeGpaSkeletonEl = document.getElementById('achievement-college-gpa-skeleton');
-        const collegeGpaTextEl = document.getElementById('achievement-college-gpa-text');
-        const collegeGpaValueEl = document.getElementById('achievement-college-gpa-value');
-        if (collegeGpaEl && collegeGpaValueEl && collegeGpaTextEl && collegeGpaSkeletonEl) {
-            if (collegeProfile.gpa) {
-                collegeGpaValueEl.textContent = collegeProfile.gpa;
-                collegeGpaEl.style.display = 'block';
-                collegeGpaSkeletonEl.style.display = 'none';
-                collegeGpaTextEl.style.display = 'inline';
-            } else {
-                collegeGpaValueEl.textContent = '';
-                collegeGpaEl.style.display = 'none';
-                collegeGpaSkeletonEl.style.display = 'inline-block';
-                collegeGpaTextEl.style.display = 'none';
-            }
-        }
-
         const collegeSchoolNames = schoolRows
             .filter(row => {
                 const schoolName = normalizeText(row?.school || row?.name || '');
@@ -1004,6 +1068,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (!highSchoolNames.length) {
             highSchoolNames.push(highSchoolProfile.normalizedName, 'emerald ridge high school', 'emerald ridge');
+        }
+
+        const collegeGpaEl = document.getElementById('achievement-college-gpa');
+        const collegeGpaSkeletonEl = document.getElementById('achievement-college-gpa-skeleton');
+        const collegeGpaTextEl = document.getElementById('achievement-college-gpa-text');
+        const collegeGpaValueEl = document.getElementById('achievement-college-gpa-value');
+        if (collegeGpaEl && collegeGpaValueEl && collegeGpaTextEl && collegeGpaSkeletonEl) {
+            const computedCollegeGpa = computeGpaForSchoolIdentifiers(collegeSchoolNames);
+            if (computedCollegeGpa !== null) {
+                collegeGpaValueEl.textContent = computedCollegeGpa.toFixed(1);
+                collegeGpaEl.style.display = 'block';
+                collegeGpaSkeletonEl.style.display = 'none';
+                collegeGpaTextEl.style.display = 'inline';
+            } else if (collegeProfile.gpa) {
+                collegeGpaValueEl.textContent = collegeProfile.gpa;
+                collegeGpaEl.style.display = 'block';
+                collegeGpaSkeletonEl.style.display = 'none';
+                collegeGpaTextEl.style.display = 'inline';
+            } else {
+                collegeGpaValueEl.textContent = '';
+                collegeGpaEl.style.display = 'none';
+                collegeGpaSkeletonEl.style.display = 'inline-block';
+                collegeGpaTextEl.style.display = 'none';
+            }
         }
 
         rows.forEach(row => {
@@ -1126,9 +1214,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const normalizedSchoolName = schoolName.toLowerCase();
             const focusSchool = normalizedSchoolName.includes('high school') ? 'highschool' : 'college';
             const marginTop = index === 0 ? '20px' : '12px';
-            const gpaRow = gpa
-                ? `<div style="font-size: 0.9rem; color: #8b949e; margin-top: 10px;">
-                <span><strong style="color: #58a6ff;">Cumulative GPA:</strong> ${gpa}</span>
+            const computedGpaVal = computeGpaForSchoolIdentifiers([normalizedSchoolName]);
+            const displayGpa = (computedGpaVal !== null) ? computedGpaVal.toFixed(1) : (gpa || '');
+            const gpaRow = displayGpa
+                ? `<div style="font-size: 0.95rem; color: #8b949e; margin-top: 12px;">
+                <span><strong style="color: #58a6ff;">Cumulative GPA:</strong> <span style="font-weight:600;">${displayGpa}</span></span>
             </div>`
                 : '';
             const achievementsLinkRow = `<div style="font-size: 0.9rem; margin-top: 10px;">
@@ -1920,9 +2010,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${escapeHtml(course.school || '-')}</td>
                     <td>${escapeHtml(course.type || '-')}</td>
                     <td>${statusBadge}</td>
+                    <td>${course.credits ? escapeHtml(course.credits) : '<span style="color:#8b949e;">-</span>'}</td>
                     <td>${course.completionYear ? escapeHtml(course.completionYear) : '<span style="color:#8b949e;">-</span>'}</td>
                     <td>${gradeBadge}</td>
-                    <td>${course.credits ? escapeHtml(course.credits) : '<span style="color:#8b949e;">-</span>'}</td>
                 </tr>`;
         }).join('');
 
@@ -1964,6 +2054,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!matchesColumn('school', course.school)) return false;
             if (!matchesColumn('type', course.type)) return false;
             if (!matchesColumn('status', course.status)) return false;
+            if (!matchesColumn('completionYear', course.completionYear)) return false;
             if (!matchesColumn('grade', course.grade)) return false;
 
             if (!query) return true;
@@ -2017,6 +2108,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     values: courses.map(course => course.status)
                 },
                 {
+                    key: 'completionYear',
+                    label: 'Completion Year',
+                    values: courses.map(course => course.completionYear)
+                },
+                {
                     key: 'grade',
                     label: 'Grade',
                     values: courses.map(course => course.grade)
@@ -2056,9 +2152,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderCourses = () => {
         if (!state.isCoursesPage || !state.coursesTableBody) return;
+        renderCoursesDashboard();
         setupCoursesControls();
         applyCoursesFilterAndSort();
     };
+
+    
 
     const bindModalButtons = () => {
         if (state.closeBtn) state.closeBtn.onclick = () => state.modalManager?.resetModal();
@@ -2191,11 +2290,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (route === '/technical' && !state.allData.skills) sheetsNeeded.push('skills');
         if (route === '/courses' && !state.allData.Courses) sheetsNeeded.push('Courses');
         if ((route === '/' || route === '/bio') && !state.allData.School) sheetsNeeded.push('School');
+        if ((route === '/' || route === '/bio') && !state.allData.Courses) sheetsNeeded.push('Courses');
         if (route === '/achievements') {
             if (!state.allData.videos) sheetsNeeded.push('videos');
             if (!state.allData.skills) sheetsNeeded.push('skills');
             if (!state.allData.Achievements) sheetsNeeded.push('Achievements');
             if (!state.allData.School) sheetsNeeded.push('School');
+            if (!state.allData.Courses) sheetsNeeded.push('Courses');
         }
         if (route === '/activities' && !state.allData.Activities) sheetsNeeded.push('Activities');
         
