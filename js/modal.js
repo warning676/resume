@@ -4,6 +4,7 @@ class ModalManager {
         this.galleryLoadId = 0;
         this.modalFadeMs = 180;
         this.modalTransitionToken = 0;
+        this.skillIconPreloadRadius = 2;
     }
 
     syncPageScrollLock(locked) {
@@ -110,6 +111,87 @@ class ModalManager {
         });
     }
 
+    preloadToolIconsForItem(cardOrData, typeOverride = null) {
+        const s = this.s;
+        const isSkill = (cardOrData instanceof HTMLElement)
+            ? cardOrData.classList.contains('skill-item')
+            : (typeOverride === 'skill');
+        if (isSkill) return;
+        const data = (cardOrData instanceof HTMLElement) ? cardOrData.dataset : cardOrData;
+        const toolsStr = data && data.tools ? String(data.tools) : '';
+        if (!toolsStr) return;
+        const skills = (s.allData && Array.isArray(s.allData.skills)) ? s.allData.skills : [];
+        if (!skills.length) return;
+        const tools = toolsStr.split(',').map(t => t.trim()).filter(Boolean);
+        const seen = new Set();
+        tools.forEach(tool => {
+            const key = tool.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            const skillMatch = skills.find(sk => (sk && sk.name && String(sk.name).toLowerCase() === key))
+                || skills.find(sk => (sk && sk.name && String(sk.name).toLowerCase().includes(key)))
+                || skills.find(sk => (sk && sk.name && key.includes(String(sk.name).toLowerCase())));
+            if (!skillMatch || !skillMatch.icon) return;
+            const src = this.fixImagePath(skillMatch.icon);
+            this.preloadImage(src, 2000);
+        });
+    }
+
+    preloadSkillIconForItem(cardOrData, typeOverride = null) {
+        const isSkill = (cardOrData instanceof HTMLElement)
+            ? cardOrData.classList.contains('skill-item')
+            : (typeOverride === 'skill');
+        if (!isSkill) return;
+        const data = (cardOrData instanceof HTMLElement) ? cardOrData.dataset : cardOrData;
+        const rawSrc = (data && data.icon)
+            ? String(data.icon)
+            : (cardOrData instanceof HTMLElement && cardOrData.querySelector('img') ? cardOrData.querySelector('img').src : '');
+        const src = this.fixImagePath(rawSrc || '');
+        if (!src) return;
+        this.preloadImage(src, 2000);
+    }
+
+    preloadSkillIconByName(name) {
+        const s = this.s;
+        const key = String(name || '').trim().toLowerCase();
+        if (!key) return;
+        const skills = (s.allData && Array.isArray(s.allData.skills)) ? s.allData.skills : [];
+        if (!skills.length) return;
+        const match = skills.find(sk => sk && sk.name && String(sk.name).trim().toLowerCase() === key);
+        if (!match || !match.icon) return;
+        const src = this.fixImagePath(match.icon);
+        if (!src) return;
+        this.preloadImage(src, 2000);
+    }
+
+    preloadAdjacentSkillIconsFromContext(toolsContext, currentIndex) {
+        const ctx = Array.isArray(toolsContext) ? toolsContext : [];
+        if (ctx.length <= 1) return;
+        const center = typeof currentIndex === 'number' ? currentIndex : -1;
+        if (center < 0) return;
+        const r = Math.max(1, this.skillIconPreloadRadius || 1);
+        for (let delta = -r; delta <= r; delta++) {
+            if (delta === 0) continue;
+            const idx = (center + delta + ctx.length) % ctx.length;
+            this.preloadSkillIconByName(ctx[idx]);
+        }
+    }
+
+    preloadAdjacentSkillIconsFromDom(container, itemSelector, currentEl) {
+        if (!container || !itemSelector || !currentEl) return;
+        const allItems = Array.from(container.querySelectorAll(itemSelector));
+        const visibleItems = allItems.filter(item => item.style.display !== 'none');
+        if (visibleItems.length <= 1) return;
+        const center = visibleItems.indexOf(currentEl);
+        if (center < 0) return;
+        const r = Math.max(1, this.skillIconPreloadRadius || 1);
+        for (let delta = -r; delta <= r; delta++) {
+            if (delta === 0) continue;
+            const idx = (center + delta + visibleItems.length) % visibleItems.length;
+            this.preloadSkillIconForItem(visibleItems[idx], 'skill');
+        }
+    }
+
     setModalSkillIcon(modalIcon, iconSrc, altText) {
         if (!modalIcon) return;
         const finalSrc = this.fixImagePath(iconSrc || '');
@@ -124,21 +206,22 @@ class ModalManager {
         }
 
         modalIcon.style.opacity = '0';
-        const img = new Image();
-        img.onload = () => {
+        this.preloadImage(finalSrc, 2000).then((result) => {
             if (modalIcon._swapToken !== token) return;
             modalIcon.src = finalSrc;
+            if (result && result.cached) {
+                modalIcon.style.opacity = '1';
+                return;
+            }
             requestAnimationFrame(() => {
                 if (modalIcon._swapToken !== token) return;
                 modalIcon.style.opacity = '1';
             });
-        };
-        img.onerror = () => {
+        }).catch(() => {
             if (modalIcon._swapToken !== token) return;
             modalIcon.src = finalSrc;
             modalIcon.style.opacity = '1';
-        };
-        img.src = finalSrc;
+        });
     }
 
     getProficiencyBadgeClass(level) {
@@ -343,6 +426,7 @@ class ModalManager {
         }
         const nextIndex = (currentIndex + direction + visibleItems.length) % visibleItems.length;
         s.currentItemCard = visibleItems[nextIndex];
+        if (isSkillModal) this.preloadAdjacentSkillIconsFromDom(container, itemSelector, s.currentItemCard);
         this.openModalForItemWithTransition(s.currentItemCard, direction);
     }
 
@@ -350,6 +434,7 @@ class ModalManager {
         const s = this.s;
         if (!s.currentToolsContext.length) return;
         s.currentToolIndex = (s.currentToolIndex + direction + s.currentToolsContext.length) % s.currentToolsContext.length;
+        this.preloadAdjacentSkillIconsFromContext(s.currentToolsContext, s.currentToolIndex);
         const nextToolName = s.currentToolsContext[s.currentToolIndex];
         const skillMatch = s.allData && s.allData.skills
             ? s.allData.skills.find(sk => sk.name.toLowerCase() === nextToolName.toLowerCase())
@@ -362,6 +447,18 @@ class ModalManager {
         const isSkill = (cardOrData instanceof HTMLElement)
             ? cardOrData.classList.contains('skill-item')
             : (typeOverride === 'skill');
+        if (isSkill) {
+            this.preloadSkillIconForItem(cardOrData, typeOverride);
+            if (Array.isArray(toolsContext) && toolsContext.length) {
+                const data = (cardOrData instanceof HTMLElement) ? cardOrData.dataset : cardOrData;
+                const idx = toolsContext.findIndex(n => String(n || '').toLowerCase() === String((data && data.name) || '').toLowerCase());
+                this.preloadAdjacentSkillIconsFromContext(toolsContext, idx >= 0 ? idx : s.currentToolIndex);
+            } else if (cardOrData instanceof HTMLElement && s.skillsList) {
+                this.preloadAdjacentSkillIconsFromDom(s.skillsList, '.skill-item', cardOrData);
+            }
+        } else {
+            this.preloadToolIconsForItem(cardOrData, typeOverride);
+        }
         const useSecondary = isSkill && s.modal && s.modal.style.display === "flex" && s.secModal && toolsContext;
         const targetModal = useSecondary ? s.secModal : s.modal;
         const transitionTarget = targetModal ? targetModal.querySelector('.modal-info-pane') : null;
@@ -653,16 +750,43 @@ class ModalManager {
                             iconSkeleton.className = 'tool-icon-skeleton skeleton-element';
 
                             const icon = document.createElement('img');
-                            icon.src = this.fixImagePath(skillMatch.icon);
                             icon.className = 'tool-icon';
+                            icon.style.opacity = '0';
 
                             iconWrap.appendChild(iconSkeleton);
                             iconWrap.appendChild(icon);
                             tag.appendChild(iconWrap);
 
                             toolIcons.push(icon);
-                            icon.onload = onToolIconLoad;
-                            icon.onerror = onToolIconLoad;
+                            const fixedSrc = this.fixImagePath(skillMatch.icon);
+                            const token = (icon._swapToken || 0) + 1;
+                            icon._swapToken = token;
+                            this.preloadImage(fixedSrc, 2000).then(() => {
+                                if (!icon.isConnected) return;
+                                if (icon._swapToken !== token) return;
+                                icon.onload = () => {
+                                    if (!icon.isConnected) return;
+                                    if (icon._swapToken !== token) return;
+                                    icon.style.opacity = '1';
+                                    onToolIconLoad();
+                                };
+                                icon.onerror = () => {
+                                    if (!icon.isConnected) return;
+                                    if (icon._swapToken !== token) return;
+                                    icon.style.opacity = '1';
+                                    onToolIconLoad();
+                                };
+                                icon.src = fixedSrc;
+                                if (icon.complete) {
+                                    icon.style.opacity = '1';
+                                    onToolIconLoad();
+                                }
+                            }).catch(() => {
+                                if (!icon.isConnected) return;
+                                if (icon._swapToken !== token) return;
+                                icon.style.opacity = '1';
+                                onToolIconLoad();
+                            });
                         }
                         const text = document.createElement('span');
                         text.innerText = tool.toUpperCase();
@@ -685,7 +809,6 @@ class ModalManager {
                         modalTools.appendChild(tag);
                     });
                     if (toolIcons.length === 0) clearToolSkeletons();
-                    toolIcons.forEach(icon => { if (icon.complete) onToolIconLoad(); });
                 } else {
                     modalTools.innerText = "NONE";
                 }

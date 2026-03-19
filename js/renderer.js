@@ -370,6 +370,14 @@ class Renderer {
                 if (iconImg.complete) clearSkeleton();
             }
 
+            const primeSkillModalIcon = () => {
+                if (!s.modalManager) return;
+                s.modalManager.preloadSkillIconForItem(item, 'skill');
+                s.modalManager.preloadAdjacentSkillIconsFromDom(s.skillsList, '.skill-item', item);
+            };
+            item.addEventListener('pointerenter', primeSkillModalIcon);
+            item.addEventListener('pointerdown', primeSkillModalIcon);
+            item.addEventListener('touchstart', primeSkillModalIcon, { passive: true });
             item.addEventListener('click', () => s.openModalForItem(item));
             tableBody.appendChild(item);
         });

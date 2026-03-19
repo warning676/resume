@@ -238,8 +238,8 @@ class FilterManager {
                 valA = Utils.getProficiencyValue(a.querySelector('.level').innerText);
                 valB = Utils.getProficiencyValue(b.querySelector('.level').innerText);
             } else {
-                valA = new Date(a.querySelector('.last-used').innerText).getTime() || 0;
-                valB = new Date(b.querySelector('.last-used').innerText).getTime() || 0;
+                valA = Utils.parseMonthYearToTime(a.querySelector('.last-used')?.innerText);
+                valB = Utils.parseMonthYearToTime(b.querySelector('.last-used')?.innerText);
             }
             if (valA === valB) return nameA.localeCompare(nameB);
             return order === 'desc' ? (valA > valB ? -1 : 1) : (valA < valB ? -1 : 1);

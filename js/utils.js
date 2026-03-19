@@ -23,6 +23,39 @@ class Utils {
         return scores[normalizedLevel] || 0;
     }
 
+    static parseMonthYearToTime(input) {
+        const raw = String(input || '').trim();
+        if (!raw || raw === '-') return 0;
+        const normalized = raw.replace(/\s+/g, ' ').trim();
+        const yearOnly = normalized.match(/^(\d{4})$/);
+        if (yearOnly) return new Date(Number.parseInt(yearOnly[1], 10), 0, 1).getTime() || 0;
+
+        const monthMap = {
+            jan: 0, january: 0,
+            feb: 1, february: 1,
+            mar: 2, march: 2,
+            apr: 3, april: 3,
+            may: 4,
+            jun: 5, june: 5,
+            jul: 6, july: 6,
+            aug: 7, august: 7,
+            sep: 8, sept: 8, september: 8,
+            oct: 9, october: 9,
+            nov: 10, november: 10,
+            dec: 11, december: 11
+        };
+
+        const parts = normalized.toLowerCase().split(' ');
+        if (parts.length >= 2) {
+            const m = monthMap[parts[0]];
+            const y = Number.parseInt(parts[1], 10);
+            if (Number.isFinite(m) && Number.isFinite(y)) return new Date(y, m, 1).getTime() || 0;
+        }
+
+        const fallback = Date.parse(normalized);
+        return Number.isFinite(fallback) ? fallback : 0;
+    }
+
     static extractYouTubeID(input) {
         if (!input) return '';
         
