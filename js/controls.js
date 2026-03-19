@@ -23,6 +23,8 @@ class ControlsManager {
             if (!dropdown || !trigger) return;
 
             const viewportTop = 12;
+            const viewportLeft = 12;
+            const viewportRight = window.innerWidth - 12;
             const viewportBottom = window.innerHeight - 12;
             const triggerRect = trigger.getBoundingClientRect();
             const gap = 5;
@@ -70,7 +72,19 @@ class ControlsManager {
                 return;
             }
 
-            const dropdownRect = dropdown.getBoundingClientRect();
+            let dropdownRect = dropdown.getBoundingClientRect();
+            const previousRight = dropdown.style.right;
+            if (previousRight === '') dropdown.style.right = '0px';
+            if (dropdownRect.left < viewportLeft) {
+                const shiftRight = viewportLeft - dropdownRect.left;
+                dropdown.style.right = `${-(shiftRight)}px`;
+                dropdownRect = dropdown.getBoundingClientRect();
+            } else if (dropdownRect.right > viewportRight) {
+                const shiftLeft = dropdownRect.right - viewportRight;
+                const currentRight = Number.parseFloat((dropdown.style.right || '0').replace('px', '')) || 0;
+                dropdown.style.right = `${currentRight + shiftLeft}px`;
+                dropdownRect = dropdown.getBoundingClientRect();
+            }
             let delta = 0;
 
             if (dropdownRect.bottom > viewportBottom) {

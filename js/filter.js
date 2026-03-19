@@ -186,7 +186,7 @@ class FilterManager {
         if (tableBody) {
             const existingRow = tableBody.querySelector('.skills-no-results-row');
             if (visibleCount === 0) {
-                if (!existingRow) tableBody.insertAdjacentHTML('beforeend', '<tr class="skills-no-results-row"><td colspan="4" class="courses-loading-row">No skills found.</td></tr>');
+                if (!existingRow) tableBody.insertAdjacentHTML('beforeend', '<tr class="skills-no-results-row"><td colspan="4" class="courses-loading-row">No matching skills found.</td></tr>');
             } else {
                 if (existingRow) existingRow.remove();
             }

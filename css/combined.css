@@ -1869,7 +1869,7 @@ body.dropdown-scroll-lock {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 0;
 }
 
 .external-link-header h3 {
@@ -1878,6 +1878,19 @@ body.dropdown-scroll-lock {
     font-size: 1.2rem;
     font-weight: 800;
     letter-spacing: 0.2px;
+}
+
+.external-link-divider {
+    border: 0;
+    border-top: 1px solid #1f2428;
+}
+
+.external-link-divider-top {
+    margin: 10px 0 12px 0;
+}
+
+.external-link-divider-bottom {
+    margin: 12px 0 10px 0;
 }
 
 .external-link-message {
@@ -1912,7 +1925,7 @@ body.dropdown-scroll-lock {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    margin-top: 18px;
+    margin-top: 0;
 }
 
 .external-link-btn {
@@ -3004,6 +3017,10 @@ body.dropdown-scroll-lock {
     display: inline-flex;
     align-items: center;
     min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .table-header-meta {
@@ -3011,6 +3028,8 @@ body.dropdown-scroll-lock {
     align-items: center;
     gap: 6px;
     min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
 }
 
 .table-header-chip {
@@ -3021,6 +3040,13 @@ body.dropdown-scroll-lock {
     width: 100%;
 }
 
+.table-header-actions {
+    flex: 0 0 auto;
+}
+
+.table-sort-button {
+    flex: 0 0 auto;
+}
 .table-sort-header {
     cursor: pointer;
     user-select: none;
@@ -3088,11 +3114,25 @@ body.dropdown-scroll-lock {
 
 .skills-table {
     min-width: 760px;
+    table-layout: fixed;
 }
 
 .skills-table .skill-item {
     cursor: pointer;
 }
+
+.skills-table th:nth-child(1),
+.skills-table td:nth-child(1) { width: 340px; }
+.skills-table th:nth-child(2),
+.skills-table td:nth-child(2) { width: 170px; }
+.skills-table th:nth-child(3),
+.skills-table td:nth-child(3) { width: 140px; }
+.skills-table th:nth-child(4),
+.skills-table td:nth-child(4) { width: 140px; }
+
+.skills-table td:nth-child(1) { overflow: hidden; }
+.skills-table .skill-meta { overflow: hidden; }
+.skills-table .skill-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .skills-table .skill-name-cell {
     display: flex;
@@ -3159,6 +3199,7 @@ body.dropdown-scroll-lock {
     border-collapse: collapse;
     min-width: 820px;
     background: #000000;
+    table-layout: fixed;
 }
 
 .courses-table th,
@@ -3168,7 +3209,13 @@ body.dropdown-scroll-lock {
     padding: 10px 12px;
     text-align: left;
     font-size: 0.86rem;
-    vertical-align: top;
+    vertical-align: middle;
+}
+
+.skills-table th,
+.skills-table td {
+    vertical-align: middle;
+    text-align: left;
 }
 
 .courses-table th:last-child,
@@ -3210,6 +3257,23 @@ body.dropdown-scroll-lock {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+.courses-table th:nth-child(1),
+.courses-table td:nth-child(1) { width: 80px; }
+.courses-table th:nth-child(2),
+.courses-table td:nth-child(2) { width: 280px; }
+.courses-table th:nth-child(3),
+.courses-table td:nth-child(3) { width: 170px; }
+.courses-table th:nth-child(4),
+.courses-table td:nth-child(4) { width: 140px; }
+.courses-table th:nth-child(5),
+.courses-table td:nth-child(5) { width: 120px; }
+.courses-table th:nth-child(6),
+.courses-table td:nth-child(6) { width: 90px; }
+.courses-table th:nth-child(7),
+.courses-table td:nth-child(7) { width: 120px; }
+.courses-table th:nth-child(8),
+.courses-table td:nth-child(8) { width: 110px; }
 
 .courses-loading-row {
     color: #8b949e;

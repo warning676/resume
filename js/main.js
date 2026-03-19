@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         allData: null,
         dataPromise: null,
         filmFestivalAwards: {},
+        pendingFocusSchool: '',
 
         openModalForItem: null,
         filterCards: null,
@@ -410,7 +411,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const syncDomReferences = () => {
         state.modal = document.getElementById("infoModal");
-        state.closeBtn = document.querySelector(".close-button");
+        state.closeBtn = document.querySelector("#infoModal .close-button");
         state.videoFrame = document.getElementById("modal-video");
         state.mediaContainer = document.getElementById("media-container");
         state.prevBtn = document.getElementById("modal-prev");
@@ -1002,7 +1003,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const scrollToFocusedSchoolCard = () => {
             const params = new URLSearchParams(window.location.search || '');
-            const focusSchool = String(params.get('focusSchool') || '').toLowerCase();
+            const focusSchool = String(state.pendingFocusSchool || params.get('focusSchool') || '').toLowerCase();
             if (!focusSchool) return;
 
             const targetId = focusSchool === 'highschool'
@@ -1016,6 +1017,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (targetCard) {
                 targetCard.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
             }
+            state.pendingFocusSchool = '';
         };
 
         const rows = Array.isArray(state.allData?.Achievements) ? state.allData.Achievements : [];
@@ -1298,7 +1300,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 event.preventDefault();
                 const focusSchool = String(link.getAttribute('data-focus-school') || '').toLowerCase();
                 if (!focusSchool) return;
-                loadRoute('/achievements', `?focusSchool=${encodeURIComponent(focusSchool)}`, {
+                state.pendingFocusSchool = focusSchool;
+                loadRoute('/achievements', '', {
                     push: false,
                     historyUrl: buildUrl('/', '')
                 });
@@ -1473,6 +1476,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const renderColumnFilterMenu = (button, menu, definitions, selectedMap, onChange, activeKey) => {
         if (!button || !menu) return;
+
+        const positionColumnFilterMenu = () => {
+            if (!menu.classList.contains('open')) return;
+            const buttonRect = button.getBoundingClientRect();
+            const viewportPad = 12;
+            const viewportTop = viewportPad;
+            const viewportBottom = window.innerHeight - viewportPad;
+            const viewportLeft = viewportPad;
+            const viewportRight = window.innerWidth - viewportPad;
+
+            const gap = 6;
+            const spaceBelow = Math.max(0, viewportBottom - buttonRect.bottom - gap);
+            const spaceAbove = Math.max(0, buttonRect.top - viewportTop - gap);
+            const naturalHeight = Math.ceil(menu.scrollHeight);
+            const openUpward = naturalHeight > spaceBelow && spaceAbove > spaceBelow;
+
+            menu.style.top = openUpward ? 'auto' : `calc(100% + ${gap}px)`;
+            menu.style.bottom = openUpward ? `calc(100% + ${gap}px)` : 'auto';
+            menu.style.maxHeight = '';
+            menu.style.overflow = 'visible';
+
+            menu.style.right = '0px';
+            menu.style.left = 'auto';
+            let rect = menu.getBoundingClientRect();
+            if (rect.left < viewportLeft) {
+                const shiftRight = viewportLeft - rect.left;
+                menu.style.right = `${-(shiftRight)}px`;
+                rect = menu.getBoundingClientRect();
+            } else if (rect.right > viewportRight) {
+                const shiftLeft = rect.right - viewportRight;
+                const currentRight = Number.parseFloat((menu.style.right || '0').replace('px', '')) || 0;
+                menu.style.right = `${currentRight + shiftLeft}px`;
+                rect = menu.getBoundingClientRect();
+            }
+
+            let deltaY = 0;
+            if (rect.bottom > viewportBottom) deltaY = rect.bottom - viewportBottom;
+            if (rect.top - deltaY < viewportTop) deltaY = rect.top - viewportTop;
+            if (deltaY) window.scrollBy({ top: deltaY, behavior: 'auto' });
+        };
 
         const selected = selectedMap || {};
         const wasOpen = menu.classList.contains('open');
@@ -1692,6 +1735,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 button.setAttribute('aria-expanded', 'true');
                 syncCoursesModalScrollLock(true);
                 syncDropdownScrollLock();
+                requestAnimationFrame(() => positionColumnFilterMenu());
             });
         }
     };
@@ -2152,9 +2196,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 coursesClearBtn.classList.toggle('visible', Boolean(state.coursesSearchInput.value && String(state.coursesSearchInput.value).trim().length));
             };
             state.coursesSearchInput.addEventListener('input', () => {
-                state.courseSearchQuery = state.coursesSearchInput.value || '';
                 updateClearButton();
-                applyCoursesFilterAndSort();
+                state.courseSearchQuery = state.coursesSearchInput.value || '';
+                if (state.coursesSearchInput._courseSearchDebounce) {
+                    clearTimeout(state.coursesSearchInput._courseSearchDebounce);
+                }
+                state.coursesSearchInput._courseSearchDebounce = setTimeout(() => {
+                    applyCoursesFilterAndSort();
+                }, 150);
             });
             state.coursesSearchInput.value = state.courseSearchQuery || '';
             if (coursesClearBtn) {
@@ -2254,16 +2303,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (externalContinueBtn) externalContinueBtn.onclick = () => closeExternalLinkModal(true);
 
         if (state.prevBtn) {
-            state.prevBtn.addEventListener('click', (e) => {
+            state.prevBtn.onclick = (e) => {
                 e.stopPropagation();
                 state.modalManager?.navigateItem(-1);
-            });
+            };
         }
         if (state.nextBtn) {
-            state.nextBtn.addEventListener('click', (e) => {
+            state.nextBtn.onclick = (e) => {
                 e.stopPropagation();
                 state.modalManager?.navigateItem(1);
-            });
+            };
         }
     };
 
@@ -2450,7 +2499,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 if (projectData.length === 0) {
-                    state.portfolioGrid.innerHTML = `<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">No projects found for "${pageType}".</p>`;
+                    const projectLabel = pageType === 'games' ? 'game projects' : 'video projects';
+                    state.portfolioGrid.innerHTML = `<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">No matching ${projectLabel} found.</p>`;
                 }
                 if (projectData.length > 0) {
                     const startTime = Date.now();

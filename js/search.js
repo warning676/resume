@@ -937,8 +937,29 @@ function waitForDataToLoad() {
             const hasSearchInput = document.getElementById('portfolio-search');
             const hasActivitiesContainer = !!document.getElementById('activities-list');
             const hasCoursesContainer = !!document.getElementById('courses-table-body');
-            
-            if ((hasPortfolioCards || hasSkillItems || hasActivityCards || hasCourseRows || hasCoursesTable || notSkeletons) && (hasSearchInput || hasActivitiesContainer || hasCoursesContainer)) {
+
+            const path = (window.location && window.location.pathname) ? window.location.pathname : '';
+            const route = path.endsWith('/technical') ? '/technical'
+                : path.endsWith('/videos') ? '/videos'
+                : path.endsWith('/games') ? '/games'
+                : path.endsWith('/courses') ? '/courses'
+                : path.endsWith('/activities') ? '/activities'
+                : path.endsWith('/achievements') ? '/achievements'
+                : '';
+
+            const readyForRoute = route === '/technical'
+                ? hasSkillItems
+                : (route === '/videos' || route === '/games')
+                    ? hasPortfolioCards
+                    : route === '/courses'
+                        ? (hasCoursesTable && (hasCourseRows || notSkeletons))
+                        : route === '/activities'
+                            ? (hasActivitiesContainer && (hasActivityCards || notSkeletons))
+                            : route === '/achievements'
+                                ? (notSkeletons || document.getElementById('presidents-list-items'))
+                                : (hasPortfolioCards || hasSkillItems || hasActivityCards || hasCourseRows || hasCoursesTable);
+
+            if (readyForRoute && (hasSearchInput || hasActivitiesContainer || hasCoursesContainer || route === '/achievements')) {
                 clearInterval(checkInterval);
                 resolve();
             }
@@ -981,6 +1002,10 @@ function openModalForSearchResult(title, type) {
     
     if (searchInput && window.state) {
         searchInput.value = title;
+        const clearBtn = searchInput.closest('.search-container')?.querySelector('.input-clear-button');
+        if (clearBtn) {
+            clearBtn.classList.toggle('visible', Boolean(searchInput.value && String(searchInput.value).length > 0));
+        }
         
         window.state.searchQuery = title;
         if (window.state.isSkillsPage) {
