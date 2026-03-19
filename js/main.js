@@ -2143,6 +2143,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statusEl.innerHTML = '';
             }
         }
+
+        if (state.renderer) {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    const table = document.getElementById('courses-table');
+                    const shell = table ? table.closest('.courses-table-shell') : null;
+                    if (table && shell) state.renderer.fitTableColumns(table, shell, { floorMin: 90 });
+                }, 0);
+            });
+        }
     };
 
     const applyCoursesFilterAndSort = () => {

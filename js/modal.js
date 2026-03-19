@@ -397,12 +397,12 @@ class ModalManager {
         transitionTarget.style.willChange = 'opacity, transform';
         transitionTarget.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
         transitionTarget.style.opacity = '0';
-        transitionTarget.style.transform = `translateX(${exitShift}px)`;
+        transitionTarget.style.transform = `translate3d(${exitShift}px, 0, 0)`;
         if (headerTransitionTarget) {
             headerTransitionTarget.style.willChange = 'opacity, transform';
             headerTransitionTarget.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
             headerTransitionTarget.style.opacity = '0';
-            headerTransitionTarget.style.transform = `translateX(${exitShift}px)`;
+            headerTransitionTarget.style.transform = `translate3d(${exitShift}px, 0, 0)`;
         }
 
         const performSwap = () => {
@@ -410,34 +410,34 @@ class ModalManager {
             this.openModalForItem(cardOrData, typeOverride, toolsContext);
             transitionTarget.style.transition = 'none';
             transitionTarget.style.opacity = '0';
-            transitionTarget.style.transform = `translateX(${enterShift}px)`;
+            transitionTarget.style.transform = `translate3d(${enterShift}px, 0, 0)`;
             if (headerTransitionTarget) {
                 headerTransitionTarget.style.transition = 'none';
                 headerTransitionTarget.style.opacity = '0';
-                headerTransitionTarget.style.transform = `translateX(${enterShift}px)`;
+                headerTransitionTarget.style.transform = `translate3d(${enterShift}px, 0, 0)`;
             }
 
             requestAnimationFrame(() => {
                 if (transitionToken !== this.modalTransitionToken) return;
                 transitionTarget.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
                 transitionTarget.style.opacity = '1';
-                transitionTarget.style.transform = 'translateX(0px)';
+                transitionTarget.style.transform = 'translate3d(0px, 0, 0)';
                 if (headerTransitionTarget) {
                     headerTransitionTarget.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
                     headerTransitionTarget.style.opacity = '1';
-                    headerTransitionTarget.style.transform = 'translateX(0px)';
+                    headerTransitionTarget.style.transform = 'translate3d(0px, 0, 0)';
                 }
 
                 const cleanup = () => {
                     if (transitionToken !== this.modalTransitionToken) return;
                     transitionTarget.style.transition = '';
                     transitionTarget.style.opacity = '';
-                    transitionTarget.style.transform = '';
+                    transitionTarget.style.transform = 'translate3d(0px, 0, 0)';
                     transitionTarget.style.willChange = '';
                     if (headerTransitionTarget) {
                         headerTransitionTarget.style.transition = '';
                         headerTransitionTarget.style.opacity = '';
-                        headerTransitionTarget.style.transform = '';
+                        headerTransitionTarget.style.transform = 'translate3d(0px, 0, 0)';
                         headerTransitionTarget.style.willChange = '';
                     }
                     if (targetModal) {

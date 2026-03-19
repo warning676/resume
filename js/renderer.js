@@ -3,6 +3,140 @@ class Renderer {
         this.s = state;
     }
 
+    fitTableColumns(table, shell, options = {}) {
+        if (!table || !shell) return;
+        const theadRow = table.tHead && table.tHead.rows[0] ? table.tHead.rows[0] : null;
+        const tbody = table.tBodies && table.tBodies[0] ? table.tBodies[0] : null;
+        if (!theadRow || !tbody) return;
+
+        const ths = Array.from(theadRow.cells || []);
+        const colCount = ths.length;
+        if (!colCount) return;
+
+        const available = Math.max(0, Math.floor(shell.clientWidth) - 2);
+        if (!available) return;
+
+        const buffer = Number.isFinite(options.buffer) ? options.buffer : 12;
+        const floorMin = Number.isFinite(options.floorMin) ? options.floorMin : 110;
+
+        const measureWrap = document.createElement('div');
+        measureWrap.style.position = 'absolute';
+        measureWrap.style.left = '-10000px';
+        measureWrap.style.top = '0';
+        measureWrap.style.visibility = 'hidden';
+        measureWrap.style.pointerEvents = 'none';
+        measureWrap.style.width = 'max-content';
+
+        const clone = table.cloneNode(true);
+        clone.style.tableLayout = 'auto';
+        clone.style.width = 'max-content';
+        clone.style.minWidth = '0';
+        clone.querySelectorAll('colgroup').forEach(cg => cg.remove());
+        clone.querySelectorAll('th, td').forEach(cell => {
+            cell.style.width = '';
+            cell.style.maxWidth = '';
+            cell.style.whiteSpace = 'nowrap';
+            cell.style.overflow = 'visible';
+            cell.style.textOverflow = 'clip';
+        });
+
+        measureWrap.appendChild(clone);
+        document.body.appendChild(measureWrap);
+
+        const cloneHeadRow = clone.tHead && clone.tHead.rows[0] ? clone.tHead.rows[0] : null;
+        const cloneBody = clone.tBodies && clone.tBodies[0] ? clone.tBodies[0] : null;
+        if (!cloneHeadRow || !cloneBody) {
+            measureWrap.remove();
+            return;
+        }
+
+        const cloneThs = Array.from(cloneHeadRow.cells || []);
+        const cloneRows = Array.from(cloneBody.rows || []);
+
+        const measureCell = (cell) => Math.ceil((cell && cell.getBoundingClientRect().width) || 0);
+        const needed = new Array(colCount).fill(0);
+        for (let i = 0; i < colCount; i++) needed[i] = Math.max(needed[i], measureCell(cloneThs[i]));
+        cloneRows.forEach((row) => {
+            const cells = Array.from(row.cells || []);
+            for (let i = 0; i < Math.min(colCount, cells.length); i++) {
+                needed[i] = Math.max(needed[i], measureCell(cells[i]));
+            }
+        });
+
+        measureWrap.remove();
+
+        for (let i = 0; i < colCount; i++) needed[i] += buffer;
+
+        const headerMin = cloneThs.map(th => measureCell(th) + buffer);
+        const floor = new Array(colCount).fill(0).map((_, i) => Math.max(floorMin, headerMin[i] || 0));
+
+        const base = Math.floor(available / colCount);
+        const alloc = new Array(colCount).fill(base);
+        let rem = available - (base * colCount);
+        for (let i = 0; i < rem; i++) alloc[i % colCount] += 1;
+
+        const calcSurplus = () => alloc.map((w, i) => Math.max(0, w - floor[i]));
+        const calcDeficit = () => alloc.map((w, i) => Math.max(0, needed[i] - w));
+
+        let surplus = calcSurplus();
+        let deficit = calcDeficit();
+
+        for (let guard = 0; guard < 80; guard++) {
+            const defPairs = deficit.map((d, i) => ({ i, d })).filter(x => x.d > 0).sort((a, b) => b.d - a.d);
+            const surPairs = surplus.map((s, i) => ({ i, s })).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+            if (!defPairs.length || !surPairs.length) break;
+            const to = defPairs[0].i;
+            const from = surPairs[0].i;
+            const amount = Math.min(defPairs[0].d, surplus[from]);
+            if (!amount) break;
+            alloc[from] -= amount;
+            alloc[to] += amount;
+            surplus = calcSurplus();
+            deficit = calcDeficit();
+        }
+
+        const canNoWrap = deficit.every(d => d <= 0);
+
+        let colgroup = table.querySelector('colgroup');
+        if (!colgroup) {
+            colgroup = document.createElement('colgroup');
+            table.insertBefore(colgroup, table.firstChild);
+        }
+        colgroup.innerHTML = '';
+        alloc.forEach((w) => {
+            const col = document.createElement('col');
+            col.style.width = `${Math.max(0, Math.floor(w))}px`;
+            colgroup.appendChild(col);
+        });
+
+        table.classList.add('table-fit');
+        if (canNoWrap) table.classList.add('table-fit-nowrap');
+        else table.classList.remove('table-fit-nowrap');
+
+        table.style.tableLayout = 'fixed';
+        table.style.width = '100%';
+        table.style.minWidth = '0';
+    }
+
+    ensureSkillsFitBinding() {
+        const s = this.s;
+        if (!s) return;
+        if (s._skillsFitBound) return;
+        s._skillsFitBound = true;
+        let t = null;
+        window.addEventListener('resize', () => {
+            if (t) clearTimeout(t);
+            t = setTimeout(() => {
+                const skillsShell = document.querySelector('.courses-table-shell.skills-table-shell');
+                const skillsTable = document.querySelector('table.skills-table');
+                if (skillsShell && skillsTable) this.fitTableColumns(skillsTable, skillsShell, { floorMin: 120 });
+                const coursesShell = document.querySelector('#courses-table')?.closest('.courses-table-shell');
+                const coursesTable = document.querySelector('#courses-table');
+                if (coursesShell && coursesTable) this.fitTableColumns(coursesTable, coursesShell, { floorMin: 90 });
+            }, 120);
+        }, { passive: true });
+    }
+
     fixImagePath(path) {
         if (!path) return path;
         if (path.startsWith('http') || path.startsWith('data:')) {
@@ -39,7 +173,7 @@ class Renderer {
             for (let i = 0; i < count; i++) {
                 const w = rowWidths[i % rowWidths.length];
                 rows += `<tr class="courses-skeleton-row">
-                    <td><div style="display:flex;align-items:center;gap:10px;"><div class="skeleton-element" style="width:32px;height:32px;border-radius:8px;"></div><div><div class="skeleton-element" style="width:${w[0]}px;height:14px;border-radius:999px;margin-bottom:7px;"></div><div class="skeleton-element" style="width:${Math.round(w[0]*0.65)}px;height:11px;border-radius:999px;"></div></div></div></td>
+                    <td><div style="display:flex;align-items:center;gap:10px;"><div class="skeleton-element" style="width:28px;height:28px;border-radius:4px;flex-shrink:0;"></div><div style="min-width:0;"><div class="skeleton-element" style="width:${w[0]}px;max-width:100%;height:14px;border-radius:999px;"></div></div></div></td>
                     <td><div class="skeleton-element" style="width:${w[1]}px;height:14px;border-radius:999px;"></div></td>
                     <td><div class="skeleton-element" style="width:${w[2]}px;height:18px;border-radius:999px;"></div></td>
                     <td><div class="skeleton-element" style="width:${w[3]}px;height:14px;border-radius:999px;"></div></td>
@@ -217,7 +351,7 @@ class Renderer {
                             <img src="${iconSrc}" class="skill-icon" alt="${skill.name} icon" loading="lazy" onerror="this.style.opacity='0.5';">
                         </span>
                         <span class="skill-meta">
-                            <span class="skill-name">${skill.name || '-'}${certifiedBadge}</span>
+                            <span class="skill-name"><span class="skill-name-text">${skill.name || '-'}</span>${certifiedBadge}</span>
                         </span>
                     </div>
                 </td>
@@ -243,5 +377,14 @@ class Renderer {
         s.updateTypeFilter(categories);
         s.sortSkills();
         if (typeof s.syncSkillSortIndicators === 'function') s.syncSkillSortIndicators();
+
+        this.ensureSkillsFitBinding();
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const shell = s.skillsList.querySelector('.courses-table-shell.skills-table-shell') || s.skillsList.querySelector('.courses-table-shell');
+                const table = s.skillsList.querySelector('table.skills-table');
+                if (shell && table) this.fitTableColumns(table, shell, { floorMin: 120 });
+            }, 0);
+        });
     }
 }

@@ -60,7 +60,7 @@ main#page-root {
 
 h1, h2 {
     margin-top: 0;
-    margin-bottom: 15px;
+    margin-bottom: 0;
     color: #ffffff;
 }
 
@@ -596,6 +596,24 @@ footer[data-include="html/footer.html"] {
     margin-bottom: 12px;
     color: #ffffff;
     margin-top: 0;
+}
+
+.page-intro.section-intro h2 {
+    font-size: 1.4rem;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+}
+
+.page-intro.section-intro p {
+    margin-bottom: 0;
+}
+
+.page-intro.section-intro + .achievement-card {
+    margin-top: 0px;
+}
+
+.page-intro.section-intro + div[data-fragment="controls"] {
+    margin-top: 0px;
 }
 
 #page-root > .page-intro {
@@ -3113,7 +3131,8 @@ body.dropdown-scroll-lock {
 }
 
 .skills-table {
-    min-width: 760px;
+    width: 100%;
+    min-width: 0;
     table-layout: fixed;
 }
 
@@ -3121,18 +3140,28 @@ body.dropdown-scroll-lock {
     cursor: pointer;
 }
 
-.skills-table th:nth-child(1),
-.skills-table td:nth-child(1) { width: 340px; }
-.skills-table th:nth-child(2),
-.skills-table td:nth-child(2) { width: 170px; }
-.skills-table th:nth-child(3),
-.skills-table td:nth-child(3) { width: 140px; }
-.skills-table th:nth-child(4),
-.skills-table td:nth-child(4) { width: 140px; }
+.skills-table th,
+.skills-table td {
+    white-space: normal;
+}
 
+.skills-table td { overflow: hidden; }
 .skills-table td:nth-child(1) { overflow: hidden; }
 .skills-table .skill-meta { overflow: hidden; }
-.skills-table .skill-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.skills-table .skill-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.skills-table .skill-name-text { min-width: 0; overflow: visible; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+
+.skills-table .grid-certified-badge { margin-left: 0; flex: 0 0 auto; }
+
+.skills-table.skills-nowrap th,
+.skills-table.skills-nowrap td { white-space: nowrap; }
+
+.skills-table.skills-nowrap .skill-name { flex-wrap: nowrap; }
+
+.skills-table.skills-nowrap .skill-name-text {
+    white-space: nowrap;
+    overflow: visible;
+}
 
 .skills-table .skill-name-cell {
     display: flex;
@@ -3197,7 +3226,7 @@ body.dropdown-scroll-lock {
 .courses-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 820px;
+    min-width: 0;
     background: #000000;
     table-layout: fixed;
 }
@@ -3251,29 +3280,19 @@ body.dropdown-scroll-lock {
     background: #0d1117;
 }
 
-.courses-table td:nth-child(2) {
-    max-width: 280px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.courses-table.table-fit th,
+.courses-table.table-fit td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
-.courses-table th:nth-child(1),
-.courses-table td:nth-child(1) { width: 80px; }
-.courses-table th:nth-child(2),
-.courses-table td:nth-child(2) { width: 280px; }
-.courses-table th:nth-child(3),
-.courses-table td:nth-child(3) { width: 170px; }
-.courses-table th:nth-child(4),
-.courses-table td:nth-child(4) { width: 140px; }
-.courses-table th:nth-child(5),
-.courses-table td:nth-child(5) { width: 120px; }
-.courses-table th:nth-child(6),
-.courses-table td:nth-child(6) { width: 90px; }
-.courses-table th:nth-child(7),
-.courses-table td:nth-child(7) { width: 120px; }
-.courses-table th:nth-child(8),
-.courses-table td:nth-child(8) { width: 110px; }
+.courses-table.table-fit.table-fit-nowrap th,
+.courses-table.table-fit.table-fit-nowrap td {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+}
 
 .courses-loading-row {
     color: #8b949e;

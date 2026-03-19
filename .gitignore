@@ -8,3 +8,4 @@ dist/
 .github/instructions/
 fiveserver.config.js
 scripts/
+.cursor
