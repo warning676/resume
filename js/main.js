@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     let initialRouteHydrated = false;
     const routes = {
         '/': { fragment: 'html/pages/bio.html', title: 'BIO' },
@@ -118,11 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const dataService = new DataService('12V7XnylQtfLmT1ux5Va-DPhKc201m3fht9JstupnHdk');
-    
+
     window.dataService = dataService;
-    
+
     window.state = state;
-    
+
     const routePaths = Object.keys(routes).sort((a, b) => b.length - a.length);
 
     const applyRedirectPath = () => {
@@ -206,27 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return '';
     };
 
-    const syncExternalLinkModalScrollLock = (locked) => {
-        const body = document.body;
-        const html = document.documentElement;
-        if (!body || !html) return;
 
-        if (locked) {
-            body.style.overflow = 'hidden';
-            html.style.overflow = 'hidden';
-            return;
-        }
-
-        const searchModal = document.getElementById('global-search-modal');
-        const searchModalOpen = !!(searchModal && searchModal.classList.contains('active'));
-        const mainModalOpen = !!(state.modal && state.modal.style.display === 'flex');
-        const secModalOpen = !!(state.secModal && state.secModal.style.display === 'flex');
-        const hasOpenDropdown = !!document.querySelector('.custom-select-container.open, .multi-select-container.open');
-        if (searchModalOpen || mainModalOpen || secModalOpen || hasOpenDropdown) return;
-
-        body.style.overflow = '';
-        html.style.overflow = '';
-    };
 
     const closeExternalLinkModal = (confirmed) => {
         if (!state.externalLinkModal) return;
@@ -250,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.externalLinkModal.style.opacity = '';
             if (contentEl) contentEl.style.transform = '';
             state.externalLinkModal._fadeTimer = null;
-            syncExternalLinkModalScrollLock(false);
+            Utils.syncPageScrollLock(false);
             if (resolver) resolver(!!confirmed);
         }, 170);
     };
@@ -266,32 +246,59 @@ document.addEventListener('DOMContentLoaded', () => {
             state.externalLinkResolve = null;
         }
 
+        const isEmail = String(url).toLowerCase().startsWith('mailto:');
+
         if (state.externalLinkTitleEl) {
-            const safeTitle = String(title || '').trim();
-            const safeTitleText = safeTitle || 'External Link';
-            state.externalLinkTitleEl.innerHTML = `<strong>Title:</strong> ${safeTitleText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}`;
+            if (isEmail) {
+                state.externalLinkTitleEl.style.display = 'none';
+            } else {
+                const safeTitle = String(title || '').trim();
+                const safeTitleText = safeTitle || 'External Link';
+                state.externalLinkTitleEl.style.display = 'block';
+                state.externalLinkTitleEl.innerHTML = `<strong style="color:#8b949e; text-transform:uppercase; font-size:0.7rem;">Title</strong><br>${safeTitleText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}`;
+            }
         }
 
         if (state.externalLinkCategoryEl) {
-            const safeCategory = String(category || '').trim();
-            state.externalLinkCategoryEl.innerHTML = safeCategory ? `<strong>Category:</strong> ${safeCategory.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}` : '';
-            state.externalLinkCategoryEl.style.display = safeCategory ? 'block' : 'none';
+            if (isEmail) {
+                state.externalLinkCategoryEl.style.display = 'none';
+            } else {
+                const safeCategory = String(category || '').trim();
+                state.externalLinkCategoryEl.innerHTML = safeCategory ? `<strong style="color:#8b949e; text-transform:uppercase; font-size:0.7rem;">Category</strong><br>${safeCategory.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}` : '';
+                state.externalLinkCategoryEl.style.display = safeCategory ? 'block' : 'none';
+            }
         }
 
         if (state.externalLinkInfoEl) {
-            const safeInfo = String(info || '').trim();
-            const safeInfoText = safeInfo
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\n/g, '<br>');
-            state.externalLinkInfoEl.innerHTML = safeInfo ? `<strong>Info:</strong> ${safeInfoText}` : '';
-            state.externalLinkInfoEl.style.display = safeInfo ? 'block' : 'none';
+            if (isEmail) {
+                state.externalLinkInfoEl.style.display = 'none';
+            } else {
+                const safeInfo = String(info || '').trim();
+                const safeInfoText = safeInfo
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\n/g, '<br>');
+                state.externalLinkInfoEl.innerHTML = safeInfo ? `<strong style="color:#8b949e; text-transform:uppercase; font-size:0.7rem;">Info</strong><br>${safeInfoText}` : '';
+                state.externalLinkInfoEl.style.display = safeInfo ? 'block' : 'none';
+            }
         }
 
         if (state.externalLinkUrlEl) {
-            const safeUrl = String(url || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            state.externalLinkUrlEl.innerHTML = `<strong style="color:#e1e4e8;">Link:</strong> <span style="color:#58a6ff;">${safeUrl}</span>`;
+            if (isEmail) {
+                const emailStr = String(url).substring(7).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                state.externalLinkUrlEl.style.display = 'block';
+                state.externalLinkUrlEl.innerHTML = `<strong style="color:#8b949e; text-transform:uppercase; font-size:0.7rem;">Email</strong><br><span style="color:#58a6ff;">${emailStr}</span>`;
+            } else {
+                const safeUrl = String(url || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                state.externalLinkUrlEl.style.display = 'block';
+                state.externalLinkUrlEl.innerHTML = `<strong style="color:#8b949e; text-transform:uppercase; font-size:0.7rem;">Link</strong><br><span style="color:#58a6ff;">${safeUrl}</span>`;
+            }
+        }
+
+        const messageEl = state.externalLinkModal.querySelector('.external-link-message') || document.getElementById('external-link-message');
+        if (messageEl) {
+            messageEl.textContent = isEmail ? 'Are you sure you want to send an email to this address?' : 'You are about to open an external website in a new tab.';
         }
 
         state.externalLinkModal.style.display = 'flex';
@@ -307,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.externalLinkModal.style.opacity = '1';
             if (contentEl) contentEl.style.transform = 'translateY(0)';
         });
-        syncExternalLinkModalScrollLock(true);
+        Utils.syncPageScrollLock(true);
 
         return new Promise(resolve => {
             state.externalLinkResolve = resolve;
@@ -355,7 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const variant = node.getAttribute('data-variant') || (route === '/videos' || route === '/games' ? 'portfolio' : 'skills');
                 path = `html/fragments/controls-${variant}.html`;
             } else if (type === 'modals') {
-                path = 'html/fragments/modals.html';
+                node.remove();
+                continue;
             } else if (type === 'no-results') {
                 const variant = node.getAttribute('data-variant') || (route === '/videos' || route === '/games' ? 'portfolio' : 'skills');
                 path = `html/fragments/no-results-${variant}.html`;
@@ -586,9 +594,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const isSameRouteNavigation = (route, search) => {
-        const currentRoute = resolveRoute(window.location.pathname);
+        const currentRoute = state.currentRoute || resolveRoute(window.location.pathname);
         const currentSearch = window.location.search || '';
         const nextSearch = search || '';
+
+        if (route === currentRoute && !nextSearch) {
+            return true;
+        }
+
         return route === currentRoute && nextSearch === currentSearch;
     };
 
@@ -619,9 +632,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const timerId = setTimeout(() => finish(false, src), timeoutMs || 3500);
         img.onload = () => {
-            const isPlaceholder = src.includes('/vi/') && 
-                                  img.naturalWidth === 120 && 
-                                  img.naturalHeight === 90;
+            const isPlaceholder = src.includes('/vi/') &&
+                img.naturalWidth === 120 &&
+                img.naturalHeight === 90;
             finish(!isPlaceholder, src);
         };
         img.onerror = () => finish(false, src);
@@ -637,13 +650,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 'mqdefault',
                 'default'
             ];
-            
+
             for (const quality of thumbnailQualities) {
                 const thumbSrc = `https://i.ytimg.com/vi/${youtubeID}/${quality}.jpg`;
                 const result = await preloadImage(thumbSrc, 3500);
                 if (result.ok) return { src: thumbSrc, cached: result.cached };
             }
-            
+
             return { src: `https://i.ytimg.com/vi/${youtubeID}/default.jpg`, cached: false };
         }
         const raw = state.renderer.fixImagePath(project.gallery?.[0] || '');
@@ -685,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const lower = (href || '').toLowerCase();
             return lower.includes('search=') && (lower.includes('videos.html') || lower.includes('/videos'));
         };
-        
+
         const linkedVideoNames = new Set();
         anchors.forEach(a => {
             const projectNameAttr = a.getAttribute('data-project');
@@ -693,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 linkedVideoNames.add(normalize(projectNameAttr.trim()));
             }
         });
-        
+
         const achievementVideos = [];
         const addedNames = new Set();
         anchors.forEach(a => {
@@ -712,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         state.achievementVideos = achievementVideos;
-        
+
         anchors.forEach(a => {
             try {
                 const projectNameAttr = a.getAttribute('data-project');
@@ -775,7 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const normalize = (s) => (s || '').toString().toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
         const awardsByType = {};
-        
+
         Object.entries(awards).forEach(([projectName, projectAwards]) => {
             if (Array.isArray(projectAwards)) {
                 projectAwards.forEach(award => {
@@ -793,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const awardVideos = [];
         const addedVideoNames = new Set();
-        
+
         Object.entries(awardsByType).forEach(([awardName, wins]) => {
             wins.forEach(win => {
                 const nName = normalize(win.projectName);
@@ -809,20 +822,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
-        
+
         container.innerHTML = '';
         Object.entries(awardsByType).forEach(([awardName, wins]) => {
             const card = document.createElement('div');
             card.style.cssText = 'background: #000000; border: 1px solid #30363d; padding: 12px; border-radius: 6px; display: flex; flex-direction: column;';
-            
+
             let cardHTML = `<strong style="color: #ffffff; font-size: 0.85rem; text-transform: uppercase; display: block; margin-bottom: 8px;">${awardName}</strong>`;
             cardHTML += '<div style="display: flex; flex-direction: column; gap: 12px;">';
-            
+
             wins.forEach((win, index) => {
                 const locationParts = win.location.split('|').map(part => part.trim());
                 const school = locationParts[0] || '';
                 const festival = locationParts[1] || '';
-                
+
                 cardHTML += `<div style="display: flex; flex-direction: column;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                         <span class="award-video-link" data-project="${win.projectName}" role="button" tabindex="0" style="color: #58a6ff; text-decoration: none; font-size: 0.9rem; line-height: 1.2; cursor: pointer;">${win.projectName}</span>
@@ -831,30 +844,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     <small style="color: #8b949e; font-size: 0.75rem; line-height: 1.4;">${festival}<br/><span style="font-size: 0.65rem; opacity: 0.8;">${school}</span></small>
                 </div>`;
             });
-            
+
             cardHTML += '</div>';
             card.innerHTML = cardHTML;
             container.appendChild(card);
         });
-        
+
         if (container._clickHandler) {
             container.removeEventListener('click', container._clickHandler);
         }
-        
+
         container._clickHandler = (e) => {
             const link = e.target.closest('.award-video-link');
             if (!link) return;
-            
+
             e.preventDefault();
             e.stopPropagation();
-            
+
             const projectName = link.getAttribute('data-project');
             const nName = normalize(projectName);
-            
+
             const project = awardVideos.find(v => normalize(v.name) === nName)
                 || awardVideos.find(v => normalize(v.name).includes(nName))
                 || awardVideos.find(v => nName.includes(normalize(v.name)));
-            
+
             if (project && state.modalManager) {
                 state.achievementVideos = awardVideos;
                 state.currentAchievementVideoIndex = awardVideos.indexOf(project);
@@ -862,7 +875,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.modalManager.openModalForItem(project, 'videos', awardVideos);
             }
         };
-        
+
         container.addEventListener('click', container._clickHandler);
     };
 
@@ -884,9 +897,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
+    const getGpaBadgeHtml = (gpaVal) => {
+        if (gpaVal === null || gpaVal === undefined) return '-';
+        const formattedGpa = gpaVal.toFixed(1);
+        const badgeClass = gpaVal >= 3.5 ? 'proficiency-beginner' : (gpaVal >= 3.0 ? 'proficiency-intermediate' : 'proficiency-advanced');
+        const perfectClass = gpaVal >= 3.95 ? ' gpa-perfect' : '';
+        return `<span class="proficiency-badge ${badgeClass}${perfectClass}">${formattedGpa}</span>`;
+    };
+
+    const capitalizeWords = (text) => {
+        if (!text) return '';
+        return text.toString().toLowerCase().replace(/(^|[ \(\/])([a-z])/g, (match, p1, p2) => p1 + p2.toUpperCase());
+    };
+
     function computeGpaForSchoolIdentifiers(identifiers) {
         const courses = normalizeCourses(state.allData?.Courses || []);
-        const ids = Array.isArray(identifiers) ? identifiers.map(s => (s||'').toString().trim().toLowerCase()).filter(Boolean) : [];
+        const ids = Array.isArray(identifiers) ? identifiers.map(s => (s || '').toString().trim().toLowerCase()).filter(Boolean) : [];
         if (!ids.length) return null;
         let totalPoints = 0;
         let totalGpaCredits = 0;
@@ -934,19 +960,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const progressFillEl = document.getElementById('courses-dashboard-progress-fill');
 
         if (gpaEl) {
-            if (totalGpaCredits > 0) gpaEl.textContent = (totalPoints / totalGpaCredits).toFixed(1);
-            else gpaEl.textContent = '-';
+            const gpaVal = totalGpaCredits > 0 ? (totalPoints / totalGpaCredits) : 0;
+            if (totalGpaCredits > 0) {
+                gpaEl.innerHTML = getGpaBadgeHtml(gpaVal);
+            } else {
+                gpaEl.textContent = '-';
+            }
         }
         if (standingEl) {
             let standing = '-';
+            let standingClass = '';
             const c = Number.isFinite(totalCompletedCredits) ? totalCompletedCredits : NaN;
             if (Number.isFinite(c)) {
-                if (c >= 90) standing = 'Senior';
-                else if (c >= 60) standing = 'Junior';
-                else if (c >= 30) standing = 'Sophomore';
-                else if (c >= 0) standing = 'Freshman';
+                if (c >= 90) { standing = 'Senior'; standingClass = 'standing-senior'; }
+                else if (c >= 60) { standing = 'Junior'; standingClass = 'standing-junior'; }
+                else if (c >= 30) { standing = 'Sophomore'; standingClass = 'standing-sophomore'; }
+                else if (c >= 0) { standing = 'Freshman'; standingClass = 'standing-freshman'; }
             }
             standingEl.textContent = standing;
+            standingEl.className = 'dashboard-value' + (standingClass ? ' ' + standingClass : '');
         }
         if (creditsEl) {
             creditsEl.textContent = `${String(totalCompletedCredits || 0)} / 120`;
@@ -1095,12 +1127,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (collegeGpaEl && collegeGpaValueEl && collegeGpaTextEl && collegeGpaSkeletonEl) {
             const computedCollegeGpa = computeGpaForSchoolIdentifiers(collegeSchoolNames);
             if (computedCollegeGpa !== null) {
-                collegeGpaValueEl.textContent = computedCollegeGpa.toFixed(1);
+                collegeGpaValueEl.innerHTML = getGpaBadgeHtml(computedCollegeGpa);
                 collegeGpaEl.style.display = 'block';
                 collegeGpaSkeletonEl.style.display = 'none';
                 collegeGpaTextEl.style.display = 'inline';
             } else if (collegeProfile.gpa) {
-                collegeGpaValueEl.textContent = collegeProfile.gpa;
+                const val = Number.parseFloat(collegeProfile.gpa);
+                collegeGpaValueEl.innerHTML = Number.isFinite(val) ? getGpaBadgeHtml(val) : collegeProfile.gpa;
                 collegeGpaEl.style.display = 'block';
                 collegeGpaSkeletonEl.style.display = 'none';
                 collegeGpaTextEl.style.display = 'inline';
@@ -1233,10 +1266,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const focusSchool = normalizedSchoolName.includes('high school') ? 'highschool' : 'college';
             const marginTop = index === 0 ? '20px' : '12px';
             const computedGpaVal = computeGpaForSchoolIdentifiers([normalizedSchoolName]);
-            const displayGpa = (computedGpaVal !== null) ? computedGpaVal.toFixed(1) : (gpa || '');
-            const gpaRow = displayGpa
-                ? `<div style="font-size: 0.95rem; color: #8b949e; margin-top: 12px;">
-                <span><strong style="color: #58a6ff;">Cumulative GPA:</strong> <span style="font-weight:600;">${displayGpa}</span></span>
+            const displayGpaHtml = (computedGpaVal !== null) ? getGpaBadgeHtml(computedGpaVal) : (gpa ? getGpaBadgeHtml(Number.parseFloat(gpa)) : '');
+            const gpaRow = displayGpaHtml
+                ? `<div class="gpa-row" style="margin-top: 12px;">
+                <span><span class="gpa-label">CUMULATIVE GPA:</span> ${displayGpaHtml}</span>
             </div>`
                 : '';
             const achievementsLinkRow = `<div style="font-size: 0.9rem; margin-top: 10px;">
@@ -1250,9 +1283,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <h3>${schoolName}</h3>
             <p>${program}</p>
             <p style="font-size: 0.85rem; color: #8b949e; margin-bottom: 5px;">${location}</p>
-            <div style="font-size: 0.9rem; color: #8b949e; margin-top: 10px;">
-                <span style="margin-right: 25px;"><strong style="color: #58a6ff;">Started:</strong> ${started}</span>
-                <span><strong style="color: #58a6ff;">Status:</strong> ${status}</span>
+            <div class="gpa-row" style="margin-top: 10px; flex-wrap: wrap; gap: 25px;">
+                <span><span class="gpa-label">STARTED:</span> ${capitalizeWords(started)}</span>
+                <span><span class="gpa-label">STATUS:</span> ${capitalizeWords(status)}</span>
             </div>
             ${gpaRow}
             ${achievementsLinkRow}
@@ -1265,7 +1298,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 event.preventDefault();
                 const focusSchool = String(link.getAttribute('data-focus-school') || '').toLowerCase();
                 if (!focusSchool) return;
-                navigate('/achievements', `?focusSchool=${encodeURIComponent(focusSchool)}`);
+                loadRoute('/achievements', `?focusSchool=${encodeURIComponent(focusSchool)}`, {
+                    push: false,
+                    historyUrl: buildUrl('/', '')
+                });
             });
         });
     };
@@ -2014,7 +2050,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!courses.length) {
             state.coursesTableBody.innerHTML = '<tr><td colspan="8" class="courses-loading-row">No matching courses found.</td></tr>';
             const statusEl = document.getElementById('courses-search-status');
-            if (statusEl) { statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
+            if (statusEl) {
+                const rawQuery = state.courseSearchQuery ? state.courseSearchQuery.trim() : '';
+                if (rawQuery) {
+                    const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    statusEl.classList.add('visible');
+                    statusEl.innerHTML = `Showing 0 results for "<span style="color:#58a6ff;">${safe}</span>"`;
+                } else {
+                    statusEl.classList.remove('visible');
+                    statusEl.innerHTML = '';
+                }
+            }
             return;
         }
 
@@ -2046,10 +2092,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const rawQuery = state.courseSearchQuery ? state.courseSearchQuery.trim() : '';
             if (rawQuery) {
                 const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                statusEl.style.display = 'block';
+                statusEl.classList.add('visible');
                 statusEl.innerHTML = `Showing ${courses.length} ${courses.length === 1 ? 'result' : 'results'} for "<span style="color:#58a6ff;">${safe}</span>"`;
             } else {
-                statusEl.style.display = 'none';
+                statusEl.classList.remove('visible');
                 statusEl.innerHTML = '';
             }
         }
@@ -2100,11 +2146,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (state.coursesSearchInput && !state.coursesSearchInput.dataset.boundCoursesSearch) {
             state.coursesSearchInput.dataset.boundCoursesSearch = 'true';
+            const coursesClearBtn = document.getElementById('courses-search-clear');
+            const updateClearButton = () => {
+                if (!coursesClearBtn) return;
+                coursesClearBtn.classList.toggle('visible', Boolean(state.coursesSearchInput.value && String(state.coursesSearchInput.value).trim().length));
+            };
             state.coursesSearchInput.addEventListener('input', () => {
                 state.courseSearchQuery = state.coursesSearchInput.value || '';
+                updateClearButton();
                 applyCoursesFilterAndSort();
             });
             state.coursesSearchInput.value = state.courseSearchQuery || '';
+            if (coursesClearBtn) {
+                coursesClearBtn.addEventListener('click', () => {
+                    state.coursesSearchInput.value = '';
+                    state.courseSearchQuery = '';
+                    updateClearButton();
+                    applyCoursesFilterAndSort();
+                    state.coursesSearchInput.focus();
+                });
+            }
+            updateClearButton();
         }
 
         if (state.coursesFilterButton && state.coursesFilterMenu) {
@@ -2175,7 +2237,7 @@ document.addEventListener('DOMContentLoaded', () => {
         applyCoursesFilterAndSort();
     };
 
-    
+
 
     const bindModalButtons = () => {
         if (state.closeBtn) state.closeBtn.onclick = () => state.modalManager?.resetModal();
@@ -2272,11 +2334,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             let modalMousedownTarget = null;
-            
+
             window.addEventListener('mousedown', (event) => {
                 modalMousedownTarget = event.target;
             });
-            
+
             window.onclick = function (event) {
                 if (event.target === state.modal && modalMousedownTarget === state.modal) {
                     state.modalManager?.resetModal();
@@ -2296,7 +2358,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.allData) state.allData = {};
         const route = state.currentRoute;
         const sheetsNeeded = [];
-        
+
         if (route === '/videos') {
             if (!state.allData.videos) sheetsNeeded.push('videos');
             if (!state.allData.skills) sheetsNeeded.push('skills');
@@ -2317,13 +2379,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!state.allData.Courses) sheetsNeeded.push('Courses');
         }
         if (route === '/activities' && !state.allData.Activities) sheetsNeeded.push('Activities');
-        
+
         if (sheetsNeeded.length === 0) {
             return Promise.resolve({ data: state.allData, allCached: true });
         }
-        
+
         let allCached = true;
-        return Promise.all(sheetsNeeded.map(sheet => 
+        return Promise.all(sheetsNeeded.map(sheet =>
             dataService.loadSheet(sheet).then(result => {
                 state.allData[sheet] = result.data;
                 if (!result.fromCache) allCached = false;
@@ -2345,95 +2407,95 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.renderer) return;
         const dataPromise = loadDataOnce();
         dataPromise.then(result => {
-                const data = result.data;
-                const isCached = result.allCached;
-                if (state.routeToken !== token) return;
+            const data = result.data;
+            const isCached = result.allCached;
+            if (state.routeToken !== token) return;
 
-                if (state.currentRoute === '/achievements') {
-                    const renderAchievementsNow = () => {
-                        if (state.routeToken !== token) return;
-                        renderAcademicAchievements();
-                        setupAchievementVideoLinks(data.videos || []);
-                        renderAchievementAwards();
-                    };
+            if (state.currentRoute === '/achievements') {
+                const renderAchievementsNow = () => {
+                    if (state.routeToken !== token) return;
+                    renderAcademicAchievements();
+                    setupAchievementVideoLinks(data.videos || []);
+                    renderAchievementAwards();
+                };
 
-                    if (isCached) {
-                        setTimeout(renderAchievementsNow, 120);
-                    } else {
-                        renderAchievementsNow();
-                    }
+                if (isCached) {
+                    setTimeout(renderAchievementsNow, 120);
+                } else {
+                    renderAchievementsNow();
+                }
+            }
+
+            if (state.currentRoute === '/' || state.currentRoute === '/bio') {
+                renderBioEducation();
+            }
+
+            if (state.currentRoute === '/activities') {
+                renderActivities();
+            }
+
+            if (state.currentRoute === '/courses') {
+                const allCoursesCount = normalizeCourses(data.Courses || []).length;
+                setStoredCount(state.skeletonKey, allCoursesCount);
+                renderCourses();
+            }
+
+            if (state.portfolioGrid) {
+                const pageType = state.currentRoute === '/games' ? 'games' : 'videos';
+                const projectData = data[pageType] || [];
+                setStoredCount(state.skeletonKey, projectData.length);
+
+                if (!isCached && (!state.didPrimeSkeletons || state.primedSkeletonTarget !== 'portfolio' || state.primedSkeletonCount !== projectData.length)) {
+                    state.renderer.showSkeletons(state.portfolioGrid, projectData.length);
                 }
 
-                if (state.currentRoute === '/' || state.currentRoute === '/bio') {
-                    renderBioEducation();
+                if (projectData.length === 0) {
+                    state.portfolioGrid.innerHTML = `<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">No projects found for "${pageType}".</p>`;
                 }
-
-                if (state.currentRoute === '/activities') {
-                    renderActivities();
-                }
-
-                if (state.currentRoute === '/courses') {
-                    const allCoursesCount = normalizeCourses(data.Courses || []).length;
-                    setStoredCount(state.skeletonKey, allCoursesCount);
-                    renderCourses();
-                }
-
-                if (state.portfolioGrid) {
-                    const pageType = state.currentRoute === '/games' ? 'games' : 'videos';
-                    const projectData = data[pageType] || [];
-                    setStoredCount(state.skeletonKey, projectData.length);
-                    
-                    if (!isCached && (!state.didPrimeSkeletons || state.primedSkeletonTarget !== 'portfolio' || state.primedSkeletonCount !== projectData.length)) {
-                        state.renderer.showSkeletons(state.portfolioGrid, projectData.length);
-                    }
-
-                    if (projectData.length === 0) {
-                        state.portfolioGrid.innerHTML = `<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">No projects found for "${pageType}".</p>`;
-                    }
-                    if (projectData.length > 0) {
-                        const startTime = Date.now();
-                        preloadProjectThumbs(projectData).then(imagesCached => {
-                            const loadTime = Date.now() - startTime;
-                            const smoothingDelay = imagesCached ? 0 : Math.max(0, 150 - loadTime);
-                            return delay(smoothingDelay);
-                        }).then(() => {
-                            if (state.routeToken !== token) return;
-                            try {
-                                state.renderer.renderProjects(projectData);
-                                renderPortfolioColumnFilter(projectData);
-                            } catch (e) {
-                                if (state.portfolioGrid) {
-                                    state.portfolioGrid.innerHTML = '<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">Unable to display projects. Please refresh the page.</p>';
-                                }
-                            }
-                        });
-                    }
-                }
-
-                if (state.skillsList) {
-                    const skillData = data.skills || [];
-                    const isAchievements = state.currentRoute === '/achievements';
-                    const dynamicCount = isAchievements ? skillData.filter(s => s.certified === true).length : skillData.length;
-                    setStoredCount(state.skeletonKey, dynamicCount);
-                    
-                    if (!isCached && (!state.didPrimeSkeletons || state.primedSkeletonTarget !== 'skills' || state.primedSkeletonCount !== dynamicCount)) {
-                        state.renderer.showSkeletons(state.skillsList, dynamicCount);
-                    }
-                    
+                if (projectData.length > 0) {
                     const startTime = Date.now();
-                    preloadSkillIcons(skillData).then(iconsCached => {
+                    preloadProjectThumbs(projectData).then(imagesCached => {
                         const loadTime = Date.now() - startTime;
-                        const smoothingDelay = iconsCached ? 0 : Math.max(0, 150 - loadTime);
+                        const smoothingDelay = imagesCached ? 0 : Math.max(0, 150 - loadTime);
                         return delay(smoothingDelay);
                     }).then(() => {
                         if (state.routeToken !== token) return;
-                        state.renderer.renderSkills(skillData);
-                        bindSkillTableSortButtons();
-                        if (state.syncSkillSortIndicators) state.syncSkillSortIndicators();
-                        renderSkillColumnFilter();
+                        try {
+                            state.renderer.renderProjects(projectData);
+                            renderPortfolioColumnFilter(projectData);
+                        } catch (e) {
+                            if (state.portfolioGrid) {
+                                state.portfolioGrid.innerHTML = '<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">Unable to display projects. Please refresh the page.</p>';
+                            }
+                        }
                     });
                 }
-            })
+            }
+
+            if (state.skillsList) {
+                const skillData = data.skills || [];
+                const isAchievements = state.currentRoute === '/achievements';
+                const dynamicCount = isAchievements ? skillData.filter(s => s.certified === true).length : skillData.length;
+                setStoredCount(state.skeletonKey, dynamicCount);
+
+                if (!isCached && (!state.didPrimeSkeletons || state.primedSkeletonTarget !== 'skills' || state.primedSkeletonCount !== dynamicCount)) {
+                    state.renderer.showSkeletons(state.skillsList, dynamicCount);
+                }
+
+                const startTime = Date.now();
+                preloadSkillIcons(skillData).then(iconsCached => {
+                    const loadTime = Date.now() - startTime;
+                    const smoothingDelay = iconsCached ? 0 : Math.max(0, 150 - loadTime);
+                    return delay(smoothingDelay);
+                }).then(() => {
+                    if (state.routeToken !== token) return;
+                    state.renderer.renderSkills(skillData);
+                    bindSkillTableSortButtons();
+                    if (state.syncSkillSortIndicators) state.syncSkillSortIndicators();
+                    renderSkillColumnFilter();
+                });
+            }
+        })
             .catch(() => {
             });
     };
@@ -2480,7 +2542,12 @@ document.addEventListener('DOMContentLoaded', () => {
         applyDataForRoute(token);
     };
 
-    const loadRoute = async (route, search, options) => {
+    const loadRoute = async (route, search = '', options = {}) => {
+        const {
+            push = true,
+            scroll = true,
+            historyUrl = null
+        } = options;
         const routeInfo = routes[route] || routes['/'];
         const root = document.getElementById('page-root');
         if (!root) return;
@@ -2491,9 +2558,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (shouldSkipRouteLoad(route, search, root)) return;
 
-        const nextUrl = buildUrl(route, search || '');
-        if (!options || options.push !== false) {
-            window.history.pushState(null, '', nextUrl);
+        const finalHistoryUrl = historyUrl !== null ? historyUrl : buildUrl(route, search);
+
+        if (push) {
+            window.history.pushState({ route, search }, '', finalHistoryUrl);
+        } else {
+            window.history.replaceState({ route, search }, '', finalHistoryUrl);
         }
 
         updateNavActive(route);
@@ -2535,7 +2605,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const navigate = (route, search) => loadRoute(route, search, { push: true });
-    
+
     window.navigateTo = navigate;
 
     const renderInitialRouteSkeleton = (route) => {
@@ -2664,10 +2734,53 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     };
 
+    const injectSharedHeaderFooter = async () => {
+        const headerEl = document.getElementById('shared-header');
+        const footerEl = document.getElementById('shared-footer');
+
+        const tasks = [];
+        if (headerEl && !headerEl.hasChildNodes()) {
+            tasks.push(getFragmentHtml('html/nav.html').then(html => {
+                headerEl.innerHTML = html;
+            }).catch(() => { }));
+        }
+        if (footerEl && !footerEl.hasChildNodes()) {
+            tasks.push(getFragmentHtml('html/footer.html').then(html => {
+                footerEl.innerHTML = html;
+            }).catch(() => { }));
+        }
+
+        let sharedModals = document.getElementById('shared-modals-container');
+        if (!sharedModals) {
+            sharedModals = document.createElement('div');
+            sharedModals.id = 'shared-modals-container';
+            document.body.appendChild(sharedModals);
+            tasks.push(getFragmentHtml('html/fragments/modals.html').then(html => {
+                sharedModals.innerHTML = html;
+            }).catch(() => { }));
+        }
+
+        await Promise.all(tasks);
+    };
+
+    await injectSharedHeaderFooter();
+
     updateNavLinks();
     updateNavActive(resolveRoute(window.location.pathname));
     ensureGlobalEvents();
-    
+
+    document.addEventListener('click', async (e) => {
+        const mailtoLink = e.target.closest('a[href^="mailto:"]');
+        if (mailtoLink) {
+            e.preventDefault();
+            const href = mailtoLink.getAttribute('href');
+            const confirmed = await showExternalLinkModal(href, 'Email Me', 'Contact', 'Are you sure you want to send an email?');
+            if (confirmed) {
+                window.location.href = href;
+            }
+        }
+    });
+
     if (typeof initializeGlobalSearch === 'function') {
         initializeGlobalSearch();
     }

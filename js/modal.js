@@ -7,29 +7,7 @@ class ModalManager {
     }
 
     syncPageScrollLock(locked) {
-        const s = this.s;
-        const body = document.body;
-        const html = document.documentElement;
-        if (!body || !html) return;
-
-        if (locked) {
-            body.style.overflow = 'hidden';
-            html.style.overflow = 'hidden';
-            body.classList.add('modal-open');
-            return;
-        }
-
-        const mainModalOpen = !!(s.modal && s.modal.style.display === 'flex');
-        const secModalOpen = !!(s.secModal && s.secModal.style.display === 'flex');
-        const searchModal = document.getElementById('global-search-modal');
-        const searchModalOpen = !!(searchModal && searchModal.classList.contains('active'));
-        const coursesModal = document.getElementById('courses-modal');
-        const coursesModalOpen = !!(coursesModal && coursesModal.style.display === 'flex');
-        if (mainModalOpen || secModalOpen || searchModalOpen || coursesModalOpen) return;
-
-        body.style.overflow = '';
-        html.style.overflow = '';
-        body.classList.remove('modal-open');
+        Utils.syncPageScrollLock(locked);
     }
 
     fadeInModal(modalEl) {
@@ -359,7 +337,10 @@ class ModalManager {
         const allItems = Array.from(container.querySelectorAll(itemSelector));
         const visibleItems = allItems.filter(item => item.style.display !== 'none');
         if (visibleItems.length <= 1) return;
-        const currentIndex = visibleItems.indexOf(s.currentItemCard);
+        let currentIndex = visibleItems.indexOf(s.currentItemCard);
+        if (currentIndex === -1) {
+            currentIndex = 0;
+        }
         const nextIndex = (currentIndex + direction + visibleItems.length) % visibleItems.length;
         s.currentItemCard = visibleItems[nextIndex];
         this.openModalForItemWithTransition(s.currentItemCard, direction);
@@ -506,6 +487,11 @@ class ModalManager {
             const container = s.isSkillsPage ? s.skillsList : s.portfolioGrid;
             const itemSelector = s.isSkillsPage ? '.skill-item' : '.portfolio-card';
             s.currentItemCard = (cardOrData instanceof HTMLElement) ? cardOrData : null;
+            if (!s.currentItemCard && container && data && data.name) {
+                const cards = Array.from(container.querySelectorAll(itemSelector));
+                s.currentItemCard = cards.find(c => String(c.getAttribute('data-name')).toLowerCase() === String(data.name).toLowerCase()) || null;
+            }
+            
             const visibleItems = container
                 ? Array.from(container.querySelectorAll(itemSelector)).filter(item => item.style.display !== 'none')
                 : [];

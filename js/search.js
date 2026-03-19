@@ -13,28 +13,6 @@ let globalSearchLatestQuery = '';
 let renderedSearchResults = [];
 const searchModalFadeMs = 180;
 
-function syncPageScrollLock(locked) {
-    const body = document.body;
-    const html = document.documentElement;
-    if (!body || !html) return;
-
-    if (locked) {
-        body.style.overflow = 'hidden';
-        html.style.overflow = 'hidden';
-        return;
-    }
-
-    const searchModal = document.getElementById('global-search-modal');
-    const searchModalOpen = !!(searchModal && searchModal.classList.contains('active'));
-    const mainModalOpen = !!(document.getElementById('infoModal') && document.getElementById('infoModal').style.display === 'flex');
-    const secModalOpen = !!(document.getElementById('secondaryModal') && document.getElementById('secondaryModal').style.display === 'flex');
-    const hasOpenDropdown = !!document.querySelector('.custom-select-container.open, .multi-select-container.open, .column-filter-menu.open');
-    if (searchModalOpen || mainModalOpen || secModalOpen || hasOpenDropdown) return;
-
-    body.style.overflow = '';
-    html.style.overflow = '';
-}
-
 function initializeGlobalSearch() {
     const searchBtn = document.getElementById('global-search-btn');
     const searchModal = document.getElementById('global-search-modal');
@@ -46,6 +24,7 @@ function initializeGlobalSearch() {
     
     const searchCloseBtn = searchModal.querySelector('.search-close-btn');
     const searchResults = document.getElementById('search-results');
+    const searchClearBtn = document.getElementById('global-search-clear');
     
     if (searchBtn.dataset.initialized) {
         return;
@@ -59,6 +38,15 @@ function initializeGlobalSearch() {
     searchCloseBtn.addEventListener('click', () => {
         closeGlobalSearch();
     });
+
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            searchClearBtn.classList.remove('visible');
+            searchInput.focus();
+            performSearch('');
+        });
+    }
 
     let searchModalMousedownTarget = null;
     
@@ -81,6 +69,9 @@ function initializeGlobalSearch() {
 
     let searchTimeout;
     searchInput.addEventListener('input', async (e) => {
+        if (searchClearBtn) {
+            searchClearBtn.classList.toggle('visible', e.target.value.length > 0);
+        }
         globalSearchLatestQuery = e.target.value;
         const requestId = ++globalSearchRequestId;
 
@@ -135,8 +126,11 @@ function openGlobalSearch() {
     requestAnimationFrame(() => {
         searchModal.style.opacity = '1';
     });
-    syncPageScrollLock(true);
+    Utils.syncPageScrollLock(true);
     searchInput.value = '';
+    
+    const searchClearBtn = document.getElementById('global-search-clear');
+    if (searchClearBtn) searchClearBtn.classList.remove('visible');
     
     if (searchResults) {
         searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">Start typing to search</div><div class="search-no-results-hint">Search across all projects, skills, achievements, activities, and courses</div></div>';
@@ -161,7 +155,7 @@ function closeGlobalSearch() {
 
     if (!searchModal.classList.contains('active')) {
         searchModal.style.opacity = '';
-        syncPageScrollLock(false);
+        Utils.syncPageScrollLock(false);
     } else {
         searchModal.style.transition = `opacity ${searchModalFadeMs}ms ease`;
         searchModal.style.opacity = '0';
@@ -169,11 +163,13 @@ function closeGlobalSearch() {
             searchModal.classList.remove('active');
             searchModal.style.opacity = '';
             searchModal._fadeTimer = null;
-            syncPageScrollLock(false);
+            Utils.syncPageScrollLock(false);
         }, searchModalFadeMs + 20);
     }
     
     if (searchInput) searchInput.value = '';
+    const searchClearBtn = document.getElementById('global-search-clear');
+    if (searchClearBtn) searchClearBtn.classList.remove('visible');
     if (searchResults) searchResults.innerHTML = '';
 }
 
@@ -235,7 +231,12 @@ function performSearch(query) {
     const searchResults = document.getElementById('search-results');
     
     if (!query || query.trim().length === 0) {
-        searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">Start typing to search</div><div class="search-no-results-hint">Search across all projects, skills, achievements, activities, and courses</div></div>';
+        searchResults.innerHTML = `
+            <div class="page-search-status" style="visibility: hidden;">&nbsp;</div>
+            <div class="search-no-results">
+                <div class="search-no-results-text">Start typing to search</div>
+                <div class="search-no-results-hint">Search across all projects, skills, achievements, activities, and courses</div>
+            </div>`;
         return;
     }
     
@@ -567,13 +568,21 @@ function renderSearchResults(results, query) {
     renderedSearchResults = results;
     
     if (results.length === 0) {
-        searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">No results found</div><div class="search-no-results-hint">Try different keywords</div></div>';
+        searchResults.innerHTML = `
+            <div class="page-search-status visible">
+                Showing 0 results for "<span style="color: #58a6ff;">${escapeHtml(query)}</span>"
+            </div>
+            <div class="search-no-results">
+                <div class="search-no-results-text">No results found</div>
+                <div class="search-no-results-hint">Try different keywords</div>
+            </div>`;
         return;
     }
     
-    let html = `<div style="padding: 10px 0 15px; color: #8b949e; font-size: 0.9rem;">
-        Showing results for "<span style="color: #58a6ff;">${escapeHtml(query)}</span>" (${results.length} ${results.length === 1 ? 'result' : 'results'})
-    </div>`;
+    let html = `
+        <div class="page-search-status visible">
+            Showing results for "<span style="color: #58a6ff;">${escapeHtml(query)}</span>" (${results.length} ${results.length === 1 ? 'result' : 'results'})
+        </div>`;
 
     html += results.map((result, index) => {
         const rawTitle = result.data.name || 'Untitled';

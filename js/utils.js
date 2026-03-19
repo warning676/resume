@@ -43,4 +43,40 @@ class Utils {
         
         return input.trim();
     }
+
+    static syncPageScrollLock(locked) {
+        const body = document.body;
+        const html = document.documentElement;
+        if (!body || !html) return;
+
+        if (locked) {
+            body.style.setProperty('overflow', 'hidden', 'important');
+            html.style.setProperty('overflow', 'hidden', 'important');
+            body.classList.add('scroll-lock');
+            html.classList.add('scroll-lock');
+            body.classList.add('modal-open');
+            return;
+        }
+
+        const modals = [
+            { id: 'global-search-modal', check: (el) => el.classList.contains('active') },
+            { id: 'infoModal', check: (el) => el.style.display === 'flex' },
+            { id: 'secondaryModal', check: (el) => el.style.display === 'flex' },
+            { id: 'courses-modal', check: (el) => el.style.display === 'flex' },
+            { id: 'external-link-modal', check: (el) => el.classList.contains('active') || el.style.display === 'flex' }
+        ];
+
+        const anyOpen = modals.some(m => {
+            const el = document.getElementById(m.id);
+            return el && m.check(el);
+        }) || !!document.querySelector('.custom-select-container.open, .multi-select-container.open, .column-filter-menu.open');
+
+        if (anyOpen) return;
+
+        body.style.removeProperty('overflow');
+        html.style.removeProperty('overflow');
+        body.classList.remove('scroll-lock');
+        html.classList.remove('scroll-lock');
+        body.classList.remove('modal-open');
+    }
 }

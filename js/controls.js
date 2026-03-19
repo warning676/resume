@@ -350,15 +350,30 @@ class ControlsManager {
         input.value = initialValue;
         input.autocomplete = 'off';
 
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'input-clear-button close-button';
+        clearBtn.setAttribute('aria-label', 'Clear search');
+        if (initialValue) clearBtn.classList.add('visible');
+        clearBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+
         let searchTimeout;
         input.addEventListener('input', (e) => {
+            clearBtn.classList.toggle('visible', e.target.value.length > 0);
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 onInput(e.target.value);
             }, 150);
         });
 
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            clearBtn.classList.remove('visible');
+            input.focus();
+            onInput('');
+        });
+
         searchWrap.appendChild(input);
+        searchWrap.appendChild(clearBtn);
         container.appendChild(searchWrap);
         s.searchInput = input;
     }

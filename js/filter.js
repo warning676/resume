@@ -132,14 +132,14 @@ class FilterManager {
             const rawQuery = s.searchQuery ? s.searchQuery.trim() : '';
             if (rawQuery && hasSkeleton) {
                 const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                statusEl.style.display = 'block';
+                statusEl.classList.add('visible');
                 statusEl.innerHTML = `<div class="page-search-status-inner"><span class="page-search-spinner"></span><span>Loading results for "<span style="color:#58a6ff;">${safe}</span>"\u2026</span></div>`;
             } else if (rawQuery) {
                 const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                statusEl.style.display = 'block';
+                statusEl.classList.add('visible');
                 statusEl.innerHTML = `Showing ${visibleCount} ${visibleCount === 1 ? 'result' : 'results'} for "<span style="color:#58a6ff;">${safe}</span>"`;
             } else {
-                statusEl.style.display = 'none';
+                statusEl.classList.remove('visible');
                 statusEl.innerHTML = '';
             }
         }
@@ -200,14 +200,14 @@ class FilterManager {
             const rawQuery = s.searchQuery ? s.searchQuery.trim() : '';
             if (rawQuery && hasSkeleton) {
                 const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                statusEl.style.display = 'block';
+                statusEl.classList.add('visible');
                 statusEl.innerHTML = `<div class="page-search-status-inner"><span class="page-search-spinner"></span><span>Loading results for "<span style="color:#58a6ff;">${safe}</span>"\u2026</span></div>`;
             } else if (rawQuery) {
                 const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                statusEl.style.display = 'block';
+                statusEl.classList.add('visible');
                 statusEl.innerHTML = `Showing ${visibleCount} ${visibleCount === 1 ? 'result' : 'results'} for "<span style="color:#58a6ff;">${safe}</span>"`;
             } else {
-                statusEl.style.display = 'none';
+                statusEl.classList.remove('visible');
                 statusEl.innerHTML = '';
             }
         }

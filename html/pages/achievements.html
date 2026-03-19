@@ -1,5 +1,5 @@
 <div class="page-intro">
-    <h2>ACHIEVEMENTS</h2>
+    <h1>ACHIEVEMENTS</h1>
     <p>My various achievements throughout my education.</p>
 </div>
 
@@ -12,9 +12,10 @@
         <span id="achievement-college-tag" class="software-tag" style="display: none;"></span>
         <h3 id="achievement-college-name" style="display: none;"></h3>
 
-        <div id="achievement-college-gpa" style="margin-top: 10px; display: block; font-size: 0.9rem; color: #8b949e;">
+        <div id="achievement-college-gpa" class="gpa-row" style="margin-top: 10px;">
             <span id="achievement-college-gpa-skeleton" class="skeleton-element school-gpa-skeleton"></span>
-            <span id="achievement-college-gpa-text" style="display: none;"><strong style="color: #58a6ff;">Cumulative GPA:</strong> <span id="achievement-college-gpa-value" style="font-weight:600;"></span></span>
+            <span id="achievement-college-gpa-text" style="display: none;"><span class="gpa-label">CUMULATIVE
+                    GPA:</span> <span id="achievement-college-gpa-value" style="font-weight:600;"></span></span>
         </div>
 
         <div style="margin-top: 14px;">
@@ -62,7 +63,8 @@
             <h4
                 style="color: #ffffff; font-size: 0.9rem; margin-bottom: 10px; border-left: 2px solid #58a6ff; padding-left: 10px;">
                 NOMINATIONS</h4>
-            <div id="nominations-items" style="margin-left: 12px; color: #e1e4e8; font-size: 0.9rem; display: flex; flex-direction: column; gap: 10px;">
+            <div id="nominations-items"
+                style="margin-left: 12px; color: #e1e4e8; font-size: 0.9rem; display: flex; flex-direction: column; gap: 10px;">
                 <div class="skeleton-element" style="height: 18px; width: 260px; border-radius: 4px;"></div>
                 <div class="skeleton-element" style="height: 18px; width: 300px; border-radius: 4px;"></div>
                 <div class="skeleton-element" style="height: 18px; width: 220px; border-radius: 4px;"></div>
@@ -71,11 +73,9 @@
     </div>
 </div>
 
-<hr style="border: 0; border-top: 1px solid #1f2428;">
-
-<div class="page-intro" style="border-bottom: none; margin-bottom: 5px;">
+<div class="page-intro" style="border-bottom: none; margin-bottom: 0; margin-top: 25px;">
     <h2>FILM FESTIVAL RECOGNITION</h2>
-    <p style="color: #8b949e;">Awards won for collaborative video projects with Seth. Click the video title to view
+    <p>Awards won for collaborative video projects with Seth. Click the video title to view
         the winning video.</p>
 </div>
 
@@ -94,16 +94,14 @@
     </div>
 </div>
 
-<hr style="border: 0; border-top: 1px solid #1f2428;">
-
-<div class="page-intro" style="border-bottom: none; margin-bottom: 5px;">
+<div class="page-intro" style="border-bottom: none; margin-bottom: 0; margin-top: 25px;">
     <h2>CERTIFICATIONS</h2>
-    <p style="color: #8b949e;">All of my certifications I've earned over the years.</p>
+    <p>All of my certifications I've earned over the years.</p>
 </div>
 
 <div data-fragment="controls" data-variant="skills"></div>
 
-<div id="page-search-status" class="page-search-status" style="display:none;"></div>
+<div id="page-search-status" class="page-search-status"></div>
 
 <div id="skills" style="min-height: 400px;">
     <div id="skills-list">
@@ -119,22 +117,70 @@
                 </thead>
                 <tbody class="skills-table-body">
                     <tr class="courses-skeleton-row">
-                        <td><div style="display:flex;align-items:center;gap:10px;"><div class="skeleton-element" style="width:32px;height:32px;border-radius:8px;"></div><div><div class="skeleton-element" style="width:126px;height:14px;border-radius:999px;margin-bottom:7px;"></div><div class="skeleton-element" style="width:82px;height:11px;border-radius:999px;"></div></div></div></td>
-                        <td><div class="skeleton-element" style="width:96px;height:14px;border-radius:999px;"></div></td>
-                        <td><div class="skeleton-element" style="width:94px;height:18px;border-radius:999px;"></div></td>
-                        <td><div class="skeleton-element" style="width:82px;height:14px;border-radius:999px;"></div></td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="skeleton-element" style="width:32px;height:32px;border-radius:8px;"></div>
+                                <div>
+                                    <div class="skeleton-element"
+                                        style="width:126px;height:14px;border-radius:999px;margin-bottom:7px;"></div>
+                                    <div class="skeleton-element" style="width:82px;height:11px;border-radius:999px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="skeleton-element" style="width:96px;height:14px;border-radius:999px;"></div>
+                        </td>
+                        <td>
+                            <div class="skeleton-element" style="width:94px;height:18px;border-radius:999px;"></div>
+                        </td>
+                        <td>
+                            <div class="skeleton-element" style="width:82px;height:14px;border-radius:999px;"></div>
+                        </td>
                     </tr>
                     <tr class="courses-skeleton-row">
-                        <td><div style="display:flex;align-items:center;gap:10px;"><div class="skeleton-element" style="width:32px;height:32px;border-radius:8px;"></div><div><div class="skeleton-element" style="width:142px;height:14px;border-radius:999px;margin-bottom:7px;"></div><div class="skeleton-element" style="width:74px;height:11px;border-radius:999px;"></div></div></div></td>
-                        <td><div class="skeleton-element" style="width:112px;height:14px;border-radius:999px;"></div></td>
-                        <td><div class="skeleton-element" style="width:102px;height:18px;border-radius:999px;"></div></td>
-                        <td><div class="skeleton-element" style="width:76px;height:14px;border-radius:999px;"></div></td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="skeleton-element" style="width:32px;height:32px;border-radius:8px;"></div>
+                                <div>
+                                    <div class="skeleton-element"
+                                        style="width:142px;height:14px;border-radius:999px;margin-bottom:7px;"></div>
+                                    <div class="skeleton-element" style="width:74px;height:11px;border-radius:999px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="skeleton-element" style="width:112px;height:14px;border-radius:999px;"></div>
+                        </td>
+                        <td>
+                            <div class="skeleton-element" style="width:102px;height:18px;border-radius:999px;"></div>
+                        </td>
+                        <td>
+                            <div class="skeleton-element" style="width:76px;height:14px;border-radius:999px;"></div>
+                        </td>
                     </tr>
                     <tr class="courses-skeleton-row">
-                        <td><div style="display:flex;align-items:center;gap:10px;"><div class="skeleton-element" style="width:32px;height:32px;border-radius:8px;"></div><div><div class="skeleton-element" style="width:118px;height:14px;border-radius:999px;margin-bottom:7px;"></div><div class="skeleton-element" style="width:88px;height:11px;border-radius:999px;"></div></div></div></td>
-                        <td><div class="skeleton-element" style="width:88px;height:14px;border-radius:999px;"></div></td>
-                        <td><div class="skeleton-element" style="width:90px;height:18px;border-radius:999px;"></div></td>
-                        <td><div class="skeleton-element" style="width:84px;height:14px;border-radius:999px;"></div></td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="skeleton-element" style="width:32px;height:32px;border-radius:8px;"></div>
+                                <div>
+                                    <div class="skeleton-element"
+                                        style="width:118px;height:14px;border-radius:999px;margin-bottom:7px;"></div>
+                                    <div class="skeleton-element" style="width:88px;height:11px;border-radius:999px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="skeleton-element" style="width:88px;height:14px;border-radius:999px;"></div>
+                        </td>
+                        <td>
+                            <div class="skeleton-element" style="width:90px;height:18px;border-radius:999px;"></div>
+                        </td>
+                        <td>
+                            <div class="skeleton-element" style="width:84px;height:14px;border-radius:999px;"></div>
+                        </td>
                     </tr>
                 </tbody>
             </table>
