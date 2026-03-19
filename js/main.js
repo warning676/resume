@@ -2639,27 +2639,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             nextRoot.innerHTML = html;
             await injectFragments(nextRoot, route);
             if (state.routeToken !== token) return;
-            if (!initialRouteHydrated) {
-                root.innerHTML = nextRoot.innerHTML;
+            const updateDOM = () => {
+                root.innerHTML = '';
+                root.replaceChildren(...nextRoot.childNodes);
                 initializePage(route);
+            };
+
+            if (!initialRouteHydrated) {
+                updateDOM();
                 initialRouteHydrated = true;
             } else {
-                await runRouteCrossfade(root, () => {
-                    root.innerHTML = nextRoot.innerHTML;
-                    initializePage(route);
-                });
+                await runRouteCrossfade(root, updateDOM);
             }
         } catch (err) {
             if (state.routeToken !== token) return;
-            if (!initialRouteHydrated) {
-                root.innerHTML = '<div class="page-intro"><h2>Page not found</h2><p>The page could not be loaded.</p></div>';
+            const applyErrorDOM = () => {
+                root.innerHTML = '';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'page-intro';
+                errorDiv.innerHTML = '<h2>Page not found</h2><p>The page could not be loaded.</p>';
+                root.appendChild(errorDiv);
                 initializePage('/');
+            };
+
+            if (!initialRouteHydrated) {
+                applyErrorDOM();
                 initialRouteHydrated = true;
             } else {
-                await runRouteCrossfade(root, () => {
-                    root.innerHTML = '<div class="page-intro"><h2>Page not found</h2><p>The page could not be loaded.</p></div>';
-                    initializePage('/');
-                });
+                await runRouteCrossfade(root, applyErrorDOM);
             }
         }
     };
@@ -2826,6 +2833,70 @@ document.addEventListener('DOMContentLoaded', async () => {
     await injectSharedHeaderFooter();
 
     updateNavLinks();
+
+    const setupMobileNav = () => {
+        const toggleBtn = document.getElementById('mobile-menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        const contactLink = document.getElementById('contact-link');
+
+        if (toggleBtn && navLinks) {
+            const closeMenu = () => {
+                toggleBtn.classList.remove('open');
+                navLinks.classList.remove('mobile-menu-open');
+                document.body.classList.remove('mobile-nav-locked');
+                document.documentElement.classList.remove('scroll-lock');
+            };
+
+            const openMenu = () => {
+                toggleBtn.classList.add('open');
+                navLinks.classList.add('mobile-menu-open');
+                document.body.classList.add('mobile-nav-locked');
+                document.documentElement.classList.add('scroll-lock');
+            };
+
+            toggleBtn.addEventListener('click', () => {
+                const willOpen = !navLinks.classList.contains('mobile-menu-open');
+                if (willOpen) openMenu();
+                else closeMenu();
+            });
+
+            navLinks.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    closeMenu();
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!navLinks.classList.contains('mobile-menu-open')) return;
+                const target = e.target;
+                if (toggleBtn.contains(target)) return;
+                if (navLinks.contains(target)) return;
+                closeMenu();
+            }, { capture: true });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (!navLinks.classList.contains('mobile-menu-open')) return;
+                closeMenu();
+            });
+        }
+
+        if (contactLink) {
+            contactLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                const footer = document.querySelector('.page-footer');
+                if (footer) footer.scrollIntoView({ behavior: 'smooth' });
+                if (toggleBtn && navLinks) {
+                    toggleBtn.classList.remove('open');
+                    navLinks.classList.remove('mobile-menu-open');
+                    document.body.classList.remove('mobile-nav-locked');
+                    document.documentElement.classList.remove('scroll-lock');
+                }
+            });
+        }
+    };
+    setupMobileNav();
+
     updateNavActive(resolveRoute(window.location.pathname));
     ensureGlobalEvents();
 

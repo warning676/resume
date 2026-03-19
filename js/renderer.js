@@ -109,13 +109,15 @@ class Renderer {
             colgroup.appendChild(col);
         });
 
+        const totalFloor = floor.reduce((sum, f) => sum + f, 0);
+
         table.classList.add('table-fit');
         if (canNoWrap) table.classList.add('table-fit-nowrap');
         else table.classList.remove('table-fit-nowrap');
 
         table.style.tableLayout = 'fixed';
         table.style.width = '100%';
-        table.style.minWidth = '0';
+        table.style.minWidth = Math.max(available, totalFloor) + 'px';
     }
 
     ensureSkillsFitBinding() {
@@ -129,7 +131,7 @@ class Renderer {
             t = setTimeout(() => {
                 const skillsShell = document.querySelector('.courses-table-shell.skills-table-shell');
                 const skillsTable = document.querySelector('table.skills-table');
-                if (skillsShell && skillsTable) this.fitTableColumns(skillsTable, skillsShell, { floorMin: 120 });
+                if (skillsShell && skillsTable) this.fitTableColumns(skillsTable, skillsShell, { floorMin: 90 });
                 const coursesShell = document.querySelector('#courses-table')?.closest('.courses-table-shell');
                 const coursesTable = document.querySelector('#courses-table');
                 if (coursesShell && coursesTable) this.fitTableColumns(coursesTable, coursesShell, { floorMin: 90 });
@@ -344,7 +346,7 @@ class Renderer {
             const iconSrc = skill.resolvedIcon || this.fixImagePath(skill.icon);
 
             item.innerHTML = `
-                <td>
+                <td data-label="Skill">
                     <div class="skill-name-cell">
                         <span class="skill-icon-wrap">
                             <span class="skill-icon-skeleton skeleton-element"></span>
@@ -355,9 +357,9 @@ class Renderer {
                         </span>
                     </div>
                 </td>
-                <td><span class="type-badge">${skill.badge || '-'}</span></td>
-                <td><span class="level proficiency-badge ${levelBadgeClass}">${skill.level || '-'}</span></td>
-                <td><span class="last-used">${skill.lastUsed || '-'}</span></td>`;
+                <td data-label="Category"><span class="type-badge">${skill.badge || '-'}</span></td>
+                <td data-label="Proficiency"><span class="level proficiency-badge ${levelBadgeClass}">${skill.level || '-'}</span></td>
+                <td data-label="Last Used"><span class="last-used">${skill.lastUsed || '-'}</span></td>`;
 
             const iconImg = item.querySelector('.skill-icon');
             const iconSkeleton = item.querySelector('.skill-icon-skeleton');
@@ -391,7 +393,7 @@ class Renderer {
             setTimeout(() => {
                 const shell = s.skillsList.querySelector('.courses-table-shell.skills-table-shell') || s.skillsList.querySelector('.courses-table-shell');
                 const table = s.skillsList.querySelector('table.skills-table');
-                if (shell && table) this.fitTableColumns(table, shell, { floorMin: 120 });
+                if (shell && table) this.fitTableColumns(table, shell, { floorMin: 90 });
             }, 0);
         });
     }
