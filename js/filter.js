@@ -186,7 +186,12 @@ class FilterManager {
         if (tableBody) {
             const existingRow = tableBody.querySelector('.skills-no-results-row');
             if (visibleCount === 0) {
-                const emptyMsg = s.isAchievementsPage ? 'No certifications added yet.' : 'No skills match the current filters.';
+                let emptyMsg = 'No skills match the current filters.';
+                if (s.isAchievementsPage) {
+                    const allSkills = Array.isArray(s.allData?.skills) ? s.allData.skills : [];
+                    const certifiedCount = allSkills.filter(skill => skill.certified === true || String(skill.certified || '').toLowerCase() === 'true').length;
+                    emptyMsg = certifiedCount === 0 ? 'No certifications added yet.' : 'No skills match the current filters.';
+                }
                 if (!existingRow) tableBody.insertAdjacentHTML('beforeend', `<tr class="skills-no-results-row"><td colspan="4" class="courses-loading-row">${emptyMsg}</td></tr>`);
             } else {
                 if (existingRow) existingRow.remove();

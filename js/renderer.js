@@ -18,6 +18,11 @@ class Renderer {
 
         const buffer = Number.isFinite(options.buffer) ? options.buffer : 12;
         const floorMin = Number.isFinite(options.floorMin) ? options.floorMin : 110;
+        const priorityColumnIndexes = Array.isArray(options.priorityColumnIndexes) ? options.priorityColumnIndexes : null;
+        const prioritySet = priorityColumnIndexes ? new Set(priorityColumnIndexes.filter(n => Number.isInteger(n) && n >= 0 && n < colCount)) : new Set();
+        const nonPriorityFloorMin = Number.isFinite(options.nonPriorityFloorMin)
+            ? options.nonPriorityFloorMin
+            : Math.max(40, Math.floor(floorMin * 0.7));
 
         const measureWrap = document.createElement('div');
         measureWrap.style.position = 'absolute';
@@ -68,34 +73,126 @@ class Renderer {
         for (let i = 0; i < colCount; i++) needed[i] += buffer;
 
         const headerMin = cloneThs.map(th => measureCell(th) + buffer);
-        const floor = new Array(colCount).fill(0).map((_, i) => Math.max(floorMin, headerMin[i] || 0));
+        const floor = new Array(colCount).fill(0).map((_, i) => {
+            const min = prioritySet.has(i) ? floorMin : nonPriorityFloorMin;
+            return Math.max(min, headerMin[i] || 0);
+        });
 
-        const base = Math.floor(available / colCount);
-        const alloc = new Array(colCount).fill(base);
-        let rem = available - (base * colCount);
-        for (let i = 0; i < rem; i++) alloc[i % colCount] += 1;
+        const useTightAllocation = prioritySet.size > 0;
+        let alloc;
+        let deficit;
+        let canNoWrap;
 
-        const calcSurplus = () => alloc.map((w, i) => Math.max(0, w - floor[i]));
-        const calcDeficit = () => alloc.map((w, i) => Math.max(0, needed[i] - w));
+        if (useTightAllocation) {
+            const sumFloor = floor.reduce((sum, v) => sum + v, 0);
+            alloc = floor.slice();
+            let remaining = Math.max(0, available - sumFloor);
 
-        let surplus = calcSurplus();
-        let deficit = calcDeficit();
+            const deficits = alloc.map((w, i) => Math.max(0, needed[i] - w));
+            deficit = deficits.slice();
 
-        for (let guard = 0; guard < 80; guard++) {
-            const defPairs = deficit.map((d, i) => ({ i, d })).filter(x => x.d > 0).sort((a, b) => b.d - a.d);
-            const surPairs = surplus.map((s, i) => ({ i, s })).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
-            if (!defPairs.length || !surPairs.length) break;
-            const to = defPairs[0].i;
-            const from = surPairs[0].i;
-            const amount = Math.min(defPairs[0].d, surplus[from]);
-            if (!amount) break;
-            alloc[from] -= amount;
-            alloc[to] += amount;
-            surplus = calcSurplus();
+            for (let guard = 0; guard < 2000; guard++) {
+                if (remaining <= 0) break;
+                const prCandidates = Array.from(prioritySet).filter(i => i >= 0 && i < colCount && deficit[i] > 0);
+                const candidates = prCandidates.length
+                    ? prCandidates
+                    : deficit.map((d, i) => ({ i, d })).filter(x => x.d > 0).sort((a, b) => b.d - a.d).map(x => x.i);
+
+                if (!candidates.length) break;
+                let pick = candidates[0];
+                if (candidates.length > 1) {
+                    pick = candidates.reduce((best, cur) => (deficit[cur] > deficit[best] ? cur : best), candidates[0]);
+                }
+
+                const amount = Math.min(deficit[pick], remaining);
+                if (amount <= 0) break;
+                alloc[pick] += amount;
+                deficit[pick] -= amount;
+                remaining -= amount;
+            }
+
+            if (remaining > 0) {
+                const prCols = Array.from(prioritySet);
+                if (prCols.length) {
+                    for (let k = 0; k < remaining; k++) {
+                        alloc[prCols[k % prCols.length]] += 1;
+                    }
+                } else {
+                    for (let k = 0; k < remaining; k++) {
+                        alloc[k % colCount] += 1;
+                    }
+                }
+            }
+
+            canNoWrap = deficit.every(d => d <= 0);
+        } else {
+            const base = Math.floor(available / colCount);
+            alloc = new Array(colCount).fill(base);
+            let rem = available - (base * colCount);
+            for (let i = 0; i < rem; i++) alloc[i % colCount] += 1;
+
+            const calcSurplus = () => alloc.map((w, i) => Math.max(0, w - floor[i]));
+            const calcDeficit = () => alloc.map((w, i) => Math.max(0, needed[i] - w));
+
+            let surplus = calcSurplus();
             deficit = calcDeficit();
-        }
 
-        const canNoWrap = deficit.every(d => d <= 0);
+            for (let guard = 0; guard < 80; guard++) {
+                const defPairs = deficit.map((d, i) => ({ i, d })).filter(x => x.d > 0).sort((a, b) => b.d - a.d);
+                const surPairs = surplus.map((s, i) => ({ i, s })).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+                if (!defPairs.length || !surPairs.length) break;
+                const to = defPairs[0].i;
+                const from = surPairs[0].i;
+                const amount = Math.min(defPairs[0].d, surplus[from]);
+                if (!amount) break;
+                alloc[from] -= amount;
+                alloc[to] += amount;
+                surplus = calcSurplus();
+                deficit = calcDeficit();
+            }
+
+            if (prioritySet.size) {
+                const minAllowed = floor.map((f, i) => {
+                    if (prioritySet.has(i)) return f;
+                    const soft = Math.min(f, needed[i] || 0);
+                    return Math.max(headerMin[i] || 0, soft);
+                });
+
+                for (let guard = 0; guard < 120; guard++) {
+                    let moved = false;
+                    for (const p of prioritySet) {
+                        if (p < 0 || p >= colCount) continue;
+                        if (alloc[p] >= needed[p]) continue;
+
+                        const need = needed[p] - alloc[p];
+                        let donor = -1;
+                        let bestSurplus = 0;
+
+                        for (let d = 0; d < colCount; d++) {
+                            if (d === p) continue;
+                            const surplusAmt = alloc[d] - (minAllowed[d] || 0);
+                            if (surplusAmt > bestSurplus) {
+                                bestSurplus = surplusAmt;
+                                donor = d;
+                            }
+                        }
+
+                        if (donor === -1 || bestSurplus <= 0) continue;
+                        const amount = Math.min(need, bestSurplus);
+                        if (!amount) continue;
+
+                        alloc[donor] -= amount;
+                        alloc[p] += amount;
+                        moved = true;
+                    }
+                    if (!moved) break;
+                }
+
+                deficit = alloc.map((w, i) => Math.max(0, needed[i] - w));
+            }
+
+            canNoWrap = deficit.every(d => d <= 0);
+        }
 
         let colgroup = table.querySelector('colgroup');
         if (!colgroup) {
@@ -131,10 +228,10 @@ class Renderer {
             t = setTimeout(() => {
                 const skillsShell = document.querySelector('.courses-table-shell.skills-table-shell');
                 const skillsTable = document.querySelector('table.skills-table');
-                if (skillsShell && skillsTable) this.fitTableColumns(skillsTable, skillsShell, { floorMin: 90 });
+                if (skillsShell && skillsTable) this.fitTableColumns(skillsTable, skillsShell, { floorMin: 90, nonPriorityFloorMin: 65, priorityColumnIndexes: [0, 1] });
                 const coursesShell = document.querySelector('#courses-table')?.closest('.courses-table-shell');
                 const coursesTable = document.querySelector('#courses-table');
-                if (coursesShell && coursesTable) this.fitTableColumns(coursesTable, coursesShell, { floorMin: 90 });
+                if (coursesShell && coursesTable) this.fitTableColumns(coursesTable, coursesShell, { floorMin: 90, nonPriorityFloorMin: 65, priorityColumnIndexes: [1, 2] });
             }, 120);
         }, { passive: true });
     }
@@ -393,7 +490,7 @@ class Renderer {
             setTimeout(() => {
                 const shell = s.skillsList.querySelector('.courses-table-shell.skills-table-shell') || s.skillsList.querySelector('.courses-table-shell');
                 const table = s.skillsList.querySelector('table.skills-table');
-                if (shell && table) this.fitTableColumns(table, shell, { floorMin: 90 });
+                if (shell && table) this.fitTableColumns(table, shell, { floorMin: 90, nonPriorityFloorMin: 65, priorityColumnIndexes: [0, 1] });
             }, 0);
         });
     }

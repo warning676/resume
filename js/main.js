@@ -1519,6 +1519,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const selected = selectedMap || {};
         const wasOpen = menu.classList.contains('open');
+        const prevHasClearWrap = !!menu.querySelector('.column-filter-clear-wrap');
         const usableDefinitions = (definitions || []).map(definition => {
             const rawValues = (definition.values || []).map(value => toText(value));
             const hasMissing = rawValues.some(value => !value);
@@ -1530,10 +1531,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         syncColumnFilterVisualState(button, menu, usableDefinitions, selected, onChange);
 
         menu.classList.toggle('skip-animation', wasOpen);
+        menu.classList.toggle('skip-submenu-animation', wasOpen);
 
         menu.innerHTML = '';
 
         const activateDefinition = (definitionKey) => {
+            if (menu.dataset.ignoreSubmenuHover === 'true') return;
+            const currentActiveKey = menu.querySelector('.column-filter-item.active')?.dataset.filterKey;
+            if (definitionKey !== currentActiveKey) menu.classList.remove('skip-submenu-animation');
             menu.querySelectorAll('.column-filter-item').forEach(node => {
                 if (node.dataset.filterKey === definitionKey) node.classList.add('active');
                 else node.classList.remove('active');
@@ -1688,18 +1693,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         const hasAnyActive = hasActiveColumnFilters(usableDefinitions, selected);
-        if (hasAnyActive) {
+        const shouldRenderClearWrap = hasAnyActive || (prevHasClearWrap && wasOpen);
+        if (shouldRenderClearWrap) {
+            if (hasAnyActive) {
+                if (!wasOpen) clearWrap.classList.add('is-pending-reveal');
+                else if (!prevHasClearWrap) clearWrap.classList.add('is-revealing');
+            } else {
+                clearWrap.classList.add('is-disappearing');
+                clearButton.disabled = true;
+            }
             clearWrap.appendChild(clearButton);
             menu.appendChild(clearWrap);
+            if (!hasAnyActive) {
+                clearWrap.addEventListener('animationend', (event) => {
+                    clearWrap.remove();
+                }, { once: true });
+            }
         }
 
         const closeMenu = () => {
             menu.classList.remove('open');
             menu.classList.remove('skip-animation');
+            menu.classList.remove('skip-submenu-animation');
             menu.querySelectorAll('.column-filter-item').forEach(node => node.classList.remove('active'));
             button.setAttribute('aria-expanded', 'false');
             syncCoursesModalScrollLock(false);
             syncDropdownScrollLock();
+            syncColumnFilterVisualState(button, menu, usableDefinitions, selected, onChange);
         };
 
         if (!menu.dataset.boundColumnFilterMenu) {
@@ -1728,11 +1748,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 closeAllColumnFilterMenus();
                 syncDropdownScrollLock();
-                if (isOpen || usableDefinitions.length === 0) return;
+                if (usableDefinitions.length === 0) return;
+                if (isOpen) return;
                 menu.classList.remove('skip-animation');
+                menu.classList.remove('skip-submenu-animation');
                 menu.classList.add('open');
+                menu.dataset.ignoreSubmenuHover = 'true';
                 menu.dataset.submenuHovered = 'false';
                 button.setAttribute('aria-expanded', 'true');
+                const activeDefinitionKey = usableDefinitions.find(def => isActiveColumnFilterSelection(selected, def.key))?.key;
+                if (activeDefinitionKey) {
+                    menu.querySelectorAll('.column-filter-item').forEach(node => {
+                        node.classList.toggle('active', node.dataset.filterKey === activeDefinitionKey);
+                    });
+                } else {
+                    menu.querySelectorAll('.column-filter-item').forEach(node => node.classList.remove('active'));
+                }
+                requestAnimationFrame(() => {
+                    menu.dataset.ignoreSubmenuHover = 'false';
+                });
                 syncCoursesModalScrollLock(true);
                 syncDropdownScrollLock();
                 requestAnimationFrame(() => positionColumnFilterMenu());
@@ -1743,16 +1777,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderSkillColumnFilter = () => {
         if (!state.isSkillsPage || !state.skillsFilterButton || !state.skillsFilterMenu) return;
         const skills = Array.isArray(state.allData?.skills) ? state.allData.skills : [];
+        const certifiedSkills = state.isAchievementsPage
+            ? skills.filter(skill => skill.certified === true || String(skill.certified || '').toLowerCase() === 'true')
+            : skills;
         const definitions = [
             {
                 key: 'type',
                 label: 'Category',
-                values: skills.map(skill => toText(skill.badge))
+                values: certifiedSkills.map(skill => toText(skill.badge))
             },
             {
                 key: 'level',
                 label: 'Proficiency',
-                values: skills.map(skill => toText(skill.level))
+                values: certifiedSkills.map(skill => toText(skill.level))
             }
         ];
 
@@ -2033,19 +2070,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             state.coursesModal._closeTimer = null;
         }
 
-        state.coursesModal.style.display = 'flex';
         state.coursesModal.setAttribute('aria-hidden', 'false');
-        requestAnimationFrame(() => {
-            if (state.coursesModal) state.coursesModal.classList.add('open');
-        });
+        state.coursesModal.classList.add('open');
         syncCoursesModalScrollLock(true);
+        state.modalManager?.fadeInModal(state.coursesModal);
     };
 
     const closeCoursesModal = () => {
         if (!state.coursesModal) return;
-        state.coursesModal.classList.remove('open');
         state.coursesModal.setAttribute('aria-hidden', 'true');
+
+        state.coursesModal.classList.remove('open');
         if (state.coursesModal._closeTimer) clearTimeout(state.coursesModal._closeTimer);
+        state.coursesModal._closeTimer = null;
+
+        if (state.modalManager?.fadeOutModal) {
+            state.modalManager.fadeOutModal(state.coursesModal, () => {
+                syncCoursesModalScrollLock(false);
+            });
+            return;
+        }
+
         state.coursesModal._closeTimer = setTimeout(() => {
             if (state.coursesModal) state.coursesModal.style.display = 'none';
             syncCoursesModalScrollLock(false);
@@ -2064,27 +2109,72 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const outClass = delta > 0 ? 'courses-swap-out-next' : 'courses-swap-out-prev';
-        const inClass = delta > 0 ? 'courses-swap-in-next' : 'courses-swap-in-prev';
+        state.currentCourseIndex = nextIndex;
+
+        const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia
+            ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            : false;
+
         const transitionTargets = [titleWrap, body].filter(Boolean);
+        if (!transitionTargets.length) return;
 
         transitionTargets.forEach(target => {
             target.classList.remove('courses-swap-out-next', 'courses-swap-out-prev', 'courses-swap-in-next', 'courses-swap-in-prev');
-            target.classList.add(outClass);
+        });
+
+        if (prefersReducedMotion) {
+            transitionTargets.forEach(target => {
+                target.style.transition = '';
+                target.style.willChange = '';
+                target.style.opacity = '';
+                target.style.transform = '';
+            });
+            populateCoursesModal(nextIndex);
+            updateCoursesModalNavState();
+            return;
+        }
+
+        const durationMs = 150;
+        const exitShift = delta >= 0 ? -12 : 12;
+        const enterShift = -exitShift;
+        const token = state.coursesModal._transitionToken = (state.coursesModal._transitionToken || 0) + 1;
+
+        transitionTargets.forEach(target => {
+            target.style.willChange = 'opacity, transform';
+            target.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
+            target.style.opacity = '0';
+            target.style.transform = `translate3d(${exitShift}px, 0, 0)`;
         });
 
         setTimeout(() => {
+            if (!state.coursesModal || token !== state.coursesModal._transitionToken) return;
             populateCoursesModal(nextIndex);
+
             transitionTargets.forEach(target => {
-                target.classList.remove(outClass);
-                target.classList.add(inClass);
+                target.style.transition = 'none';
+                target.style.opacity = '0';
+                target.style.transform = `translate3d(${enterShift}px, 0, 0)`;
             });
-            setTimeout(() => {
+
+            requestAnimationFrame(() => {
+                if (!state.coursesModal || token !== state.coursesModal._transitionToken) return;
                 transitionTargets.forEach(target => {
-                    target.classList.remove(inClass);
+                    target.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
+                    target.style.opacity = '1';
+                    target.style.transform = 'translate3d(0px, 0, 0)';
                 });
-            }, 170);
-        }, 140);
+
+                setTimeout(() => {
+                    if (!state.coursesModal || token !== state.coursesModal._transitionToken) return;
+                    transitionTargets.forEach(target => {
+                        target.style.transition = '';
+                        target.style.willChange = '';
+                        target.style.opacity = '';
+                        target.style.transform = '';
+                    });
+                }, durationMs + 30);
+            });
+        }, durationMs);
     };
 
     const renderCoursesTable = () => {
@@ -2092,18 +2182,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const courses = state.filteredCourses;
 
         if (!courses.length) {
-            state.coursesTableBody.innerHTML = '<tr><td colspan="8" class="courses-loading-row">No matching courses found.</td></tr>';
+            const emptyMsg = 'No courses match the current filters.';
+            state.coursesTableBody.innerHTML = `<tr><td colspan="8" class="courses-loading-row">${emptyMsg}</td></tr>`;
             const statusEl = document.getElementById('courses-search-status');
             if (statusEl) {
-                const rawQuery = state.courseSearchQuery ? state.courseSearchQuery.trim() : '';
-                if (rawQuery) {
-                    const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    statusEl.classList.add('visible');
-                    statusEl.innerHTML = `Showing 0 results for "<span style="color:#58a6ff;">${safe}</span>"`;
-                } else {
-                    statusEl.classList.remove('visible');
-                    statusEl.innerHTML = '';
-                }
+                statusEl.classList.add('visible');
+                statusEl.innerHTML = emptyMsg;
             }
             return;
         }
@@ -2149,7 +2233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setTimeout(() => {
                     const table = document.getElementById('courses-table');
                     const shell = table ? table.closest('.courses-table-shell') : null;
-                    if (table && shell) state.renderer.fitTableColumns(table, shell, { floorMin: 90 });
+                    if (table && shell) state.renderer.fitTableColumns(table, shell, { floorMin: 90, priorityColumnIndexes: [1] });
                 }, 0);
             });
         }
@@ -2191,6 +2275,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         renderCoursesTable();
     };
+
+    state.applyCoursesFilterAndSort = applyCoursesFilterAndSort;
 
     const setupCoursesControls = () => {
         if (!state.isCoursesPage) return;
@@ -2509,8 +2595,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 if (projectData.length === 0) {
-                    const projectLabel = pageType === 'games' ? 'game projects' : 'video projects';
-                    state.portfolioGrid.innerHTML = `<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">No matching ${projectLabel} found.</p>`;
+                    const emptyMsg = pageType === 'games'
+                        ? 'No games match the current filters.'
+                        : 'No videos match the current filters.';
+                    state.portfolioGrid.innerHTML = `<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">${emptyMsg}</p>`;
                 }
                 if (projectData.length > 0) {
                     const startTime = Date.now();
@@ -2597,6 +2685,118 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         primeSkeletons();
         bindModalButtons();
+
+        document.querySelectorAll('.column-header-filter-indicator').forEach(indicator => {
+            if (indicator.dataset.boundClearFiltersIcon === 'true') return;
+            indicator.dataset.boundClearFiltersIcon = 'true';
+
+            indicator.style.cursor = 'pointer';
+
+            indicator.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+
+                if (!indicator.classList.contains('is-active')) return;
+
+                const scope = indicator.dataset.filterScope || indicator.getAttribute('data-filter-scope') || '';
+                const key = indicator.dataset.filterKey || indicator.getAttribute('data-filter-key') || '';
+                if (!scope || !key) return;
+
+                const selectedMap = scope === 'skills'
+                    ? state.selectedSkillColumnValues
+                    : scope === 'courses'
+                        ? state.selectedCourseColumnValues
+                        : scope === 'portfolio'
+                            ? state.selectedPortfolioColumnValues
+                            : null;
+
+                if (!selectedMap) return;
+
+                delete selectedMap[key];
+
+                if (scope === 'skills') state.filterSkills && state.filterSkills();
+                else if (scope === 'courses') state.applyCoursesFilterAndSort && state.applyCoursesFilterAndSort();
+                else if (scope === 'portfolio') state.filterCards && state.filterCards();
+
+                closeAllColumnFilterMenus();
+
+                const selectedForScope = selectedMap || {};
+                document.querySelectorAll(`.column-header-filter-indicator[data-filter-scope="${scope}"]`).forEach(i => {
+                    const filterKey = i.dataset.filterKey || i.getAttribute('data-filter-key') || '';
+                    i.classList.toggle('is-active', isActiveColumnFilterSelection(selectedForScope, filterKey));
+                });
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            const hoveredIndicator = document.querySelector('.column-header-filter-indicator.is-active:hover');
+            const indicatorEl = e.target.closest('.column-header-filter-indicator.is-active') || hoveredIndicator;
+            if (!indicatorEl) return;
+
+            const scope = indicatorEl.dataset.filterScope || indicatorEl.getAttribute('data-filter-scope') || '';
+            const key = indicatorEl.dataset.filterKey || indicatorEl.getAttribute('data-filter-key') || '';
+            if (!scope || !key) return;
+
+            const selectedMap = scope === 'skills'
+                ? state.selectedSkillColumnValues
+                : scope === 'courses'
+                    ? state.selectedCourseColumnValues
+                    : scope === 'portfolio'
+                        ? state.selectedPortfolioColumnValues
+                        : null;
+
+            if (!selectedMap) return;
+
+            delete selectedMap[key];
+
+            if (scope === 'skills') {
+                if (state.filterSkills) state.filterSkills();
+                if (state.skillsFilterButton && state.skillsFilterMenu) {
+                    const skills = Array.isArray(state.allData?.skills) ? state.allData.skills : [];
+                    const certifiedSkills = skills.filter(skill => skill.certified === true || String(skill.certified || '').toLowerCase() === 'true');
+                    const activeKey = state.skillsFilterMenu.querySelector('.column-filter-item.active')?.dataset.filterKey;
+                    const definitions = [
+                        { key: 'type', label: 'Category', values: certifiedSkills.map(skill => toText(skill.badge)) },
+                        { key: 'level', label: 'Proficiency', values: certifiedSkills.map(skill => toText(skill.level)) }
+                    ];
+                    renderColumnFilterMenu(
+                        state.skillsFilterButton,
+                        state.skillsFilterMenu,
+                        definitions,
+                        state.selectedSkillColumnValues,
+                        () => state.filterSkills && state.filterSkills(),
+                        activeKey
+                    );
+                }
+            } else if (scope === 'courses') {
+                if (state.applyCoursesFilterAndSort) state.applyCoursesFilterAndSort();
+                if (state.coursesFilterButton && state.coursesFilterMenu) {
+                    const courses = normalizeCourses(state.allData?.Courses || []);
+                    const activeKey = state.coursesFilterMenu.querySelector('.column-filter-item.active')?.dataset.filterKey;
+                    const definitions = [
+                        { key: 'school', label: 'School', values: courses.map(course => course.school) },
+                        { key: 'type', label: 'Type', values: courses.map(course => course.type) },
+                        { key: 'status', label: 'Status', values: courses.map(course => course.status) },
+                        { key: 'completionYear', label: 'Completion Year', values: courses.map(course => course.completionYear) },
+                        { key: 'grade', label: 'Grade', values: courses.map(course => course.grade) }
+                    ];
+                    renderColumnFilterMenu(
+                        state.coursesFilterButton,
+                        state.coursesFilterMenu,
+                        definitions,
+                        state.selectedCourseColumnValues,
+                        state.applyCoursesFilterAndSort,
+                        activeKey
+                    );
+                }
+            } else if (scope === 'portfolio') {
+                if (state.filterCards) state.filterCards();
+            }
+
+            e.preventDefault();
+            e.stopPropagation();
+        }, true);
 
         const token = ++state.routeToken;
         applyDataForRoute(token);
