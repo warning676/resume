@@ -63,6 +63,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         coursesModalCredits: null,
         coursesModalName: null,
         coursesModalInfo: null,
+        coursesModalProgrammingLanguagesLabel: null,
+        coursesModalProgrammingLanguagesContainer: null,
 
         selectedCategories: ['all'],
         selectedTools: ['all'],
@@ -116,7 +118,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         primedSkeletonCount: 0,
         primedSkeletonTarget: null,
         skeletonKey: null,
-        coursesTableColumnsFitted: false
+        coursesTableColumnsFitted: false,
+        coursesTableShellMaxHeight: null,
+        skillsTableShellMaxHeight: null,
+        coursesProgrammingLanguageIconsPreloaded: false
     };
 
     const dataService = new DataService('12V7XnylQtfLmT1ux5Va-DPhKc201m3fht9JstupnHdk');
@@ -408,6 +413,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.primedSkeletonCount = 0;
         state.primedSkeletonTarget = null;
         state.skeletonKey = null;
+        state.coursesTableShellMaxHeight = null;
+        const shell = state.coursesTableBody?.closest('.courses-table-shell');
+        if (shell) shell.style.minHeight = '';
+        state.skillsTableShellMaxHeight = null;
+        state.coursesProgrammingLanguageIconsPreloaded = false;
+        const skillsShell = document.querySelector('.courses-table-shell.skills-table-shell');
+        if (skillsShell) skillsShell.style.minHeight = '';
     };
 
     const syncDomReferences = () => {
@@ -462,6 +474,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.coursesModalCredits = document.getElementById('courses-modal-credits');
         state.coursesModalName = document.getElementById('courses-modal-name');
         state.coursesModalInfo = document.getElementById('courses-modal-info');
+        state.coursesModalProgrammingLanguagesLabel = document.getElementById('courses-modal-programming-languages-label');
+        state.coursesModalProgrammingLanguagesContainer = document.getElementById('courses-modal-programming-languages');
         state.coursesModalYear = document.getElementById('courses-modal-year');
     };
 
@@ -2044,8 +2058,161 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         if (state.coursesModalYear) state.coursesModalYear.textContent = course.completionYear || course.completionyear || '-';
-        if (state.coursesModalInfo) state.coursesModalInfo.textContent = course.info || 'No course information available.';
+        const rawInfo = toText(course.info);
+        const languagesSectionRegex = /Programming Languages Used\s*:\s*([\s\S]*)$/i;
+        const languagesSectionMatch = rawInfo.match(languagesSectionRegex);
+        let languagesRaw = '';
+        let infoText = rawInfo;
+        if (languagesSectionMatch) {
+            languagesRaw = toText(languagesSectionMatch[1]);
+            infoText = rawInfo.replace(languagesSectionRegex, '').trim();
+        }
+
+        if (state.coursesModalInfo) state.coursesModalInfo.textContent = infoText || 'No course information available.';
+
+        const skills = state.allData && state.allData.skills ? state.allData.skills : [];
+        const modalManager = state.modalManager;
+        const languages = (languagesRaw ? languagesRaw
+            .split(/[\n,;|]+/g)
+            .map(s => s.trim())
+            .map(s => s.replace(/^[-*]\s*/, '').trim())
+            .filter(Boolean) : [])
+            .reduce((acc, lang) => {
+                const key = lang.toLowerCase();
+                if (!acc.seen.has(key)) {
+                    acc.seen.add(key);
+                    acc.items.push(lang);
+                }
+                return acc;
+            }, { seen: new Set(), items: [] }).items;
+
+        const labelEl = state.coursesModalProgrammingLanguagesLabel;
+        const containerEl = state.coursesModalProgrammingLanguagesContainer;
+        if (labelEl && containerEl) {
+            containerEl.innerHTML = '';
+            if (!languages.length) {
+                labelEl.style.display = 'none';
+                containerEl.style.display = 'none';
+            } else {
+                labelEl.style.display = 'block';
+                containerEl.style.display = 'flex';
+
+                const languageEntries = languages.map((lang) => {
+                    const langLower = lang.toLowerCase();
+                    const skillMatch = skills.find(sk => String(sk.name || '').toLowerCase() === langLower)
+                        || skills.find(sk => String(sk.name || '').toLowerCase().includes(langLower))
+                        || skills.find(sk => langLower.includes(String(sk.name || '').toLowerCase()));
+
+                    const fixedSrc = (skillMatch && skillMatch.icon)
+                        ? (modalManager && typeof modalManager.fixImagePath === 'function'
+                            ? modalManager.fixImagePath(skillMatch.icon)
+                            : skillMatch.icon)
+                        : '';
+
+                    return { lang, skillMatch, fixedSrc };
+                });
+
+                if (modalManager && typeof modalManager.preloadImage === 'function') {
+                    const seen = new Set();
+                    languageEntries.forEach(({ fixedSrc }) => {
+                        if (!fixedSrc || seen.has(fixedSrc)) return;
+                        seen.add(fixedSrc);
+                        modalManager.preloadImage(fixedSrc, 1200);
+                    });
+                }
+
+                languageEntries.forEach(({ lang, skillMatch, fixedSrc }) => {
+                    const tag = document.createElement('span');
+                    tag.className = 'software-tag';
+
+                    if (skillMatch) {
+                        tag.classList.add('clickable-tool');
+                        tag.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (!state.openModalForItem) return;
+                            state.openModalForItem(skillMatch, 'skill', languages);
+                        });
+                    }
+
+                    if (fixedSrc) {
+                        const iconWrap = document.createElement('span');
+                        iconWrap.className = 'tool-icon-wrap';
+                        const icon = document.createElement('img');
+                        icon.className = 'tool-icon';
+                        icon.alt = lang.toUpperCase();
+                        icon.src = fixedSrc;
+                        icon.style.opacity = '1';
+                        iconWrap.appendChild(icon);
+                        tag.appendChild(iconWrap);
+                    }
+
+                    const text = document.createElement('span');
+                    text.innerText = lang.toUpperCase();
+                    tag.appendChild(text);
+
+                    if (skillMatch) {
+                        const isCertified = skillMatch.certified === true || String(skillMatch.certified || '').toLowerCase() === 'true';
+                        if (isCertified) {
+                            const cert = document.createElement('span');
+                            cert.className = 'grid-certified-badge';
+                            cert.title = skillMatch.certName || skillMatch.name || 'Certified';
+                            cert.innerText = 'CERTIFIED';
+                            tag.appendChild(cert);
+                        }
+                    }
+
+                    containerEl.appendChild(tag);
+                });
+            }
+        }
         updateCoursesModalNavState();
+    };
+
+    const preloadProgrammingLanguageIconsForCourses = (coursesRows) => {
+        if (!state.modalManager) return;
+        if (state.coursesProgrammingLanguageIconsPreloaded) return;
+        const skills = state.allData && Array.isArray(state.allData.skills) ? state.allData.skills : [];
+        if (!skills.length) return;
+
+        const skillsByLowerName = new Map();
+        skills.forEach(sk => {
+            const n = sk && typeof sk.name !== 'undefined' ? String(sk.name).trim().toLowerCase() : '';
+            if (!n) return;
+            if (!skillsByLowerName.has(n)) skillsByLowerName.set(n, sk);
+        });
+
+        const languageRegex = /Programming Languages Used\s*:\s*([\s\S]*)$/i;
+        const languages = new Set();
+        (Array.isArray(coursesRows) ? coursesRows : []).forEach(row => {
+            const rawInfo = toText(row && row.info);
+            const match = rawInfo.match(languageRegex);
+            if (!match) return;
+            const tail = toText(match[1]);
+            tail.split(/[\n,;|]+/g).forEach(part => {
+                const lang = toText(part).replace(/^[-*]\s*/, '').trim();
+                if (lang) languages.add(lang);
+            });
+        });
+        if (!languages.size) return;
+
+        const iconUrls = new Set();
+        languages.forEach(lang => {
+            const langLower = lang.toLowerCase();
+            let skill = skillsByLowerName.get(langLower);
+            if (!skill) {
+                skill = skills.find(sk => String(sk.name || '').toLowerCase().includes(langLower))
+                    || skills.find(sk => langLower.includes(String(sk.name || '').toLowerCase()));
+            }
+            if (!skill || !skill.icon) return;
+            const fixedSrc = state.modalManager && typeof state.modalManager.fixImagePath === 'function'
+                ? state.modalManager.fixImagePath(skill.icon)
+                : skill.icon;
+            if (fixedSrc) iconUrls.add(fixedSrc);
+        });
+
+        if (!iconUrls.size) return;
+        iconUrls.forEach(src => state.modalManager.preloadImage(src, 1200));
+        state.coursesProgrammingLanguageIconsPreloaded = true;
     };
 
     const updateCoursesModalNavState = () => {
@@ -2185,6 +2352,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const renderCoursesTable = () => {
         if (!state.coursesTableBody) return;
+        const shell = state.coursesTableBody.closest('.courses-table-shell');
+        if (shell) {
+            const measured = shell.getBoundingClientRect().height;
+            if (Number.isFinite(measured) && measured > 0) {
+                state.coursesTableShellMaxHeight = Math.max(state.coursesTableShellMaxHeight || 0, measured);
+                shell.style.minHeight = `${state.coursesTableShellMaxHeight}px`;
+            }
+        }
         const courses = state.filteredCourses;
 
         if (!courses.length) {
@@ -2248,6 +2423,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const shell = table ? table.closest('.courses-table-shell') : null;
                     if (table && shell) state.renderer.fitTableColumns(table, shell, { floorMin: 90, nonPriorityFloorMin: 65, priorityColumnIndexes: [1, 2] });
                 }, 0);
+            });
+        }
+
+        if (shell) {
+            requestAnimationFrame(() => {
+                const measured = shell.getBoundingClientRect().height;
+                if (!Number.isFinite(measured) || measured <= 0) return;
+                state.coursesTableShellMaxHeight = Math.max(state.coursesTableShellMaxHeight || 0, measured);
+                shell.style.minHeight = `${state.coursesTableShellMaxHeight}px`;
             });
         }
     };
@@ -2451,12 +2635,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.addEventListener('keydown', (e) => {
                 if (state.externalLinkModal && state.externalLinkModal.classList.contains('active')) {
                     if (e.key === 'Escape') closeExternalLinkModal(false);
-                } else if (state.coursesModal && state.coursesModal.style.display === 'flex') {
-                    if (state.filteredCourses.length > 1) {
-                        if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
-                        if (e.key === 'ArrowRight') navigateCoursesModal(1);
-                    }
-                    if (e.key === 'Escape') closeCoursesModal();
                 } else if (state.secModal && state.secModal.style.display === 'flex') {
                     if (state.currentToolsContext.length > 1) {
                         if (e.key === 'ArrowLeft') state.modalManager?.navigateTool(-1);
@@ -2469,6 +2647,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (e.key === 'ArrowRight') state.modalManager?.navigateItem(1);
                     }
                     if (e.key === 'Escape') state.modalManager?.resetModal();
+                } else if (state.coursesModal && state.coursesModal.style.display === 'flex') {
+                    if (state.filteredCourses.length > 1) {
+                        if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
+                        if (e.key === 'ArrowRight') navigateCoursesModal(1);
+                    }
+                    if (e.key === 'Escape') closeCoursesModal();
                 }
             });
 
@@ -2530,7 +2714,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!state.allData.skills) sheetsNeeded.push('skills');
         }
         if (route === '/technical' && !state.allData.skills) sheetsNeeded.push('skills');
-        if (route === '/courses' && !state.allData.Courses) sheetsNeeded.push('Courses');
+        if (route === '/courses') {
+            if (!state.allData.Courses) sheetsNeeded.push('Courses');
+            if (!state.allData.skills) sheetsNeeded.push('skills');
+        }
         if ((route === '/' || route === '/bio') && !state.allData.School) sheetsNeeded.push('School');
         if ((route === '/' || route === '/bio') && !state.allData.Courses) sheetsNeeded.push('Courses');
         if (route === '/achievements') {
@@ -2600,6 +2787,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const allCoursesCount = normalizeCourses(data.Courses || []).length;
                 setStoredCount(state.skeletonKey, allCoursesCount);
                 renderCourses();
+                preloadProgrammingLanguageIconsForCourses(data.Courses || []);
             }
 
             if (state.portfolioGrid) {

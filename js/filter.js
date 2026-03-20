@@ -182,6 +182,15 @@ class FilterManager {
                 item.style.display = 'none';
             }
         });
+
+        const skillsShell = s.skillsList ? s.skillsList.querySelector('.courses-table-shell.skills-table-shell') : null;
+        if (skillsShell) {
+            const measured = skillsShell.getBoundingClientRect().height;
+            if (Number.isFinite(measured) && measured > 0) {
+                s.skillsTableShellMaxHeight = Math.max(s.skillsTableShellMaxHeight || 0, measured);
+                skillsShell.style.minHeight = `${s.skillsTableShellMaxHeight}px`;
+            }
+        }
         const tableBody = s.skillsList ? s.skillsList.querySelector('.skills-table-body') : null;
         if (tableBody) {
             const existingRow = tableBody.querySelector('.skills-no-results-row');

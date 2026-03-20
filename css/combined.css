@@ -3771,6 +3771,59 @@ body.dropdown-scroll-lock {
     white-space: pre-line;
 }
 
+.courses-modal-programming-languages-label {
+    display: none;
+    color: #8b949e;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 14px;
+    margin-bottom: 6px;
+}
+
+.courses-modal-programming-languages {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 5px;
+    align-items: flex-start;
+}
+
+.courses-modal-programming-languages .software-tag {
+    display: inline-flex;
+    align-items: center;
+    background: transparent;
+    border: 1px solid #30363d !important;
+    padding: 8px 13px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e1e4e8;
+    min-height: 34px;
+    margin-bottom: 0;
+    transform-origin: center;
+    transition: transform 0.24s cubic-bezier(0, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+.courses-modal-programming-languages .grid-certified-badge {
+    margin-left: 7px;
+    margin-right: 0;
+}
+
+.courses-modal-programming-languages .clickable-tool:hover {
+    background: #30363d !important;
+    border-color: #58a6ff !important;
+    color: #ffffff !important;
+}
+
+.courses-modal-programming-languages .clickable-tool:active {
+    border-color: #58a6ff !important;
+    transform: scale(0.955);
+}
+
 @media (max-width: 900px) {
     .courses-modal-grid {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
