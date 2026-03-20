@@ -379,10 +379,14 @@ class ControlsManager {
             }, 150);
         });
 
+        clearBtn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+        });
+
         clearBtn.addEventListener('click', () => {
             input.value = '';
             clearBtn.classList.remove('visible');
-            input.focus();
+            if (document.activeElement !== input) input.focus();
             onInput('');
         });
 

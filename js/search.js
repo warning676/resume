@@ -40,10 +40,13 @@ function initializeGlobalSearch() {
     });
 
     if (searchClearBtn) {
+        searchClearBtn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+        });
         searchClearBtn.addEventListener('click', () => {
             searchInput.value = '';
             searchClearBtn.classList.remove('visible');
-            searchInput.focus();
+            if (document.activeElement !== searchInput) searchInput.focus();
             performSearch('');
         });
     }

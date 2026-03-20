@@ -115,7 +115,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         didPrimeSkeletons: false,
         primedSkeletonCount: 0,
         primedSkeletonTarget: null,
-        skeletonKey: null
+        skeletonKey: null,
+        coursesTableColumnsFitted: false
     };
 
     const dataService = new DataService('12V7XnylQtfLmT1ux5Va-DPhKc201m3fht9JstupnHdk');
@@ -1565,6 +1566,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             labelIndicator.className = `column-filter-menu-indicator${definitionIsActive ? ' is-active' : ''}`;
             labelIndicator.setAttribute('aria-hidden', 'true');
 
+            labelIndicator.addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                if (!labelIndicator.classList.contains('is-active')) return;
+
+                delete selected[definition.key];
+                onChange();
+                renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key);
+            });
+
             label.appendChild(labelText);
             label.appendChild(labelIndicator);
             item.appendChild(label);
@@ -1679,7 +1690,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const textSpan = document.createElement('span');
         textSpan.className = 'column-filter-clear-text';
-        textSpan.textContent = 'Clear Filters';
+        textSpan.textContent = 'Clear All Filters';
 
         clearButton.appendChild(textSpan);
         clearButton.appendChild(iconWrap);
@@ -1756,14 +1767,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 menu.dataset.ignoreSubmenuHover = 'true';
                 menu.dataset.submenuHovered = 'false';
                 button.setAttribute('aria-expanded', 'true');
-                const activeDefinitionKey = usableDefinitions.find(def => isActiveColumnFilterSelection(selected, def.key))?.key;
-                if (activeDefinitionKey) {
-                    menu.querySelectorAll('.column-filter-item').forEach(node => {
-                        node.classList.toggle('active', node.dataset.filterKey === activeDefinitionKey);
-                    });
-                } else {
-                    menu.querySelectorAll('.column-filter-item').forEach(node => node.classList.remove('active'));
-                }
+                menu.querySelectorAll('.column-filter-item').forEach(node => {
+                    node.classList.remove('active');
+                });
                 requestAnimationFrame(() => {
                     menu.dataset.ignoreSubmenuHover = 'false';
                 });
@@ -2183,11 +2189,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!courses.length) {
             const emptyMsg = 'No courses match the current filters.';
-            state.coursesTableBody.innerHTML = `<tr><td colspan="8" class="courses-loading-row">${emptyMsg}</td></tr>`;
             const statusEl = document.getElementById('courses-search-status');
+            state.coursesTableBody.innerHTML = `<tr><td colspan="8" class="courses-loading-row">${emptyMsg}</td></tr>`;
             if (statusEl) {
                 statusEl.classList.add('visible');
-                statusEl.innerHTML = emptyMsg;
+                const rawQuery = state.courseSearchQuery ? state.courseSearchQuery.trim() : '';
+                if (rawQuery) {
+                    const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    statusEl.innerHTML = `Showing 0 results for "<span style="color:#58a6ff;">${safe}</span>"`;
+                } else {
+                    statusEl.innerHTML = emptyMsg;
+                }
             }
             return;
         }
@@ -2228,12 +2240,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        if (state.renderer) {
+        if (state.renderer && !state.coursesTableColumnsFitted) {
+            state.coursesTableColumnsFitted = true;
             requestAnimationFrame(() => {
                 setTimeout(() => {
                     const table = document.getElementById('courses-table');
                     const shell = table ? table.closest('.courses-table-shell') : null;
-                    if (table && shell) state.renderer.fitTableColumns(table, shell, { floorMin: 90, priorityColumnIndexes: [1] });
+                    if (table && shell) state.renderer.fitTableColumns(table, shell, { floorMin: 90, nonPriorityFloorMin: 65, priorityColumnIndexes: [1, 2] });
                 }, 0);
             });
         }
@@ -2303,12 +2316,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             state.coursesSearchInput.value = state.courseSearchQuery || '';
             if (coursesClearBtn) {
+                    coursesClearBtn.addEventListener('pointerdown', (e) => {
+                        e.preventDefault();
+                    });
                 coursesClearBtn.addEventListener('click', () => {
                     state.coursesSearchInput.value = '';
                     state.courseSearchQuery = '';
                     updateClearButton();
                     applyCoursesFilterAndSort();
-                    state.coursesSearchInput.focus();
+                        if (document.activeElement !== state.coursesSearchInput) state.coursesSearchInput.focus();
                 });
             }
             updateClearButton();
@@ -2379,6 +2395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!state.isCoursesPage || !state.coursesTableBody) return;
         renderCoursesDashboard();
         setupCoursesControls();
+        state.coursesTableColumnsFitted = false;
         applyCoursesFilterAndSort();
     };
 
