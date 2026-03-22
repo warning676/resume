@@ -5,15 +5,18 @@
 
 <div data-fragment="controls" data-variant="skills"></div>
 
-<div id="page-search-status" class="page-search-status"></div>
+<div class="skills-filter-results-row">
+    <div id="page-search-status" class="page-search-status"></div>
+    <p class="filter-results-count" id="skills-filter-results-count" aria-live="polite"></p>
+</div>
 
-<div id="skills" style="min-height: 980px;">
+<div id="skills">
     <div id="skills-list">
         <div class="courses-table-shell skills-table-shell">
             <table class="courses-table skills-table">
                 <thead>
                     <tr>
-                        <th>Skill</th>
+                        <th>Name</th>
                         <th><span class="table-header-chip"><span class="table-header-label">Category</span><span
                                     class="column-header-filter-indicator" data-filter-scope="skills"
                                     data-filter-key="type" aria-hidden="true"></span></span></th>
@@ -25,7 +28,7 @@
                 </thead>
                 <tbody class="skills-table-body">
                     <tr class="courses-skeleton-row">
-                        <td data-label="Skill">
+                        <td data-label="Name">
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <div class="skeleton-element" style="width:32px; height:32px; border-radius:8px;"></div>
                                 <div>
@@ -47,7 +50,7 @@
                         </td>
                     </tr>
                     <tr class="courses-skeleton-row">
-                        <td data-label="Skill">
+                        <td data-label="Name">
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <div class="skeleton-element" style="width:32px; height:32px; border-radius:8px;"></div>
                                 <div>
@@ -69,7 +72,7 @@
                         </td>
                     </tr>
                     <tr class="courses-skeleton-row">
-                        <td data-label="Skill">
+                        <td data-label="Name">
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <div class="skeleton-element" style="width:32px; height:32px; border-radius:8px;"></div>
                                 <div>

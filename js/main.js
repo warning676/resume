@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     let initialRouteHydrated = false;
+    let portfolioGridResizeObserver = null;
     const routes = {
         '/': { fragment: 'html/pages/bio.html', title: 'BIO' },
         '/bio': { fragment: 'html/pages/bio.html', title: 'BIO' },
@@ -77,6 +78,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectedCourseColumnValues: {},
         selectedSkillColumnValues: {},
         selectedPortfolioColumnValues: {},
+        hiddenCourseColumns: {},
+        hiddenSkillColumns: {},
         filteredCourses: [],
         currentCourseIndex: -1,
         currentItemCard: null,
@@ -118,10 +121,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         primedSkeletonCount: 0,
         primedSkeletonTarget: null,
         skeletonKey: null,
-        coursesTableColumnsFitted: false,
-        coursesTableShellMaxHeight: null,
-        skillsTableShellMaxHeight: null,
-        coursesProgrammingLanguageIconsPreloaded: false
+        coursesProgrammingLanguageIconsPreloaded: false,
+        coursesLanguageIconsPreloadPromise: null
     };
 
     const dataService = new DataService('12V7XnylQtfLmT1ux5Va-DPhKc201m3fht9JstupnHdk');
@@ -399,6 +400,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.selectedCourseColumnValues = {};
         state.selectedSkillColumnValues = {};
         state.selectedPortfolioColumnValues = {};
+        state.hiddenCourseColumns = {};
+        state.hiddenSkillColumns = {};
         state.filteredCourses = [];
         state.currentCourseIndex = -1;
         state.searchQuery = '';
@@ -413,13 +416,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.primedSkeletonCount = 0;
         state.primedSkeletonTarget = null;
         state.skeletonKey = null;
-        state.coursesTableShellMaxHeight = null;
         const shell = state.coursesTableBody?.closest('.courses-table-shell');
         if (shell) shell.style.minHeight = '';
-        state.skillsTableShellMaxHeight = null;
         state.coursesProgrammingLanguageIconsPreloaded = false;
+        state.coursesLanguageIconsPreloadPromise = null;
         const skillsShell = document.querySelector('.courses-table-shell.skills-table-shell');
         if (skillsShell) skillsShell.style.minHeight = '';
+        if (portfolioGridResizeObserver) {
+            portfolioGridResizeObserver.disconnect();
+            portfolioGridResizeObserver = null;
+        }
+        if (state.portfolioGrid) state.portfolioGrid.style.minHeight = '';
+    };
+
+    const lockTableShellHeight = (shell) => {
+        if (!shell) return;
+        const currentHeight = shell.getBoundingClientRect().height;
+        if (!Number.isFinite(currentHeight) || currentHeight <= 0) return;
+        const currentMin = Number.parseFloat(shell.style.minHeight || '0');
+        const nextMin = Math.ceil(currentHeight);
+        if (!Number.isFinite(currentMin) || nextMin > currentMin) shell.style.minHeight = `${nextMin}px`;
+    };
+
+    const ensurePortfolioGridResizeObserver = () => {
+        if (portfolioGridResizeObserver) {
+            portfolioGridResizeObserver.disconnect();
+            portfolioGridResizeObserver = null;
+        }
+        const grid = state.portfolioGrid;
+        if (!grid || !state.isPortfolioPage) return;
+        portfolioGridResizeObserver = new ResizeObserver(() => {
+            if (state.lockPortfolioGridHeight) state.lockPortfolioGridHeight();
+        });
+        portfolioGridResizeObserver.observe(grid);
     };
 
     const syncDomReferences = () => {
@@ -1431,6 +1460,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.column-filter-menu.open').forEach(menu => {
             menu.classList.remove('open');
         });
+        document.querySelectorAll('.column-filter-header-flyout').forEach(el => {
+            el.innerHTML = '';
+            el.removeAttribute('data-header-filter-scope');
+            el.removeAttribute('data-header-filter-key');
+        });
+        document.querySelectorAll('.column-header-filter-indicator.is-flyout-open').forEach(el => {
+            el.classList.remove('is-flyout-open');
+        });
         document.querySelectorAll('.column-filter-item.active').forEach(item => {
             item.classList.remove('active');
         });
@@ -1438,9 +1475,77 @@ document.addEventListener('DOMContentLoaded', async () => {
             button.setAttribute('aria-expanded', 'false');
         });
         syncCoursesModalScrollLock(false);
+        document.querySelectorAll('.custom-select-container.open, .multi-select-container.open').forEach(el => el.classList.remove('open'));
+        if (typeof window.syncDropdownScrollLock === 'function') window.syncDropdownScrollLock();
     };
 
     window.closeAllColumnFilterMenus = closeAllColumnFilterMenus;
+
+    const positionColumnFilterMenuAtButton = (button, menu) => {
+        if (!button || !menu || !menu.classList.contains('open')) return;
+        const buttonRect = button.getBoundingClientRect();
+        const viewportPad = 12;
+        const viewportTop = viewportPad;
+        const viewportBottom = window.innerHeight - viewportPad;
+        const viewportLeft = viewportPad;
+        const viewportRight = window.innerWidth - viewportPad;
+
+        const gap = 6;
+        const spaceBelow = Math.max(0, viewportBottom - buttonRect.bottom - gap);
+        const spaceAbove = Math.max(0, buttonRect.top - viewportTop - gap);
+        const naturalHeight = Math.ceil(menu.scrollHeight);
+        const openUpward = naturalHeight > spaceBelow && spaceAbove > spaceBelow;
+
+        menu.style.top = openUpward ? 'auto' : `calc(100% + ${gap}px)`;
+        menu.style.bottom = openUpward ? `calc(100% + ${gap}px)` : 'auto';
+        menu.style.maxHeight = '';
+        menu.style.overflow = 'visible';
+
+        menu.style.right = '0px';
+        menu.style.left = 'auto';
+        let rect = menu.getBoundingClientRect();
+        if (rect.left < viewportLeft) {
+            const shiftRight = viewportLeft - rect.left;
+            menu.style.right = `${-(shiftRight)}px`;
+            rect = menu.getBoundingClientRect();
+        } else if (rect.right > viewportRight) {
+            const shiftLeft = rect.right - viewportRight;
+            const currentRight = Number.parseFloat((menu.style.right || '0').replace('px', '')) || 0;
+            menu.style.right = `${currentRight + shiftLeft}px`;
+            rect = menu.getBoundingClientRect();
+        }
+
+        let deltaY = 0;
+        if (rect.bottom > viewportBottom) deltaY = rect.bottom - viewportBottom;
+        if (rect.top - deltaY < viewportTop) deltaY = rect.top - viewportTop;
+        if (deltaY) window.scrollBy({ top: deltaY, behavior: 'auto' });
+    };
+
+    const runColumnFilterMenuOpen = (button, menu, options = {}) => {
+        const resetActiveColumn = options.resetActiveColumn !== false;
+        document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(container => {
+            container.classList.remove('open');
+        });
+        closeAllColumnFilterMenus();
+        syncDropdownScrollLock();
+        menu.classList.remove('skip-animation');
+        menu.classList.remove('skip-submenu-animation');
+        menu.classList.add('open');
+        menu.dataset.ignoreSubmenuHover = 'true';
+        menu.dataset.submenuHovered = 'false';
+        button.setAttribute('aria-expanded', 'true');
+        if (resetActiveColumn) {
+            menu.querySelectorAll('.column-filter-item').forEach(node => {
+                node.classList.remove('active');
+            });
+        }
+        requestAnimationFrame(() => {
+            menu.dataset.ignoreSubmenuHover = 'false';
+        });
+        syncCoursesModalScrollLock(true);
+        syncDropdownScrollLock();
+        requestAnimationFrame(() => positionColumnFilterMenuAtButton(button, menu));
+    };
 
     const NONE_FILTER_VALUE = '__NONE__';
 
@@ -1451,6 +1556,320 @@ document.addEventListener('DOMContentLoaded', async () => {
         return text.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
     };
 
+    const normalizeColumnFilterDefinitionList = (definitions) => {
+        return (definitions || []).map(definition => {
+            let filterable = definition.filterable !== false;
+            const rawValues = (definition.values || []).map(value => toText(value));
+            const hasMissing = rawValues.some(value => !value);
+            const normalizedValues = Array.from(new Set(rawValues.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+            let values = hasMissing ? [NONE_FILTER_VALUE, ...normalizedValues] : normalizedValues;
+            if (filterable && values.length <= 1) {
+                filterable = false;
+                values = [];
+            }
+            return { ...definition, filterable, values };
+        });
+    };
+
+    const getSkillsRowsForColumnFilter = () => {
+        const skills = Array.isArray(state.allData?.skills) ? state.allData.skills : [];
+        if (state.isAchievementsPage) {
+            return skills.filter(skill => skill.certified === true || String(skill.certified || '').toLowerCase() === 'true');
+        }
+        return skills;
+    };
+
+    const columnFilterHasDiscriminatoryPower = (key, filterValues, ctx) => {
+        if (!ctx || !filterValues.length) return true;
+        if (ctx.kind === 'portfolio') {
+            const projects = ctx.projects || [];
+            const n = projects.length;
+            if (n === 0) return false;
+            if (key === 'type') {
+                for (const v of filterValues) {
+                    const sel = [v];
+                    let cnt = 0;
+                    for (const p of projects) {
+                        const cardType = toText(p.badge);
+                        const normalizedCardType = cardType || NONE_FILTER_VALUE;
+                        const matches = sel.includes('all') || sel.includes(cardType) || sel.includes(normalizedCardType);
+                        if (matches) cnt++;
+                    }
+                    if (cnt < n) return true;
+                }
+                return false;
+            }
+            if (key === 'tools') {
+                const noneLower = NONE_FILTER_VALUE.toLowerCase();
+                for (const v of filterValues) {
+                    const sel = [String(v).toLowerCase()];
+                    let cnt = 0;
+                    for (const p of projects) {
+                        const cardTools = toText(p.tools).toLowerCase();
+                        const toolsList = cardTools.split(',').map(t => t.trim()).filter(Boolean);
+                        const hasNoTools = toolsList.length === 0;
+                        const matches = sel.includes('all')
+                            || toolsList.some(t => sel.includes(t))
+                            || (hasNoTools && sel.includes(noneLower));
+                        if (matches) cnt++;
+                    }
+                    if (cnt < n) return true;
+                }
+                return false;
+            }
+            return true;
+        }
+        if (ctx.kind === 'skills') {
+            const skills = ctx.skills || [];
+            const n = skills.length;
+            if (n === 0) return false;
+            if (key === 'type') {
+                for (const v of filterValues) {
+                    const sel = [String(v).toLowerCase()];
+                    let cnt = 0;
+                    for (const sk of skills) {
+                        const itemType = toText(sk.badge).trim();
+                        const normalizedType = itemType ? itemType.toLowerCase() : '__none__';
+                        const matches = sel.includes('all') || sel.includes(normalizedType);
+                        if (matches) cnt++;
+                    }
+                    if (cnt < n) return true;
+                }
+                return false;
+            }
+            if (key === 'level') {
+                for (const v of filterValues) {
+                    const sel = [String(v).toLowerCase()];
+                    let cnt = 0;
+                    for (const sk of skills) {
+                        const itemLevel = (toText(sk.level).trim() || '-').trim();
+                        const normalizedLevel = itemLevel ? itemLevel.toLowerCase() : '__none__';
+                        const matches = sel.includes('all') || sel.includes(normalizedLevel);
+                        if (matches) cnt++;
+                    }
+                    if (cnt < n) return true;
+                }
+                return false;
+            }
+            return true;
+        }
+        if (ctx.kind === 'courses') {
+            const courses = ctx.courses || [];
+            const n = courses.length;
+            if (n === 0) return false;
+            const fieldMap = {
+                school: c => c.school,
+                type: c => c.type,
+                status: c => c.status,
+                completionYear: c => c.completionYear,
+                grade: c => c.grade
+            };
+            const getter = fieldMap[key];
+            if (!getter) return true;
+            for (const v of filterValues) {
+                let cnt = 0;
+                for (const c of courses) {
+                    const normalizedValue = toText(getter(c)) || NONE_FILTER_VALUE;
+                    if ([v].includes(normalizedValue)) cnt++;
+                }
+                if (cnt < n) return true;
+            }
+            return false;
+        }
+        return true;
+    };
+
+    const stripNonDiscriminatoryColumnFilters = (definitions, ctx) => {
+        if (!ctx) return definitions;
+        return definitions.map(def => {
+            if (def.filterable === false || !def.values.length) return def;
+            if (columnFilterHasDiscriminatoryPower(def.key, def.values, ctx)) return def;
+            return { ...def, filterable: false, values: [] };
+        });
+    };
+
+    let headerColumnFilterFlyoutEl = null;
+    const getHeaderColumnFilterFlyout = () => {
+        if (!headerColumnFilterFlyoutEl) {
+            headerColumnFilterFlyoutEl = document.createElement('div');
+            headerColumnFilterFlyoutEl.className = 'column-filter-menu column-filter-header-flyout';
+            headerColumnFilterFlyoutEl.setAttribute('role', 'menu');
+            headerColumnFilterFlyoutEl.setAttribute('aria-label', 'Column filter');
+            headerColumnFilterFlyoutEl.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
+            document.body.appendChild(headerColumnFilterFlyoutEl);
+        }
+        return headerColumnFilterFlyoutEl;
+    };
+
+    const positionHeaderColumnFilterFlyout = (anchorEl, flyoutEl) => {
+        if (!anchorEl || !flyoutEl) return;
+        const run = () => {
+            const anchorRect = anchorEl.getBoundingClientRect();
+            const gap = 6;
+            const pad = 12;
+            flyoutEl.style.position = 'fixed';
+            if (window.matchMedia('(max-width: 600px)').matches) {
+                flyoutEl.style.left = '';
+                flyoutEl.style.right = '';
+                flyoutEl.style.top = '';
+                flyoutEl.style.bottom = '';
+                flyoutEl.style.width = '';
+                flyoutEl.style.transform = '';
+                return;
+            }
+            flyoutEl.style.right = 'auto';
+            const fw = flyoutEl.getBoundingClientRect();
+            let left = anchorRect.right - fw.width;
+            let top = anchorRect.bottom + gap;
+            if (left < pad) left = pad;
+            if (left + fw.width > window.innerWidth - pad) left = window.innerWidth - pad - fw.width;
+            if (top + fw.height > window.innerHeight - pad) {
+                top = anchorRect.top - gap - fw.height;
+            }
+            if (top < pad) top = pad;
+            flyoutEl.style.left = `${left}px`;
+            flyoutEl.style.top = `${top}px`;
+        };
+        requestAnimationFrame(() => {
+            requestAnimationFrame(run);
+        });
+    };
+
+    const fillHeaderColumnFilterFlyout = (parentEl, definition, selectedMap, onPipelineChange, rerender) => {
+        const prevHadClearWrap = !!parentEl.querySelector('.column-filter-clear-wrap');
+        const wasFlyoutOpen = parentEl.classList.contains('open');
+        parentEl.innerHTML = '';
+        const selected = selectedMap || {};
+        const subMenu = document.createElement('div');
+        subMenu.className = 'column-filter-submenu';
+        const keySelected = selected[definition.key];
+        const isAllMode = keySelected === undefined || (Array.isArray(keySelected) && keySelected.includes('all'));
+        const individualValues = definition.values;
+
+        const allRow = document.createElement('label');
+        allRow.className = 'column-filter-value-row';
+        const allCheckbox = document.createElement('input');
+        allCheckbox.type = 'checkbox';
+        allCheckbox.checked = isAllMode;
+        const allText = document.createElement('span');
+        allText.className = 'column-filter-value-text';
+        allText.textContent = 'All';
+        allRow.appendChild(allCheckbox);
+        allRow.appendChild(allText);
+        allRow.addEventListener('click', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            selected[definition.key] = ['all'];
+            onPipelineChange();
+            rerender();
+        });
+        subMenu.appendChild(allRow);
+
+        individualValues.forEach(value => {
+            const row = document.createElement('label');
+            row.className = 'column-filter-value-row';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = isAllMode || (Array.isArray(keySelected) && keySelected.includes(value));
+
+            const text = document.createElement('span');
+            text.className = 'column-filter-value-text';
+            text.textContent = value === NONE_FILTER_VALUE ? 'None' : formatFilterValueLabel(value);
+
+            row.appendChild(checkbox);
+            row.appendChild(text);
+
+            row.addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                let currentValues;
+                if (isAllMode) {
+                    currentValues = [value];
+                } else {
+                    currentValues = Array.from(Array.isArray(keySelected) ? keySelected : []);
+                    const idx = currentValues.indexOf(value);
+                    if (idx >= 0) currentValues.splice(idx, 1);
+                    else currentValues.push(value);
+                }
+                if (currentValues.length === 0) {
+                    selected[definition.key] = ['all'];
+                } else if (currentValues.length === individualValues.length) {
+                    selected[definition.key] = ['all'];
+                } else {
+                    selected[definition.key] = currentValues;
+                }
+                onPipelineChange();
+                rerender();
+            });
+
+            subMenu.appendChild(row);
+        });
+
+        const definitionIsActive = isActiveColumnFilterSelection(selected, definition.key);
+        if (definitionIsActive) {
+            const clearWrap = document.createElement('div');
+            clearWrap.className = 'column-filter-clear-wrap';
+            if (!wasFlyoutOpen) {
+                clearWrap.classList.add('is-pending-reveal');
+            } else if (!prevHadClearWrap) {
+                clearWrap.classList.add('is-revealing');
+            }
+
+            const clearButton = document.createElement('button');
+            clearButton.type = 'button';
+            clearButton.className = 'column-filter-clear-button';
+            clearButton.style.display = 'flex';
+            clearButton.style.alignItems = 'center';
+            clearButton.style.justifyContent = 'flex-start';
+            clearButton.style.gap = '8px';
+            clearButton.style.paddingLeft = '8px';
+            clearButton.style.paddingRight = '8px';
+            clearButton.style.textAlign = 'left';
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'column-filter-clear-text';
+            textSpan.textContent = 'Clear Column Filter';
+
+            const iconWrap = document.createElement('span');
+            iconWrap.className = 'tool-icon-wrap';
+            iconWrap.style.width = '18px';
+            iconWrap.style.height = '18px';
+            iconWrap.style.minWidth = '18px';
+            iconWrap.style.marginLeft = 'auto';
+            iconWrap.style.display = 'flex';
+            iconWrap.style.alignItems = 'center';
+            iconWrap.style.justifyContent = 'center';
+            iconWrap.innerHTML = `
+            <svg class="tool-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path d="M18 6 6 18 M6 6 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>`;
+
+            clearButton.appendChild(textSpan);
+            clearButton.appendChild(iconWrap);
+
+            clearButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                delete selected[definition.key];
+                onPipelineChange();
+                closeAllColumnFilterMenus();
+            });
+            clearWrap.appendChild(clearButton);
+            subMenu.appendChild(clearWrap);
+        }
+
+        parentEl.appendChild(subMenu);
+        subMenu.addEventListener('mouseleave', (ev) => {
+            if (!isActiveColumnFilterSelection(selected, definition.key)) return;
+            const next = ev.relatedTarget;
+            if (next && parentEl.contains(next)) return;
+            closeAllColumnFilterMenus();
+        });
+    };
+
     const getColumnFilterScope = (button) => {
         const id = button?.id || '';
         if (id.startsWith('courses-')) return 'courses';
@@ -1459,13 +1878,108 @@ document.addEventListener('DOMContentLoaded', async () => {
         return '';
     };
 
+    const getColumnIndexForScopeKey = (scope, key) => {
+        if (scope === 'skills') {
+            if (key === 'name') return 1;
+            if (key === 'type') return 2;
+            if (key === 'level') return 3;
+            if (key === 'lastUsed') return 4;
+            return 0;
+        }
+        if (scope === 'courses') {
+            if (key === 'id') return 1;
+            if (key === 'name') return 2;
+            if (key === 'school') return 3;
+            if (key === 'type') return 4;
+            if (key === 'status') return 5;
+            if (key === 'credits') return 6;
+            if (key === 'completionYear') return 7;
+            if (key === 'grade') return 8;
+            return 0;
+        }
+        return 0;
+    };
+
+    const getHiddenColumnMap = (scope) => {
+        if (scope === 'skills') return state.hiddenSkillColumns;
+        if (scope === 'courses') return state.hiddenCourseColumns;
+        return null;
+    };
+
+    const getColumnCountForScope = (scope) => {
+        if (scope === 'skills') return 4;
+        if (scope === 'courses') return 8;
+        return 0;
+    };
+
+    const canHideColumn = (scope, key) => {
+        if ((scope === 'skills' || scope === 'courses') && key === 'name') return false;
+        return true;
+    };
+
+    const isColumnHidden = (scope, key) => {
+        const hiddenMap = getHiddenColumnMap(scope);
+        return !!(hiddenMap && hiddenMap[key]);
+    };
+
+    const setColumnHidden = (scope, key, hidden) => {
+        const hiddenMap = getHiddenColumnMap(scope);
+        if (!hiddenMap || !key) return;
+        if (hidden) {
+            if (!canHideColumn(scope, key)) return;
+            const totalColumns = getColumnCountForScope(scope);
+            const hiddenCount = Object.keys(hiddenMap).filter(mapKey => hiddenMap[mapKey]).length + (hiddenMap[key] ? 0 : 1);
+            const visibleAfter = totalColumns - hiddenCount;
+            if (visibleAfter < 1) return;
+            hiddenMap[key] = true;
+            return;
+        }
+        delete hiddenMap[key];
+    };
+
+    const getTableForScope = (scope) => {
+        if (scope === 'skills') return state.skillsList?.querySelector('.skills-table') || document.querySelector('.skills-table');
+        if (scope === 'courses') return document.getElementById('courses-table');
+        return null;
+    };
+
+    const applyHiddenColumnsToTable = (scope) => {
+        const table = getTableForScope(scope);
+        const hiddenMap = getHiddenColumnMap(scope);
+        if (!table || !hiddenMap) return;
+
+        const hiddenIndexes = new Set(
+            Object.keys(hiddenMap)
+                .filter(key => hiddenMap[key])
+                .map(key => getColumnIndexForScopeKey(scope, key))
+                .filter(index => index > 0)
+        );
+
+        table.querySelectorAll('thead tr').forEach(row => {
+            Array.from(row.children).forEach((cell, idx) => {
+                const colIndex = idx + 1;
+                cell.style.display = hiddenIndexes.has(colIndex) ? 'none' : '';
+            });
+        });
+
+        table.querySelectorAll('tbody tr').forEach(row => {
+            Array.from(row.children).forEach((cell, idx) => {
+                const colIndex = idx + 1;
+                cell.style.display = hiddenIndexes.has(colIndex) ? 'none' : '';
+            });
+        });
+    };
+
     const isActiveColumnFilterSelection = (selectedMap, key) => {
         const values = selectedMap?.[key];
         return Array.isArray(values) && values.length > 0 && !values.includes('all');
     };
 
     const hasActiveColumnFilters = (definitions, selectedMap) => {
-        return (definitions || []).some(definition => isActiveColumnFilterSelection(selectedMap, definition.key));
+        return (definitions || []).some(definition => {
+            if (definition.filterable === false || !definition.values.length) return false;
+            return isActiveColumnFilterSelection(selectedMap, definition.key);
+        });
     };
 
     const resetColumnFilterSelections = (definitions, selectedMap) => {
@@ -1482,76 +1996,81 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const scope = getColumnFilterScope(button);
         if (scope) {
+            const defs = definitions || [];
             document.querySelectorAll(`.column-header-filter-indicator[data-filter-scope="${scope}"]`).forEach(indicator => {
-                const isActive = isActiveColumnFilterSelection(selectedMap, indicator.dataset.filterKey || '');
-                indicator.classList.toggle('is-active', isActive);
+                const key = indicator.dataset.filterKey || '';
+                const def = defs.find(d => d.key === key);
+                const canFilterCol = !!(def && def.filterable !== false && def.values.length > 0);
+                indicator.classList.toggle('is-disabled', !canFilterCol);
+                if (!canFilterCol) {
+                    indicator.classList.remove('is-active', 'is-flyout-open');
+                } else {
+                    const isActive = isActiveColumnFilterSelection(selectedMap, key);
+                    indicator.classList.toggle('is-active', isActive);
+                }
             });
         }
     };
 
-    const renderColumnFilterMenu = (button, menu, definitions, selectedMap, onChange, activeKey) => {
+    const renderColumnFilterMenu = (button, menu, definitions, selectedMap, onChange, activeKey, discriminationContext) => {
         if (!button || !menu) return;
 
-        const positionColumnFilterMenu = () => {
-            if (!menu.classList.contains('open')) return;
-            const buttonRect = button.getBoundingClientRect();
-            const viewportPad = 12;
-            const viewportTop = viewportPad;
-            const viewportBottom = window.innerHeight - viewportPad;
-            const viewportLeft = viewportPad;
-            const viewportRight = window.innerWidth - viewportPad;
-
-            const gap = 6;
-            const spaceBelow = Math.max(0, viewportBottom - buttonRect.bottom - gap);
-            const spaceAbove = Math.max(0, buttonRect.top - viewportTop - gap);
-            const naturalHeight = Math.ceil(menu.scrollHeight);
-            const openUpward = naturalHeight > spaceBelow && spaceAbove > spaceBelow;
-
-            menu.style.top = openUpward ? 'auto' : `calc(100% + ${gap}px)`;
-            menu.style.bottom = openUpward ? `calc(100% + ${gap}px)` : 'auto';
-            menu.style.maxHeight = '';
-            menu.style.overflow = 'visible';
-
-            menu.style.right = '0px';
-            menu.style.left = 'auto';
-            let rect = menu.getBoundingClientRect();
-            if (rect.left < viewportLeft) {
-                const shiftRight = viewportLeft - rect.left;
-                menu.style.right = `${-(shiftRight)}px`;
-                rect = menu.getBoundingClientRect();
-            } else if (rect.right > viewportRight) {
-                const shiftLeft = rect.right - viewportRight;
-                const currentRight = Number.parseFloat((menu.style.right || '0').replace('px', '')) || 0;
-                menu.style.right = `${currentRight + shiftLeft}px`;
-                rect = menu.getBoundingClientRect();
-            }
-
-            let deltaY = 0;
-            if (rect.bottom > viewportBottom) deltaY = rect.bottom - viewportBottom;
-            if (rect.top - deltaY < viewportTop) deltaY = rect.top - viewportTop;
-            if (deltaY) window.scrollBy({ top: deltaY, behavior: 'auto' });
-        };
-
         const selected = selectedMap || {};
+        const scope = getColumnFilterScope(button);
         const wasOpen = menu.classList.contains('open');
-        const prevHasClearWrap = !!menu.querySelector('.column-filter-clear-wrap');
-        const usableDefinitions = (definitions || []).map(definition => {
-            const rawValues = (definition.values || []).map(value => toText(value));
-            const hasMissing = rawValues.some(value => !value);
-            const normalizedValues = Array.from(new Set(rawValues.filter(Boolean))).sort((a, b) => a.localeCompare(b));
-            const values = hasMissing ? [NONE_FILTER_VALUE, ...normalizedValues] : normalizedValues;
-            return { ...definition, values };
-        }).filter(definition => definition.values.length > 0);
+        const prevHasClearWrap = Array.from(menu.children).some(el => el.classList && el.classList.contains('column-filter-clear-wrap'));
+        let usableDefinitions = normalizeColumnFilterDefinitionList(definitions);
+        if (discriminationContext) {
+            usableDefinitions = stripNonDiscriminatoryColumnFilters(usableDefinitions, discriminationContext);
+        }
+
+        let prunedSelection = false;
+        usableDefinitions.forEach(d => {
+            const canCol = d.filterable !== false && d.values.length > 0;
+            if (canCol) return;
+            const cur = selected[d.key];
+            if (cur === undefined) return;
+            const isAll = Array.isArray(cur) && cur.includes('all');
+            if (isAll) return;
+            selected[d.key] = ['all'];
+            prunedSelection = true;
+        });
+        if (scope) applyHiddenColumnsToTable(scope);
 
         syncColumnFilterVisualState(button, menu, usableDefinitions, selected, onChange);
 
         menu.classList.toggle('skip-animation', wasOpen);
         menu.classList.toggle('skip-submenu-animation', wasOpen);
 
+        const closeMenu = () => {
+            closeOpenSelectDropdowns();
+            menu.classList.remove('open');
+            menu.classList.remove('skip-animation');
+            menu.classList.remove('skip-submenu-animation');
+            menu.querySelectorAll('.column-filter-item').forEach(node => node.classList.remove('active'));
+            button.setAttribute('aria-expanded', 'false');
+            syncCoursesModalScrollLock(false);
+            syncColumnFilterVisualState(button, menu, usableDefinitions, selected, onChange);
+        };
+
+        const prevSubmenuClearByKey = new Map();
+        menu.querySelectorAll('.column-filter-item').forEach(itemNode => {
+            const k = itemNode.dataset.filterKey;
+            if (k && itemNode.querySelector('.column-filter-submenu .column-filter-clear-wrap')) {
+                prevSubmenuClearByKey.set(k, true);
+            }
+        });
+
         menu.innerHTML = '';
 
         const activateDefinition = (definitionKey) => {
             if (menu.dataset.ignoreSubmenuHover === 'true') return;
+            const definition = usableDefinitions.find(def => def.key === definitionKey);
+            const canFilter = !!(definition && definition.filterable !== false && definition.values.length > 0);
+            if (!canFilter) {
+                menu.querySelectorAll('.column-filter-item').forEach(node => node.classList.remove('active'));
+                return;
+            }
             const currentActiveKey = menu.querySelector('.column-filter-item.active')?.dataset.filterKey;
             if (definitionKey !== currentActiveKey) menu.classList.remove('skip-submenu-animation');
             menu.querySelectorAll('.column-filter-item').forEach(node => {
@@ -1560,17 +2079,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         };
 
+        const closeAllColumnFilterSubmenus = () => {
+            if (menu.dataset.ignoreSubmenuHover === 'true') return;
+            menu.querySelectorAll('.column-filter-item').forEach(node => node.classList.remove('active'));
+        };
+
+        const isInteractableColumnFilterControlTarget = target => {
+            if (!target || typeof target.closest !== 'function') return false;
+            const el = target.nodeType === Node.TEXT_NODE ? target.parentElement : target;
+            if (!el) return false;
+            const ind = el.closest('.column-filter-menu-indicator.is-active');
+            if (ind && !ind.classList.contains('is-disabled')) return true;
+            const vis = el.closest('.column-visibility-toggle');
+            if (vis && !vis.disabled) return true;
+            return false;
+        };
+
         usableDefinitions.forEach(definition => {
             const item = document.createElement('div');
             item.className = 'column-filter-item';
             item.dataset.filterKey = definition.key;
-            if (activeKey && definition.key === activeKey) item.classList.add('active');
+            const canFilter = definition.filterable !== false && definition.values.length > 0;
+            if (activeKey && definition.key === activeKey && canFilter) item.classList.add('active');
             const definitionIsActive = isActiveColumnFilterSelection(selected, definition.key);
 
             const label = document.createElement('button');
             label.type = 'button';
             label.className = 'column-filter-column-label';
             label.classList.toggle('has-active-filter', definitionIsActive);
+            label.classList.toggle('is-non-filterable', !canFilter);
 
             const labelText = document.createElement('span');
             labelText.className = 'column-filter-label-text';
@@ -1578,20 +2115,61 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const labelIndicator = document.createElement('span');
             labelIndicator.className = `column-filter-menu-indicator${definitionIsActive ? ' is-active' : ''}`;
+            labelIndicator.classList.toggle('is-disabled', !canFilter);
             labelIndicator.setAttribute('aria-hidden', 'true');
 
             labelIndicator.addEventListener('click', (event) => {
                 event.stopPropagation();
                 event.preventDefault();
+                if (!canFilter) return;
                 if (!labelIndicator.classList.contains('is-active')) return;
 
                 delete selected[definition.key];
                 onChange();
-                renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key);
+                renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, undefined, discriminationContext);
+            });
+            if (canFilter && definitionIsActive) {
+                labelIndicator.addEventListener('mouseenter', closeAllColumnFilterSubmenus);
+            }
+
+            const labelActions = document.createElement('span');
+            labelActions.className = 'column-filter-label-actions';
+            if (canFilter) labelActions.appendChild(labelIndicator);
+
+            const columnIndex = getColumnIndexForScopeKey(scope, definition.key);
+            if (columnIndex > 0) {
+                const hidden = isColumnHidden(scope, definition.key);
+                const allowHide = canHideColumn(scope, definition.key);
+                const toggleButton = document.createElement('button');
+                toggleButton.type = 'button';
+                toggleButton.className = `column-visibility-toggle${hidden ? ' is-hidden' : ''}`;
+                toggleButton.setAttribute('aria-label', hidden ? 'Show column' : 'Hide column');
+                toggleButton.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+                toggleButton.classList.toggle('is-locked', !allowHide);
+                if (!allowHide) toggleButton.disabled = true;
+                toggleButton.innerHTML = `<span class="column-visibility-icon icon-eye" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></span><span class="column-visibility-icon icon-eye-off" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="M10.733 5.076A10.744 10.744 0 0 1 12 5c4.3 0 7.93 2.75 9.338 6.594a1 1 0 0 1 0 .812 10.75 10.75 0 0 1-1.433 2.497"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499A10.75 10.75 0 0 1 12 19c-4.3 0-7.93-2.75-9.338-6.594a1 1 0 0 1 0-.812 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg></span>`;
+                toggleButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    if (!allowHide) return;
+                    setColumnHidden(scope, definition.key, !isColumnHidden(scope, definition.key));
+                    applyHiddenColumnsToTable(scope);
+                    renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key, discriminationContext);
+                });
+                if (allowHide) {
+                    toggleButton.addEventListener('mouseenter', closeAllColumnFilterSubmenus);
+                    toggleButton.addEventListener('focusin', closeAllColumnFilterSubmenus);
+                }
+                labelActions.appendChild(toggleButton);
+            }
+
+            labelText.addEventListener('mouseenter', () => activateDefinition(definition.key));
+            label.addEventListener('mouseenter', ev => {
+                if (!isInteractableColumnFilterControlTarget(ev.target)) activateDefinition(definition.key);
             });
 
             label.appendChild(labelText);
-            label.appendChild(labelIndicator);
+            label.appendChild(labelActions);
             item.appendChild(label);
 
             const subMenu = document.createElement('div');
@@ -1616,7 +2194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 event.preventDefault();
                 selected[definition.key] = ['all'];
                 onChange();
-                renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key);
+                renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key, discriminationContext);
             });
             subMenu.appendChild(allRow);
 
@@ -1655,97 +2233,146 @@ document.addEventListener('DOMContentLoaded', async () => {
                         selected[definition.key] = currentValues;
                     }
                     onChange();
-                    renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key);
+                    renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key, discriminationContext);
                 });
 
                 subMenu.appendChild(row);
             });
 
+            if (isActiveColumnFilterSelection(selected, definition.key)) {
+                const clearWrap = document.createElement('div');
+                clearWrap.className = 'column-filter-clear-wrap';
+                const prevHadSubmenuClear = prevSubmenuClearByKey.get(definition.key);
+                if (!wasOpen) {
+                    clearWrap.classList.add('is-pending-reveal');
+                } else if (!prevHadSubmenuClear) {
+                    clearWrap.classList.add('is-revealing');
+                }
+
+                const clearButton = document.createElement('button');
+                clearButton.type = 'button';
+                clearButton.className = 'column-filter-clear-button';
+                clearButton.style.display = 'flex';
+                clearButton.style.alignItems = 'center';
+                clearButton.style.justifyContent = 'flex-start';
+                clearButton.style.gap = '8px';
+                clearButton.style.paddingLeft = '8px';
+                clearButton.style.paddingRight = '8px';
+                clearButton.style.textAlign = 'left';
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'column-filter-clear-text';
+                textSpan.textContent = 'Clear Column Filter';
+
+                const iconWrap = document.createElement('span');
+                iconWrap.className = 'tool-icon-wrap';
+                iconWrap.style.width = '18px';
+                iconWrap.style.height = '18px';
+                iconWrap.style.minWidth = '18px';
+                iconWrap.style.marginLeft = 'auto';
+                iconWrap.style.display = 'flex';
+                iconWrap.style.alignItems = 'center';
+                iconWrap.style.justifyContent = 'center';
+                iconWrap.innerHTML = `
+            <svg class="tool-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path d="M18 6 6 18 M6 6 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>`;
+
+                clearButton.appendChild(textSpan);
+                clearButton.appendChild(iconWrap);
+
+                clearButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    delete selected[definition.key];
+                    onChange();
+                    renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, undefined, discriminationContext);
+                    closeMenu();
+                });
+
+                clearWrap.appendChild(clearButton);
+                subMenu.appendChild(clearWrap);
+            }
+
             item.appendChild(subMenu);
+            subMenu.addEventListener('mouseleave', (ev) => {
+                if (menu.dataset.ignoreSubmenuHover === 'true') return;
+                if (!isActiveColumnFilterSelection(selected, definition.key)) return;
+                const next = ev.relatedTarget;
+                if (next && menu.contains(next)) return;
+                closeMenu();
+            });
             item.addEventListener('click', () => {
                 activateDefinition(definition.key);
             });
-            item.addEventListener('mouseenter', () => {
+            item.addEventListener('mouseenter', (ev) => {
+                if (isInteractableColumnFilterControlTarget(ev.target)) {
+                    closeAllColumnFilterSubmenus();
+                    return;
+                }
                 activateDefinition(definition.key);
             });
-            item.addEventListener('focusin', () => {
+            item.addEventListener('focusin', (ev) => {
+                if (isInteractableColumnFilterControlTarget(ev.target)) {
+                    closeAllColumnFilterSubmenus();
+                    return;
+                }
                 activateDefinition(definition.key);
             });
             menu.appendChild(item);
         });
 
-        const clearWrap = document.createElement('div');
-        clearWrap.className = 'column-filter-clear-wrap';
+        const hasAnyActive = hasActiveColumnFilters(usableDefinitions, selected);
+        if (hasAnyActive) {
+            const clearWrap = document.createElement('div');
+            clearWrap.className = 'column-filter-clear-wrap';
+            if (!wasOpen) clearWrap.classList.add('is-pending-reveal');
+            else if (!prevHasClearWrap) clearWrap.classList.add('is-revealing');
 
-        const clearButton = document.createElement('button');
-        clearButton.type = 'button';
-        clearButton.className = 'column-filter-clear-button';
-        clearButton.style.display = 'flex';
-        clearButton.style.alignItems = 'center';
-        clearButton.style.justifyContent = 'flex-start';
-        clearButton.style.gap = '8px';
-        clearButton.style.paddingLeft = '8px';
-        clearButton.style.paddingRight = '8px';
-        clearButton.style.textAlign = 'left';
+            const clearButton = document.createElement('button');
+            clearButton.type = 'button';
+            clearButton.className = 'column-filter-clear-button';
+            clearButton.style.display = 'flex';
+            clearButton.style.alignItems = 'center';
+            clearButton.style.justifyContent = 'flex-start';
+            clearButton.style.gap = '8px';
+            clearButton.style.paddingLeft = '8px';
+            clearButton.style.paddingRight = '8px';
+            clearButton.style.textAlign = 'left';
 
-        const iconWrap = document.createElement('span');
-        iconWrap.className = 'tool-icon-wrap';
-        iconWrap.style.width = '18px';
-        iconWrap.style.height = '18px';
-        iconWrap.style.minWidth = '18px';
-        iconWrap.style.marginLeft = 'auto';
-        iconWrap.style.display = 'flex';
-        iconWrap.style.alignItems = 'center';
-        iconWrap.style.justifyContent = 'center';
-        iconWrap.innerHTML = `
+            const iconWrap = document.createElement('span');
+            iconWrap.className = 'tool-icon-wrap';
+            iconWrap.style.width = '18px';
+            iconWrap.style.height = '18px';
+            iconWrap.style.minWidth = '18px';
+            iconWrap.style.marginLeft = 'auto';
+            iconWrap.style.display = 'flex';
+            iconWrap.style.alignItems = 'center';
+            iconWrap.style.justifyContent = 'center';
+            iconWrap.innerHTML = `
             <svg class="tool-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
                 <path d="M18 6 6 18 M6 6 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
             </svg>`;
 
-        const textSpan = document.createElement('span');
-        textSpan.className = 'column-filter-clear-text';
-        textSpan.textContent = 'Clear All Filters';
+            const textSpan = document.createElement('span');
+            textSpan.className = 'column-filter-clear-text';
+            textSpan.textContent = 'Clear All Filters';
 
-        clearButton.appendChild(textSpan);
-        clearButton.appendChild(iconWrap);
+            clearButton.appendChild(textSpan);
+            clearButton.appendChild(iconWrap);
 
-        clearButton.addEventListener('click', (event) => {
-            event.stopPropagation();
-            event.preventDefault();
-            resetColumnFilterSelections(usableDefinitions, selected);
-            onChange();
-            renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange);
-        });
+            clearButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                resetColumnFilterSelections(usableDefinitions, selected);
+                onChange();
+                renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, undefined, discriminationContext);
+                closeMenu();
+            });
 
-        const hasAnyActive = hasActiveColumnFilters(usableDefinitions, selected);
-        const shouldRenderClearWrap = hasAnyActive || (prevHasClearWrap && wasOpen);
-        if (shouldRenderClearWrap) {
-            if (hasAnyActive) {
-                if (!wasOpen) clearWrap.classList.add('is-pending-reveal');
-                else if (!prevHasClearWrap) clearWrap.classList.add('is-revealing');
-            } else {
-                clearWrap.classList.add('is-disappearing');
-                clearButton.disabled = true;
-            }
             clearWrap.appendChild(clearButton);
             menu.appendChild(clearWrap);
-            if (!hasAnyActive) {
-                clearWrap.addEventListener('animationend', (event) => {
-                    clearWrap.remove();
-                }, { once: true });
-            }
         }
-
-        const closeMenu = () => {
-            menu.classList.remove('open');
-            menu.classList.remove('skip-animation');
-            menu.classList.remove('skip-submenu-animation');
-            menu.querySelectorAll('.column-filter-item').forEach(node => node.classList.remove('active'));
-            button.setAttribute('aria-expanded', 'false');
-            syncCoursesModalScrollLock(false);
-            syncDropdownScrollLock();
-            syncColumnFilterVisualState(button, menu, usableDefinitions, selected, onChange);
-        };
 
         if (!menu.dataset.boundColumnFilterMenu) {
             menu.dataset.boundColumnFilterMenu = 'true';
@@ -1775,50 +2402,57 @@ document.addEventListener('DOMContentLoaded', async () => {
                 syncDropdownScrollLock();
                 if (usableDefinitions.length === 0) return;
                 if (isOpen) return;
-                menu.classList.remove('skip-animation');
-                menu.classList.remove('skip-submenu-animation');
-                menu.classList.add('open');
-                menu.dataset.ignoreSubmenuHover = 'true';
-                menu.dataset.submenuHovered = 'false';
-                button.setAttribute('aria-expanded', 'true');
-                menu.querySelectorAll('.column-filter-item').forEach(node => {
-                    node.classList.remove('active');
-                });
-                requestAnimationFrame(() => {
-                    menu.dataset.ignoreSubmenuHover = 'false';
-                });
-                syncCoursesModalScrollLock(true);
-                syncDropdownScrollLock();
-                requestAnimationFrame(() => positionColumnFilterMenu());
+                runColumnFilterMenuOpen(button, menu, { resetActiveColumn: true });
             });
+        }
+
+        if (prunedSelection && typeof onChange === 'function') {
+            onChange();
         }
     };
 
-    const renderSkillColumnFilter = () => {
-        if (!state.isSkillsPage || !state.skillsFilterButton || !state.skillsFilterMenu) return;
-        const skills = Array.isArray(state.allData?.skills) ? state.allData.skills : [];
-        const certifiedSkills = state.isAchievementsPage
-            ? skills.filter(skill => skill.certified === true || String(skill.certified || '').toLowerCase() === 'true')
-            : skills;
-        const definitions = [
+    const getSkillsColumnFilterDefinitions = () => {
+        const certifiedSkills = getSkillsRowsForColumnFilter();
+        return [
+            {
+                key: 'name',
+                label: 'Name',
+                filterable: false,
+                values: []
+            },
             {
                 key: 'type',
                 label: 'Category',
+                filterable: true,
                 values: certifiedSkills.map(skill => toText(skill.badge))
             },
             {
                 key: 'level',
                 label: 'Proficiency',
+                filterable: true,
                 values: certifiedSkills.map(skill => toText(skill.level))
+            },
+            {
+                key: 'lastUsed',
+                label: 'Last Used',
+                filterable: false,
+                values: []
             }
         ];
+    };
 
+    const renderSkillColumnFilter = () => {
+        if (!state.isSkillsPage || !state.skillsFilterButton || !state.skillsFilterMenu) return;
+        const definitions = getSkillsColumnFilterDefinitions();
+        const discriminationContext = { kind: 'skills', skills: getSkillsRowsForColumnFilter() };
         renderColumnFilterMenu(
             state.skillsFilterButton,
             state.skillsFilterMenu,
             definitions,
             state.selectedSkillColumnValues,
-            () => state.filterSkills && state.filterSkills()
+            () => state.filterSkills && state.filterSkills(),
+            undefined,
+            discriminationContext
         );
     };
 
@@ -1847,6 +2481,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!('type' in state.selectedPortfolioColumnValues)) state.selectedPortfolioColumnValues.type = ['all'];
         if (!('tools' in state.selectedPortfolioColumnValues)) state.selectedPortfolioColumnValues.tools = ['all'];
 
+        const discriminationContext = { kind: 'portfolio', projects: list };
         renderColumnFilterMenu(
             state.portfolioFilterButton,
             state.portfolioFilterMenu,
@@ -1859,7 +2494,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!('type' in selectedByColumn)) state.selectedCategories = ['all'];
                 if (!('tools' in selectedByColumn)) state.selectedTools = ['all'];
                 if (state.filterCards) state.filterCards();
-            }
+            },
+            undefined,
+            discriminationContext
         );
     };
 
@@ -1947,6 +2584,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
+    const parseCourseLanguagesUsedRaw = raw => {
+        const s = toText(raw);
+        if (!s) return [];
+        return s
+            .split(/[\n,;|]+/g)
+            .map(part => toText(part).replace(/^[-*]\s*/, '').trim())
+            .filter(Boolean)
+            .reduce(
+                (acc, lang) => {
+                    const key = lang.toLowerCase();
+                    if (!acc.seen.has(key)) {
+                        acc.seen.add(key);
+                        acc.items.push(lang);
+                    }
+                    return acc;
+                },
+                { seen: new Set(), items: [] }
+            ).items;
+    };
+
     const normalizeCourses = (rows) => {
         return (Array.isArray(rows) ? rows : []).map((row, index) => {
             const id = toText(row.id || row.courseid);
@@ -1958,8 +2615,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const grade = toText(row.grade);
             const credits = toText(row.creditsearned || row.credits || row.creditsEarned);
             const completionYear = toText(row.completionyear || row.completionYear || row.year || row.completion);
-            return { id, name, school, type, info, status, completionYear, grade, credits, originalIndex: index };
-        }).filter(course => course.id || course.name || course.school || course.type || course.status || course.grade || course.credits || course.info);
+            const languagesUsed = toText(row.languagesUsed || row.languagesused);
+            return { id, name, school, type, info, status, completionYear, grade, credits, languagesUsed, originalIndex: index };
+        }).filter(course => course.id || course.name || course.school || course.type || course.status || course.grade || course.credits || course.info || course.languagesUsed);
     };
 
     const sortCourses = (courses) => {
@@ -2061,10 +2719,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rawInfo = toText(course.info);
         const languagesSectionRegex = /Programming Languages Used\s*:\s*([\s\S]*)$/i;
         const languagesSectionMatch = rawInfo.match(languagesSectionRegex);
-        let languagesRaw = '';
         let infoText = rawInfo;
         if (languagesSectionMatch) {
-            languagesRaw = toText(languagesSectionMatch[1]);
             infoText = rawInfo.replace(languagesSectionRegex, '').trim();
         }
 
@@ -2072,19 +2728,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const skills = state.allData && state.allData.skills ? state.allData.skills : [];
         const modalManager = state.modalManager;
-        const languages = (languagesRaw ? languagesRaw
-            .split(/[\n,;|]+/g)
-            .map(s => s.trim())
-            .map(s => s.replace(/^[-*]\s*/, '').trim())
-            .filter(Boolean) : [])
-            .reduce((acc, lang) => {
-                const key = lang.toLowerCase();
-                if (!acc.seen.has(key)) {
-                    acc.seen.add(key);
-                    acc.items.push(lang);
-                }
-                return acc;
-            }, { seen: new Set(), items: [] }).items;
+        let languages = parseCourseLanguagesUsedRaw(course.languagesUsed);
+        if (!languages.length && languagesSectionMatch) {
+            languages = parseCourseLanguagesUsedRaw(languagesSectionMatch[1]);
+        }
 
         const labelEl = state.coursesModalProgrammingLanguagesLabel;
         const containerEl = state.coursesModalProgrammingLanguagesContainer;
@@ -2111,15 +2758,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     return { lang, skillMatch, fixedSrc };
                 });
-
-                if (modalManager && typeof modalManager.preloadImage === 'function') {
-                    const seen = new Set();
-                    languageEntries.forEach(({ fixedSrc }) => {
-                        if (!fixedSrc || seen.has(fixedSrc)) return;
-                        seen.add(fixedSrc);
-                        modalManager.preloadImage(fixedSrc, 1200);
-                    });
-                }
 
                 languageEntries.forEach(({ lang, skillMatch, fixedSrc }) => {
                     const tag = document.createElement('span');
@@ -2169,10 +2807,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const preloadProgrammingLanguageIconsForCourses = (coursesRows) => {
-        if (!state.modalManager) return;
-        if (state.coursesProgrammingLanguageIconsPreloaded) return;
+        if (state.coursesProgrammingLanguageIconsPreloaded) return Promise.resolve();
+        if (state.coursesLanguageIconsPreloadPromise) return state.coursesLanguageIconsPreloadPromise;
+        if (!state.modalManager) return Promise.resolve();
         const skills = state.allData && Array.isArray(state.allData.skills) ? state.allData.skills : [];
-        if (!skills.length) return;
+        if (!skills.length) return Promise.resolve();
 
         const skillsByLowerName = new Map();
         skills.forEach(sk => {
@@ -2184,16 +2823,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const languageRegex = /Programming Languages Used\s*:\s*([\s\S]*)$/i;
         const languages = new Set();
         (Array.isArray(coursesRows) ? coursesRows : []).forEach(row => {
+            parseCourseLanguagesUsedRaw(row && (row.languagesUsed || row.languagesused)).forEach(lang => languages.add(lang));
             const rawInfo = toText(row && row.info);
             const match = rawInfo.match(languageRegex);
-            if (!match) return;
-            const tail = toText(match[1]);
-            tail.split(/[\n,;|]+/g).forEach(part => {
-                const lang = toText(part).replace(/^[-*]\s*/, '').trim();
-                if (lang) languages.add(lang);
-            });
+            if (match) {
+                parseCourseLanguagesUsedRaw(match[1]).forEach(lang => languages.add(lang));
+            }
         });
-        if (!languages.size) return;
+        if (!languages.size) {
+            state.coursesProgrammingLanguageIconsPreloaded = true;
+            return Promise.resolve();
+        }
 
         const iconUrls = new Set();
         languages.forEach(lang => {
@@ -2210,9 +2850,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (fixedSrc) iconUrls.add(fixedSrc);
         });
 
-        if (!iconUrls.size) return;
-        iconUrls.forEach(src => state.modalManager.preloadImage(src, 1200));
-        state.coursesProgrammingLanguageIconsPreloaded = true;
+        if (!iconUrls.size) {
+            state.coursesProgrammingLanguageIconsPreloaded = true;
+            return Promise.resolve();
+        }
+
+        const urls = [...iconUrls];
+        const timeoutMs = 4000;
+        state.coursesLanguageIconsPreloadPromise = Promise.all(
+            urls.map(src => state.modalManager.preloadImage(src, timeoutMs))
+        ).then(() => {
+            state.coursesProgrammingLanguageIconsPreloaded = true;
+        }).finally(() => {
+            state.coursesLanguageIconsPreloadPromise = null;
+        });
+        return state.coursesLanguageIconsPreloadPromise;
     };
 
     const updateCoursesModalNavState = () => {
@@ -2231,9 +2883,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const openCoursesModal = (index) => {
+    const openCoursesModal = async (index) => {
         if (!state.coursesModal || !state.filteredCourses.length) return;
         if (index < 0 || index >= state.filteredCourses.length) return;
+
+        await preloadProgrammingLanguageIconsForCourses(state.allData?.Courses || []);
 
         populateCoursesModal(index);
         updateCoursesModalNavState();
@@ -2352,15 +3006,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const renderCoursesTable = () => {
         if (!state.coursesTableBody) return;
-        const shell = state.coursesTableBody.closest('.courses-table-shell');
-        if (shell) {
-            const measured = shell.getBoundingClientRect().height;
-            if (Number.isFinite(measured) && measured > 0) {
-                state.coursesTableShellMaxHeight = Math.max(state.coursesTableShellMaxHeight || 0, measured);
-                shell.style.minHeight = `${state.coursesTableShellMaxHeight}px`;
-            }
+        const coursesShell = state.coursesTableBody.closest('.courses-table-shell');
+        lockTableShellHeight(coursesShell);
+        applyHiddenColumnsToTable('courses');
+        const coursesTableEl = document.getElementById('courses-table');
+        if (coursesTableEl) {
+            coursesTableEl.querySelector('colgroup')?.remove();
+            coursesTableEl.classList.remove('table-fit', 'table-fit-nowrap');
+            coursesTableEl.style.width = '';
+            coursesTableEl.style.minWidth = '';
+            coursesTableEl.style.tableLayout = '';
         }
         const courses = state.filteredCourses;
+        const coursesTotalAll = normalizeCourses(state.allData?.Courses || []).length;
+        if (state.filterManager) {
+            state.filterManager.updateFilterResultsLine('courses-filter-results-count', courses.length, coursesTotalAll, 'courses', 'course');
+        }
 
         if (!courses.length) {
             const emptyMsg = 'No courses match the current filters.';
@@ -2376,6 +3037,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     statusEl.innerHTML = emptyMsg;
                 }
             }
+            lockTableShellHeight(coursesShell);
+            applyHiddenColumnsToTable('courses');
             return;
         }
 
@@ -2414,26 +3077,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statusEl.innerHTML = '';
             }
         }
+        lockTableShellHeight(coursesShell);
+        applyHiddenColumnsToTable('courses');
 
-        if (state.renderer && !state.coursesTableColumnsFitted) {
-            state.coursesTableColumnsFitted = true;
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    const table = document.getElementById('courses-table');
-                    const shell = table ? table.closest('.courses-table-shell') : null;
-                    if (table && shell) state.renderer.fitTableColumns(table, shell, { floorMin: 90, nonPriorityFloorMin: 65, priorityColumnIndexes: [1, 2] });
-                }, 0);
-            });
-        }
-
-        if (shell) {
-            requestAnimationFrame(() => {
-                const measured = shell.getBoundingClientRect().height;
-                if (!Number.isFinite(measured) || measured <= 0) return;
-                state.coursesTableShellMaxHeight = Math.max(state.coursesTableShellMaxHeight || 0, measured);
-                shell.style.minHeight = `${state.coursesTableShellMaxHeight}px`;
-            });
-        }
     };
 
     const applyCoursesFilterAndSort = () => {
@@ -2457,7 +3103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!matchesColumn('grade', course.grade)) return false;
 
             if (!query) return true;
-            const searchBlob = `${course.id} ${course.name} ${course.school} ${course.type} ${course.info} ${course.status} ${course.completionYear || ''} ${course.grade} ${course.credits}`.toLowerCase();
+            const searchBlob = `${course.id} ${course.name} ${course.school} ${course.type} ${course.info} ${course.languagesUsed || ''} ${course.status} ${course.completionYear || ''} ${course.grade} ${course.credits}`.toLowerCase();
             return searchBlob.includes(query);
         });
 
@@ -2474,6 +3120,146 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     state.applyCoursesFilterAndSort = applyCoursesFilterAndSort;
+
+    const renderCoursesColumnFilter = (activeKey) => {
+        if (!state.coursesFilterButton || !state.coursesFilterMenu) return;
+        const onChange = state.applyCoursesFilterAndSort;
+        if (!onChange) return;
+        const courses = normalizeCourses(state.allData?.Courses || []);
+        const definitions = [
+            { key: 'id', label: 'ID', filterable: false, values: [] },
+            { key: 'name', label: 'Name', filterable: false, values: [] },
+            { key: 'school', label: 'School', values: courses.map(course => course.school) },
+            { key: 'type', label: 'Type', values: courses.map(course => course.type) },
+            { key: 'status', label: 'Status', values: courses.map(course => course.status) },
+            { key: 'credits', label: 'Credits', filterable: false, values: [] },
+            { key: 'completionYear', label: 'Year', values: courses.map(course => course.completionYear) },
+            { key: 'grade', label: 'Grade', values: courses.map(course => course.grade) }
+        ];
+        const discriminationContext = { kind: 'courses', courses };
+        renderColumnFilterMenu(
+            state.coursesFilterButton,
+            state.coursesFilterMenu,
+            definitions,
+            state.selectedCourseColumnValues,
+            onChange,
+            activeKey,
+            discriminationContext
+        );
+    };
+
+    const openHeaderColumnFilterFlyout = (scope, filterKey, anchorEl) => {
+        if (!filterKey || !anchorEl) return;
+
+        let getDefinitions;
+        let selectedMap;
+        let finalize;
+        let discriminationCtx = null;
+
+        if (scope === 'skills') {
+            getDefinitions = getSkillsColumnFilterDefinitions;
+            selectedMap = state.selectedSkillColumnValues;
+            discriminationCtx = { kind: 'skills', skills: getSkillsRowsForColumnFilter() };
+            finalize = () => {
+                if (state.filterSkills) state.filterSkills();
+                renderSkillColumnFilter();
+            };
+        } else if (scope === 'courses') {
+            getDefinitions = () => {
+                const courses = normalizeCourses(state.allData?.Courses || []);
+                return [
+                    { key: 'id', label: 'ID', filterable: false, values: [] },
+                    { key: 'name', label: 'Name', filterable: false, values: [] },
+                    { key: 'school', label: 'School', values: courses.map(course => course.school) },
+                    { key: 'type', label: 'Type', values: courses.map(course => course.type) },
+                    { key: 'status', label: 'Status', values: courses.map(course => course.status) },
+                    { key: 'credits', label: 'Credits', filterable: false, values: [] },
+                    { key: 'completionYear', label: 'Year', values: courses.map(course => course.completionYear) },
+                    { key: 'grade', label: 'Grade', values: courses.map(course => course.grade) }
+                ];
+            };
+            selectedMap = state.selectedCourseColumnValues;
+            discriminationCtx = { kind: 'courses', courses: normalizeCourses(state.allData?.Courses || []) };
+            finalize = () => {
+                if (state.applyCoursesFilterAndSort) state.applyCoursesFilterAndSort();
+                renderCoursesColumnFilter();
+            };
+        } else if (scope === 'portfolio') {
+            if (!(state.currentRoute === '/videos' || state.currentRoute === '/games')) return;
+            const pageType = state.currentRoute === '/games' ? 'games' : 'videos';
+            discriminationCtx = {
+                kind: 'portfolio',
+                projects: Array.isArray(state.allData?.[pageType]) ? state.allData[pageType] : []
+            };
+            getDefinitions = () => {
+                const list = Array.isArray(state.allData?.[pageType]) ? state.allData[pageType] : [];
+                return [
+                    {
+                        key: 'type',
+                        label: 'Category',
+                        values: list.map(project => toText(project.badge))
+                    },
+                    {
+                        key: 'tools',
+                        label: 'Tools',
+                        values: list.flatMap(project => {
+                            const rawTools = toText(project.tools);
+                            if (!rawTools) return [''];
+                            return rawTools.split(',').map(value => toText(value));
+                        })
+                    }
+                ];
+            };
+            selectedMap = state.selectedPortfolioColumnValues;
+            if (!('type' in state.selectedPortfolioColumnValues)) state.selectedPortfolioColumnValues.type = ['all'];
+            if (!('tools' in state.selectedPortfolioColumnValues)) state.selectedPortfolioColumnValues.tools = ['all'];
+            finalize = () => {
+                const selectedByColumn = state.selectedPortfolioColumnValues || {};
+                state.selectedCategories = Array.isArray(selectedByColumn.type) ? [...selectedByColumn.type] : ['all'];
+                state.selectedTools = Array.isArray(selectedByColumn.tools) ? [...selectedByColumn.tools] : ['all'];
+                if (!('type' in selectedByColumn)) state.selectedCategories = ['all'];
+                if (!('tools' in selectedByColumn)) state.selectedTools = ['all'];
+                if (state.filterCards) state.filterCards();
+                const list = Array.isArray(state.allData?.[pageType]) ? state.allData[pageType] : [];
+                renderPortfolioColumnFilter(list);
+            };
+        } else {
+            return;
+        }
+
+        const usable = stripNonDiscriminatoryColumnFilters(normalizeColumnFilterDefinitionList(getDefinitions()), discriminationCtx);
+        const definition = usable.find(d => d.key === filterKey);
+        if (!definition) return;
+        if (definition.filterable === false || definition.values.length === 0) return;
+
+        closeAllColumnFilterMenus();
+
+        const flyout = getHeaderColumnFilterFlyout();
+        const rerender = () => {
+            flyout.classList.toggle('skip-submenu-animation', flyout.classList.contains('open'));
+            const u = stripNonDiscriminatoryColumnFilters(normalizeColumnFilterDefinitionList(getDefinitions()), discriminationCtx);
+            const def = u.find(d => d.key === filterKey);
+            if (!def || def.filterable === false || def.values.length === 0) {
+                closeAllColumnFilterMenus();
+                syncDropdownScrollLock();
+                return;
+            }
+            fillHeaderColumnFilterFlyout(flyout, def, selectedMap, finalize, rerender);
+            positionHeaderColumnFilterFlyout(anchorEl, flyout);
+        };
+
+        flyout.classList.remove('skip-submenu-animation');
+        fillHeaderColumnFilterFlyout(flyout, definition, selectedMap, finalize, rerender);
+        flyout.dataset.headerFilterScope = scope;
+        flyout.dataset.headerFilterKey = filterKey;
+        flyout.classList.add('open');
+        if (anchorEl && anchorEl.classList.contains('column-header-filter-indicator')) {
+            anchorEl.classList.add('is-flyout-open');
+        }
+        positionHeaderColumnFilterFlyout(anchorEl, flyout);
+        syncCoursesModalScrollLock(true);
+        syncDropdownScrollLock();
+    };
 
     const setupCoursesControls = () => {
         if (!state.isCoursesPage) return;
@@ -2515,42 +3301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (state.coursesFilterButton && state.coursesFilterMenu) {
-            const courses = normalizeCourses(state.allData?.Courses || []);
-            const definitions = [
-                {
-                    key: 'school',
-                    label: 'School',
-                    values: courses.map(course => course.school)
-                },
-                {
-                    key: 'type',
-                    label: 'Type',
-                    values: courses.map(course => course.type)
-                },
-                {
-                    key: 'status',
-                    label: 'Status',
-                    values: courses.map(course => course.status)
-                },
-                {
-                    key: 'completionYear',
-                    label: 'Completion Year',
-                    values: courses.map(course => course.completionYear)
-                },
-                {
-                    key: 'grade',
-                    label: 'Grade',
-                    values: courses.map(course => course.grade)
-                }
-            ];
-
-            renderColumnFilterMenu(
-                state.coursesFilterButton,
-                state.coursesFilterMenu,
-                definitions,
-                state.selectedCourseColumnValues,
-                applyCoursesFilterAndSort
-            );
+            renderCoursesColumnFilter();
         }
 
         if (!state.coursesModalClose?.dataset.boundCoursesModal) {
@@ -2579,7 +3330,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!state.isCoursesPage || !state.coursesTableBody) return;
         renderCoursesDashboard();
         setupCoursesControls();
-        state.coursesTableColumnsFitted = false;
         applyCoursesFilterAndSort();
     };
 
@@ -2626,6 +3376,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.syncDropdownScrollLock = syncDropdownScrollLock;
 
+    const closeOpenSelectDropdowns = () => {
+        document.querySelectorAll('.custom-select-container.open, .multi-select-container.open').forEach(el => el.classList.remove('open'));
+        syncDropdownScrollLock();
+    };
+
     const ensureGlobalEvents = (() => {
         let bound = false;
         return () => {
@@ -2653,12 +3408,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (e.key === 'ArrowRight') navigateCoursesModal(1);
                     }
                     if (e.key === 'Escape') closeCoursesModal();
+                } else if (document.querySelector('.column-filter-header-flyout.open')) {
+                    if (e.key === 'Escape') closeAllColumnFilterMenus();
                 }
             });
 
             document.addEventListener('click', (e) => {
                 const clickedSelect = !!e.target.closest('.custom-select-container, .multi-select-container');
-                const clickedColumnFilter = !!e.target.closest('.column-filter-menu, .filter-icon-button');
+                const clickedColumnFilter = !!e.target.closest('.column-filter-menu, .column-filter-header-flyout, .filter-icon-button, .column-header-filter-indicator');
                 if (!clickedSelect) {
                     document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
                 }
@@ -2787,7 +3544,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const allCoursesCount = normalizeCourses(data.Courses || []).length;
                 setStoredCount(state.skeletonKey, allCoursesCount);
                 renderCourses();
-                preloadProgrammingLanguageIconsForCourses(data.Courses || []);
+            }
+
+            if ((data.Courses || []).length && (data.skills || []).length && state.modalManager) {
+                preloadProgrammingLanguageIconsForCourses(data.Courses).catch(() => {});
             }
 
             if (state.portfolioGrid) {
@@ -2800,6 +3560,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 if (projectData.length === 0) {
+                    if (portfolioGridResizeObserver) {
+                        portfolioGridResizeObserver.disconnect();
+                        portfolioGridResizeObserver = null;
+                    }
+                    state.portfolioGrid.style.minHeight = '';
                     const emptyMsg = pageType === 'games'
                         ? 'No games match the current filters.'
                         : 'No videos match the current filters.';
@@ -2816,8 +3581,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                         try {
                             state.renderer.renderProjects(projectData);
                             renderPortfolioColumnFilter(projectData);
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                    if (state.routeToken !== token) return;
+                                    if (state.lockPortfolioGridHeight) state.lockPortfolioGridHeight();
+                                    ensurePortfolioGridResizeObserver();
+                                });
+                            });
                         } catch (e) {
                             if (state.portfolioGrid) {
+                                if (portfolioGridResizeObserver) {
+                                    portfolioGridResizeObserver.disconnect();
+                                    portfolioGridResizeObserver = null;
+                                }
+                                state.portfolioGrid.style.minHeight = '';
                                 state.portfolioGrid.innerHTML = '<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">Unable to display projects. Please refresh the page.</p>';
                             }
                         }
@@ -2843,9 +3620,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }).then(() => {
                     if (state.routeToken !== token) return;
                     state.renderer.renderSkills(skillData);
+                    applyHiddenColumnsToTable('skills');
+                    if (state.lockSkillsTableHeight) state.lockSkillsTableHeight();
                     bindSkillTableSortButtons();
                     if (state.syncSkillSortIndicators) state.syncSkillSortIndicators();
                     renderSkillColumnFilter();
+                    if (state.filterSkills) state.filterSkills();
                 });
             }
         })
@@ -2878,6 +3658,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.filterSkills = () => state.filterManager.filterSkills();
         state.sortCards = () => state.filterManager.sortCards();
         state.sortSkills = () => state.filterManager.sortSkills();
+        state.lockSkillsTableHeight = () => {
+            const skillsShell = state.skillsList?.querySelector('.skills-table-shell') || document.querySelector('.courses-table-shell.skills-table-shell');
+            lockTableShellHeight(skillsShell);
+        };
+        state.lockPortfolioGridHeight = () => lockTableShellHeight(state.portfolioGrid);
+        state.lockCoursesTableHeight = () => {
+            const coursesShell = state.coursesTableBody?.closest('.courses-table-shell');
+            lockTableShellHeight(coursesShell);
+        };
         state.updateTypeFilter = (cats) => state.controlsManager.updateTypeFilter(cats);
         state.updateToolFilter = (tools) => state.controlsManager.updateToolFilter(tools);
         state.runFiltering = () => state.filterManager.runFiltering();
@@ -2891,117 +3680,62 @@ document.addEventListener('DOMContentLoaded', async () => {
         primeSkeletons();
         bindModalButtons();
 
-        document.querySelectorAll('.column-header-filter-indicator').forEach(indicator => {
-            if (indicator.dataset.boundClearFiltersIcon === 'true') return;
-            indicator.dataset.boundClearFiltersIcon = 'true';
-
-            indicator.style.cursor = 'pointer';
-
-            indicator.addEventListener('click', (e) => {
+        if (!document.body.dataset.boundColumnHeaderFilterClick) {
+            document.body.dataset.boundColumnHeaderFilterClick = 'true';
+            document.addEventListener('click', (e) => {
+                const indicator = e.target.closest('.column-header-filter-indicator');
+                if (!indicator) return;
+                if (indicator.classList.contains('is-disabled')) return;
                 e.preventDefault();
                 e.stopPropagation();
-                return;
 
-                if (!indicator.classList.contains('is-active')) return;
-
-                const scope = indicator.dataset.filterScope || indicator.getAttribute('data-filter-scope') || '';
-                const key = indicator.dataset.filterKey || indicator.getAttribute('data-filter-key') || '';
+                const scope = indicator.dataset.filterScope || '';
+                const key = indicator.dataset.filterKey || '';
                 if (!scope || !key) return;
 
-                const selectedMap = scope === 'skills'
-                    ? state.selectedSkillColumnValues
-                    : scope === 'courses'
-                        ? state.selectedCourseColumnValues
-                        : scope === 'portfolio'
-                            ? state.selectedPortfolioColumnValues
-                            : null;
-
-                if (!selectedMap) return;
-
-                delete selectedMap[key];
-
-                if (scope === 'skills') state.filterSkills && state.filterSkills();
-                else if (scope === 'courses') state.applyCoursesFilterAndSort && state.applyCoursesFilterAndSort();
-                else if (scope === 'portfolio') state.filterCards && state.filterCards();
-
-                closeAllColumnFilterMenus();
-
-                const selectedForScope = selectedMap || {};
-                document.querySelectorAll(`.column-header-filter-indicator[data-filter-scope="${scope}"]`).forEach(i => {
-                    const filterKey = i.dataset.filterKey || i.getAttribute('data-filter-key') || '';
-                    i.classList.toggle('is-active', isActiveColumnFilterSelection(selectedForScope, filterKey));
-                });
-            });
-        });
-
-        document.addEventListener('click', (e) => {
-            const hoveredIndicator = document.querySelector('.column-header-filter-indicator.is-active:hover');
-            const indicatorEl = e.target.closest('.column-header-filter-indicator.is-active') || hoveredIndicator;
-            if (!indicatorEl) return;
-
-            const scope = indicatorEl.dataset.filterScope || indicatorEl.getAttribute('data-filter-scope') || '';
-            const key = indicatorEl.dataset.filterKey || indicatorEl.getAttribute('data-filter-key') || '';
-            if (!scope || !key) return;
-
-            const selectedMap = scope === 'skills'
-                ? state.selectedSkillColumnValues
-                : scope === 'courses'
-                    ? state.selectedCourseColumnValues
-                    : scope === 'portfolio'
-                        ? state.selectedPortfolioColumnValues
-                        : null;
-
-            if (!selectedMap) return;
-
-            delete selectedMap[key];
-
-            if (scope === 'skills') {
-                if (state.filterSkills) state.filterSkills();
-                if (state.skillsFilterButton && state.skillsFilterMenu) {
-                    const skills = Array.isArray(state.allData?.skills) ? state.allData.skills : [];
-                    const certifiedSkills = skills.filter(skill => skill.certified === true || String(skill.certified || '').toLowerCase() === 'true');
-                    const activeKey = state.skillsFilterMenu.querySelector('.column-filter-item.active')?.dataset.filterKey;
-                    const definitions = [
-                        { key: 'type', label: 'Category', values: certifiedSkills.map(skill => toText(skill.badge)) },
-                        { key: 'level', label: 'Proficiency', values: certifiedSkills.map(skill => toText(skill.level)) }
-                    ];
-                    renderColumnFilterMenu(
-                        state.skillsFilterButton,
-                        state.skillsFilterMenu,
-                        definitions,
-                        state.selectedSkillColumnValues,
-                        () => state.filterSkills && state.filterSkills(),
-                        activeKey
-                    );
+                const flyout = headerColumnFilterFlyoutEl;
+                if (flyout && flyout.classList.contains('open')
+                    && flyout.dataset.headerFilterScope === scope
+                    && flyout.dataset.headerFilterKey === key) {
+                    closeAllColumnFilterMenus();
+                    syncDropdownScrollLock();
+                    return;
                 }
-            } else if (scope === 'courses') {
-                if (state.applyCoursesFilterAndSort) state.applyCoursesFilterAndSort();
-                if (state.coursesFilterButton && state.coursesFilterMenu) {
-                    const courses = normalizeCourses(state.allData?.Courses || []);
-                    const activeKey = state.coursesFilterMenu.querySelector('.column-filter-item.active')?.dataset.filterKey;
-                    const definitions = [
-                        { key: 'school', label: 'School', values: courses.map(course => course.school) },
-                        { key: 'type', label: 'Type', values: courses.map(course => course.type) },
-                        { key: 'status', label: 'Status', values: courses.map(course => course.status) },
-                        { key: 'completionYear', label: 'Completion Year', values: courses.map(course => course.completionYear) },
-                        { key: 'grade', label: 'Grade', values: courses.map(course => course.grade) }
-                    ];
-                    renderColumnFilterMenu(
-                        state.coursesFilterButton,
-                        state.coursesFilterMenu,
-                        definitions,
-                        state.selectedCourseColumnValues,
-                        state.applyCoursesFilterAndSort,
-                        activeKey
-                    );
-                }
-            } else if (scope === 'portfolio') {
-                if (state.filterCards) state.filterCards();
-            }
 
-            e.preventDefault();
-            e.stopPropagation();
-        }, true);
+                if (indicator.classList.contains('is-active')) {
+                    const selectedMap = scope === 'skills'
+                        ? state.selectedSkillColumnValues
+                        : scope === 'courses'
+                            ? state.selectedCourseColumnValues
+                            : scope === 'portfolio'
+                                ? state.selectedPortfolioColumnValues
+                                : null;
+                    if (!selectedMap) return;
+                    delete selectedMap[key];
+                    if (scope === 'skills') {
+                        if (state.filterSkills) state.filterSkills();
+                        renderSkillColumnFilter();
+                    } else if (scope === 'courses') {
+                        if (state.applyCoursesFilterAndSort) state.applyCoursesFilterAndSort();
+                        renderCoursesColumnFilter();
+                    } else if (scope === 'portfolio') {
+                        const selectedByColumn = state.selectedPortfolioColumnValues || {};
+                        state.selectedCategories = Array.isArray(selectedByColumn.type) ? [...selectedByColumn.type] : ['all'];
+                        state.selectedTools = Array.isArray(selectedByColumn.tools) ? [...selectedByColumn.tools] : ['all'];
+                        if (!('type' in selectedByColumn)) state.selectedCategories = ['all'];
+                        if (!('tools' in selectedByColumn)) state.selectedTools = ['all'];
+                        if (state.filterCards) state.filterCards();
+                        const pageType = state.currentRoute === '/games' ? 'games' : 'videos';
+                        const list = Array.isArray(state.allData?.[pageType]) ? state.allData[pageType] : [];
+                        renderPortfolioColumnFilter(list);
+                    }
+                    closeAllColumnFilterMenus();
+                    return;
+                }
+
+                openHeaderColumnFilterFlyout(scope, key, indicator);
+            }, true);
+        }
 
         const token = ++state.routeToken;
         applyDataForRoute(token);

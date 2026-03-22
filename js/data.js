@@ -1,3 +1,5 @@
+const SHEET_CACHE_TTL_MS = 1000 * 60 * 15;
+
 class DataService {
     constructor(spreadsheetId) {
         this.spreadsheetId = spreadsheetId;
@@ -185,12 +187,24 @@ class DataService {
         const timestampKey = `sheet_${sheetName}_ts`;
         
         let cachedData = null;
+        let cachedTs = null;
         try {
             const cached = localStorage.getItem(cacheKey);
             if (cached) {
                 cachedData = JSON.parse(cached);
             }
+            const tsRaw = localStorage.getItem(timestampKey);
+            if (tsRaw) {
+                const n = Number(tsRaw);
+                if (Number.isFinite(n)) cachedTs = n;
+            }
         } catch (err) {}
+
+        if (cachedData && cachedTs !== null && Date.now() - cachedTs < SHEET_CACHE_TTL_MS) {
+            this.recordConnectionSample(null, true, false);
+            this.updateConnectionStatus();
+            return { data: cachedData, fromCache: true };
+        }
 
         try {
             const url = `https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}&_=${Date.now()}`;
@@ -265,6 +279,7 @@ class DataService {
             'Completion Year': 'completionYear',
             'Credits Earned': 'creditsEarned',
             'Course ID': 'courseid',
+            'Languages Used': 'languagesUsed',
             'Tools': 'tools',
             'YouTube Link': 'youtube',
             'Gallery': 'gallery',

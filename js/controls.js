@@ -271,6 +271,7 @@ class ControlsManager {
 
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
+            const wasOpen = container.classList.contains('open');
             if (typeof window.closeAllColumnFilterMenus === 'function') {
                 window.closeAllColumnFilterMenus();
             }
@@ -278,7 +279,11 @@ class ControlsManager {
                 if (c !== container) c.classList.remove('open');
             });
             container.classList.remove('skip-animation');
-            container.classList.toggle('open');
+            if (wasOpen) {
+                container.classList.remove('open');
+            } else {
+                container.classList.add('open');
+            }
             this.ensureDropdownBestVisibility(container);
             this.syncDropdownScrollLock();
         });
@@ -335,12 +340,18 @@ class ControlsManager {
 
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
+            const wasOpen = container.classList.contains('open');
             if (typeof window.closeAllColumnFilterMenus === 'function') {
                 window.closeAllColumnFilterMenus();
             }
-            const isOpen = container.classList.contains('open');
-            document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => c.classList.remove('open'));
-            if (!isOpen) container.classList.add('open');
+            document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(c => {
+                if (c !== container) c.classList.remove('open');
+            });
+            if (wasOpen) {
+                container.classList.remove('open');
+            } else {
+                container.classList.add('open');
+            }
             this.ensureDropdownBestVisibility(container);
             this.syncDropdownScrollLock();
         });

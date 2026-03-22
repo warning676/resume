@@ -3,239 +3,6 @@ class Renderer {
         this.s = state;
     }
 
-    fitTableColumns(table, shell, options = {}) {
-        if (!table || !shell) return;
-        const theadRow = table.tHead && table.tHead.rows[0] ? table.tHead.rows[0] : null;
-        const tbody = table.tBodies && table.tBodies[0] ? table.tBodies[0] : null;
-        if (!theadRow || !tbody) return;
-
-        const ths = Array.from(theadRow.cells || []);
-        const colCount = ths.length;
-        if (!colCount) return;
-
-        const available = Math.max(0, Math.floor(shell.clientWidth) - 2);
-        if (!available) return;
-
-        const buffer = Number.isFinite(options.buffer) ? options.buffer : 12;
-        const floorMin = Number.isFinite(options.floorMin) ? options.floorMin : 110;
-        const priorityColumnIndexes = Array.isArray(options.priorityColumnIndexes) ? options.priorityColumnIndexes : null;
-        const prioritySet = priorityColumnIndexes ? new Set(priorityColumnIndexes.filter(n => Number.isInteger(n) && n >= 0 && n < colCount)) : new Set();
-        const nonPriorityFloorMin = Number.isFinite(options.nonPriorityFloorMin)
-            ? options.nonPriorityFloorMin
-            : Math.max(40, Math.floor(floorMin * 0.7));
-
-        const measureWrap = document.createElement('div');
-        measureWrap.style.position = 'absolute';
-        measureWrap.style.left = '-10000px';
-        measureWrap.style.top = '0';
-        measureWrap.style.visibility = 'hidden';
-        measureWrap.style.pointerEvents = 'none';
-        measureWrap.style.width = 'max-content';
-
-        const clone = table.cloneNode(true);
-        clone.style.tableLayout = 'auto';
-        clone.style.width = 'max-content';
-        clone.style.minWidth = '0';
-        clone.querySelectorAll('colgroup').forEach(cg => cg.remove());
-        clone.querySelectorAll('th, td').forEach(cell => {
-            cell.style.width = '';
-            cell.style.maxWidth = '';
-            cell.style.whiteSpace = 'nowrap';
-            cell.style.overflow = 'visible';
-            cell.style.textOverflow = 'clip';
-        });
-
-        measureWrap.appendChild(clone);
-        document.body.appendChild(measureWrap);
-
-        const cloneHeadRow = clone.tHead && clone.tHead.rows[0] ? clone.tHead.rows[0] : null;
-        const cloneBody = clone.tBodies && clone.tBodies[0] ? clone.tBodies[0] : null;
-        if (!cloneHeadRow || !cloneBody) {
-            measureWrap.remove();
-            return;
-        }
-
-        const cloneThs = Array.from(cloneHeadRow.cells || []);
-        const cloneRows = Array.from(cloneBody.rows || []);
-
-        const measureCell = (cell) => Math.ceil((cell && cell.getBoundingClientRect().width) || 0);
-        const needed = new Array(colCount).fill(0);
-        for (let i = 0; i < colCount; i++) needed[i] = Math.max(needed[i], measureCell(cloneThs[i]));
-        cloneRows.forEach((row) => {
-            const cells = Array.from(row.cells || []);
-            for (let i = 0; i < Math.min(colCount, cells.length); i++) {
-                needed[i] = Math.max(needed[i], measureCell(cells[i]));
-            }
-        });
-
-        measureWrap.remove();
-
-        for (let i = 0; i < colCount; i++) needed[i] += buffer;
-
-        const headerMin = cloneThs.map(th => measureCell(th) + buffer);
-        const floor = new Array(colCount).fill(0).map((_, i) => {
-            const min = prioritySet.has(i) ? floorMin : nonPriorityFloorMin;
-            return Math.max(min, headerMin[i] || 0);
-        });
-
-        const useTightAllocation = prioritySet.size > 0;
-        let alloc;
-        let deficit;
-        let canNoWrap;
-
-        if (useTightAllocation) {
-            const sumFloor = floor.reduce((sum, v) => sum + v, 0);
-            alloc = floor.slice();
-            let remaining = Math.max(0, available - sumFloor);
-
-            const deficits = alloc.map((w, i) => Math.max(0, needed[i] - w));
-            deficit = deficits.slice();
-
-            for (let guard = 0; guard < 2000; guard++) {
-                if (remaining <= 0) break;
-                const prCandidates = Array.from(prioritySet).filter(i => i >= 0 && i < colCount && deficit[i] > 0);
-                const candidates = prCandidates.length
-                    ? prCandidates
-                    : deficit.map((d, i) => ({ i, d })).filter(x => x.d > 0).sort((a, b) => b.d - a.d).map(x => x.i);
-
-                if (!candidates.length) break;
-                let pick = candidates[0];
-                if (candidates.length > 1) {
-                    pick = candidates.reduce((best, cur) => (deficit[cur] > deficit[best] ? cur : best), candidates[0]);
-                }
-
-                const amount = Math.min(deficit[pick], remaining);
-                if (amount <= 0) break;
-                alloc[pick] += amount;
-                deficit[pick] -= amount;
-                remaining -= amount;
-            }
-
-            if (remaining > 0) {
-                const prCols = Array.from(prioritySet);
-                if (prCols.length) {
-                    for (let k = 0; k < remaining; k++) {
-                        alloc[prCols[k % prCols.length]] += 1;
-                    }
-                } else {
-                    for (let k = 0; k < remaining; k++) {
-                        alloc[k % colCount] += 1;
-                    }
-                }
-            }
-
-            canNoWrap = deficit.every(d => d <= 0);
-        } else {
-            const base = Math.floor(available / colCount);
-            alloc = new Array(colCount).fill(base);
-            let rem = available - (base * colCount);
-            for (let i = 0; i < rem; i++) alloc[i % colCount] += 1;
-
-            const calcSurplus = () => alloc.map((w, i) => Math.max(0, w - floor[i]));
-            const calcDeficit = () => alloc.map((w, i) => Math.max(0, needed[i] - w));
-
-            let surplus = calcSurplus();
-            deficit = calcDeficit();
-
-            for (let guard = 0; guard < 80; guard++) {
-                const defPairs = deficit.map((d, i) => ({ i, d })).filter(x => x.d > 0).sort((a, b) => b.d - a.d);
-                const surPairs = surplus.map((s, i) => ({ i, s })).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
-                if (!defPairs.length || !surPairs.length) break;
-                const to = defPairs[0].i;
-                const from = surPairs[0].i;
-                const amount = Math.min(defPairs[0].d, surplus[from]);
-                if (!amount) break;
-                alloc[from] -= amount;
-                alloc[to] += amount;
-                surplus = calcSurplus();
-                deficit = calcDeficit();
-            }
-
-            if (prioritySet.size) {
-                const minAllowed = floor.map((f, i) => {
-                    if (prioritySet.has(i)) return f;
-                    const soft = Math.min(f, needed[i] || 0);
-                    return Math.max(headerMin[i] || 0, soft);
-                });
-
-                for (let guard = 0; guard < 120; guard++) {
-                    let moved = false;
-                    for (const p of prioritySet) {
-                        if (p < 0 || p >= colCount) continue;
-                        if (alloc[p] >= needed[p]) continue;
-
-                        const need = needed[p] - alloc[p];
-                        let donor = -1;
-                        let bestSurplus = 0;
-
-                        for (let d = 0; d < colCount; d++) {
-                            if (d === p) continue;
-                            const surplusAmt = alloc[d] - (minAllowed[d] || 0);
-                            if (surplusAmt > bestSurplus) {
-                                bestSurplus = surplusAmt;
-                                donor = d;
-                            }
-                        }
-
-                        if (donor === -1 || bestSurplus <= 0) continue;
-                        const amount = Math.min(need, bestSurplus);
-                        if (!amount) continue;
-
-                        alloc[donor] -= amount;
-                        alloc[p] += amount;
-                        moved = true;
-                    }
-                    if (!moved) break;
-                }
-
-                deficit = alloc.map((w, i) => Math.max(0, needed[i] - w));
-            }
-
-            canNoWrap = deficit.every(d => d <= 0);
-        }
-
-        let colgroup = table.querySelector('colgroup');
-        if (!colgroup) {
-            colgroup = document.createElement('colgroup');
-            table.insertBefore(colgroup, table.firstChild);
-        }
-        colgroup.innerHTML = '';
-        alloc.forEach((w) => {
-            const col = document.createElement('col');
-            col.style.width = `${Math.max(0, Math.floor(w))}px`;
-            colgroup.appendChild(col);
-        });
-
-        const totalFloor = floor.reduce((sum, f) => sum + f, 0);
-
-        table.classList.add('table-fit');
-        if (canNoWrap) table.classList.add('table-fit-nowrap');
-        else table.classList.remove('table-fit-nowrap');
-
-        table.style.tableLayout = 'fixed';
-        table.style.width = '100%';
-        table.style.minWidth = Math.max(available, totalFloor) + 'px';
-    }
-
-    ensureSkillsFitBinding() {
-        const s = this.s;
-        if (!s) return;
-        if (s._skillsFitBound) return;
-        s._skillsFitBound = true;
-        let t = null;
-        window.addEventListener('resize', () => {
-            if (t) clearTimeout(t);
-            t = setTimeout(() => {
-                const skillsShell = document.querySelector('.courses-table-shell.skills-table-shell');
-                const skillsTable = document.querySelector('table.skills-table');
-                if (skillsShell && skillsTable) this.fitTableColumns(skillsTable, skillsShell, { floorMin: 90, nonPriorityFloorMin: 65, priorityColumnIndexes: [0, 1] });
-                const coursesShell = document.querySelector('#courses-table')?.closest('.courses-table-shell');
-                const coursesTable = document.querySelector('#courses-table');
-                if (coursesShell && coursesTable) this.fitTableColumns(coursesTable, coursesShell, { floorMin: 90, nonPriorityFloorMin: 65, priorityColumnIndexes: [1, 2] });
-            }, 120);
-        }, { passive: true });
-    }
-
     fixImagePath(path) {
         if (!path) return path;
         if (path.startsWith('http') || path.startsWith('data:')) {
@@ -278,7 +45,7 @@ class Renderer {
                     <td><div class="skeleton-element" style="width:${w[3]}px;height:14px;border-radius:999px;"></div></td>
                 </tr>`;
             }
-            container.innerHTML = `<div class="courses-table-shell skills-table-shell"><table class="courses-table skills-table"><thead><tr><th>Skill</th><th>Category</th><th>Proficiency</th><th>Last Used</th></tr></thead><tbody class="skills-table-body">${rows}</tbody></table></div>`;
+            container.innerHTML = `<div class="courses-table-shell skills-table-shell"><table class="courses-table skills-table"><thead><tr><th>Name</th><th>Category</th><th>Proficiency</th><th>Last Used</th></tr></thead><tbody class="skills-table-body">${rows}</tbody></table></div>`;
             return;
         }
 
@@ -291,9 +58,9 @@ class Renderer {
                     <div class="card-thumb"><div class="skeleton-element" style="width: 100%; height: 100%;"></div></div>
                     <div class="card-content">
                         <div class="card-info">
+                            <div class="skeleton-element" style="width: 38%; height: 11px; margin-bottom: 8px; border-radius: 999px;"></div>
                             <div class="skeleton-element" style="width: 78%; height: 18px; margin-bottom: 10px; border-radius: 999px;"></div>
                             <div class="skeleton-element" style="width: 42%; height: 14px; border-radius: 999px;"></div>
-                            <div class="skeleton-element" style="width: 56%; height: 12px; margin-top: 12px; border-radius: 999px;"></div>
                         </div>
                     </div>
                 </div>`;
@@ -330,8 +97,9 @@ class Renderer {
                     thumbSrc = project.resolvedThumb || this.fixImagePath(thumbSrc);
                 }
 
-                const displayDate = project.date ? Utils.formatFullDate(project.date).toUpperCase() : "";
-                const badgeHTML = project.badge ? `<span class="type-badge" style="margin-top: 10px; display: block;">${project.badge}</span>` : '';
+                const displayDate = project.date ? Utils.formatFullDate(project.date).toUpperCase() : '';
+                const dateHTML = displayDate ? `<p class="card-meta-date">${displayDate}</p>` : '';
+                const badgeHTML = project.badge ? `<span class="type-badge">${project.badge}</span>` : '';
                 
                 const isVideosPage = s.currentRoute === '/videos';
                 const awards = isVideosPage && s.filmFestivalAwards ? s.filmFestivalAwards[project.name] : null;
@@ -352,8 +120,8 @@ class Renderer {
                     </div>
                     <div class="card-content">
                         <div class="card-info">
+                            ${dateHTML}
                             <h3>${(project.name || '')}</h3>
-                            <p>${displayDate}</p>
                             ${badgeHTML}
                         </div>
                         ${awardsHTML ? `<div class="card-awards">${awardsHTML}</div>` : ''}
@@ -404,7 +172,7 @@ class Renderer {
                 <table class="courses-table skills-table">
                     <thead>
                         <tr>
-                            <th class="table-sort-header" data-sort-scope="skills" data-sort-key="name" tabindex="0" role="button" aria-label="Sort Skill"><span class="table-header-chip"><span class="table-header-label">Skill</span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
+                            <th class="table-sort-header" data-sort-scope="skills" data-sort-key="name" tabindex="0" role="button" aria-label="Sort Name"><span class="table-header-chip"><span class="table-header-label">Name</span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
                             <th class="table-sort-header" data-sort-scope="skills" data-sort-key="type" tabindex="0" role="button" aria-label="Sort Category"><span class="table-header-chip"><span class="table-header-meta"><span class="table-header-label">Category</span><span class="column-header-filter-indicator" data-filter-scope="skills" data-filter-key="type" aria-hidden="true"></span></span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
                             <th class="table-sort-header" data-sort-scope="skills" data-sort-key="proficiency" tabindex="0" role="button" aria-label="Sort Proficiency"><span class="table-header-chip"><span class="table-header-meta"><span class="table-header-label">Proficiency</span><span class="column-header-filter-indicator" data-filter-scope="skills" data-filter-key="level" aria-hidden="true"></span></span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
                             <th class="table-sort-header" data-sort-scope="skills" data-sort-key="lastUsed" tabindex="0" role="button" aria-label="Sort Last Used"><span class="table-header-chip"><span class="table-header-label">Last Used</span><span class="table-header-actions" aria-hidden="true"><span class="table-sort-button" data-sort-order="asc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="table-sort-button" data-sort-order="desc"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></span></th>
@@ -443,7 +211,7 @@ class Renderer {
             const iconSrc = skill.resolvedIcon || this.fixImagePath(skill.icon);
 
             item.innerHTML = `
-                <td data-label="Skill">
+                <td data-label="Name">
                     <div class="skill-name-cell">
                         <span class="skill-icon-wrap">
                             <span class="skill-icon-skeleton skeleton-element"></span>
@@ -485,13 +253,5 @@ class Renderer {
         s.sortSkills();
         if (typeof s.syncSkillSortIndicators === 'function') s.syncSkillSortIndicators();
 
-        this.ensureSkillsFitBinding();
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                const shell = s.skillsList.querySelector('.courses-table-shell.skills-table-shell') || s.skillsList.querySelector('.courses-table-shell');
-                const table = s.skillsList.querySelector('table.skills-table');
-                if (shell && table) this.fitTableColumns(table, shell, { floorMin: 90, nonPriorityFloorMin: 65, priorityColumnIndexes: [0, 1] });
-            }, 0);
-        });
     }
 }

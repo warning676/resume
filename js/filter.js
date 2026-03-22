@@ -8,6 +8,23 @@ class FilterManager {
         return String(s).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
+    updateFilterResultsLine(elementId, visible, total, pluralNoun, singularNoun) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const t = Number.isFinite(total) ? Math.max(0, Math.floor(total)) : 0;
+        const v = Number.isFinite(visible) ? Math.max(0, Math.floor(visible)) : 0;
+        if (t === 0) {
+            el.textContent = '';
+            return;
+        }
+        const noun = t === 1 ? singularNoun : pluralNoun;
+        if (v === t) {
+            el.textContent = `${t} ${noun}`;
+        } else {
+            el.textContent = `${v} of ${t} ${noun} (${t - v} hidden)`;
+        }
+    }
+
     levenshtein(a, b) {
         if (a === b) return 0;
         const al = a.length, bl = b.length;
@@ -91,10 +108,14 @@ class FilterManager {
     filterCards() {
         const s = this.s;
         if (!s.portfolioGrid) return;
+        const hasSkeleton = !!s.portfolioGrid.querySelector('.skeleton-item');
+        if (!hasSkeleton && typeof s.lockPortfolioGridHeight === 'function') s.lockPortfolioGridHeight();
         const query = this.normalizeText(s.searchQuery);
         const queryTokens = query.split(/\s+/).filter(t => t);
         let visibleCount = 0;
-        s.portfolioGrid.querySelectorAll('.portfolio-card').forEach(card => {
+        const dataCards = Array.from(s.portfolioGrid.querySelectorAll('.portfolio-card')).filter(c => !c.classList.contains('skeleton-item'));
+        const totalCards = dataCards.length;
+        dataCards.forEach(card => {
             const cardType = card.getAttribute('data-type') || '';
             const cardTools = (card.getAttribute('data-tools') || '').toLowerCase();
             const toolsList = cardTools.split(',').map(t => t.trim());
@@ -126,9 +147,9 @@ class FilterManager {
             }
         });
         if (s.noResults) s.noResults.style.display = visibleCount === 0 ? "block" : "none";
+        this.updateFilterResultsLine('portfolio-filter-results-count', visibleCount, totalCards, 'projects', 'project');
         const statusEl = document.getElementById('page-search-status');
         if (statusEl) {
-            const hasSkeleton = !!s.portfolioGrid.querySelector('.skeleton-item');
             const rawQuery = s.searchQuery ? s.searchQuery.trim() : '';
             if (rawQuery && hasSkeleton) {
                 const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -148,10 +169,13 @@ class FilterManager {
     filterSkills() {
         const s = this.s;
         if (!s.skillsList) return;
+        if (typeof s.lockSkillsTableHeight === 'function') s.lockSkillsTableHeight();
         const query = this.normalizeText(s.searchQuery);
         const queryTokens = query.split(/\s+/).filter(t => t);
         let visibleCount = 0;
-        s.skillsList.querySelectorAll('.skill-item').forEach(item => {
+        const skillItems = s.skillsList.querySelectorAll('.skill-item');
+        const totalSkills = skillItems.length;
+        skillItems.forEach(item => {
             const info = item.getAttribute('data-info') || '';
             const textRaw = (item.innerText || '') + ' ' + info;
             const text = this.normalizeText(textRaw);
@@ -183,14 +207,6 @@ class FilterManager {
             }
         });
 
-        const skillsShell = s.skillsList ? s.skillsList.querySelector('.courses-table-shell.skills-table-shell') : null;
-        if (skillsShell) {
-            const measured = skillsShell.getBoundingClientRect().height;
-            if (Number.isFinite(measured) && measured > 0) {
-                s.skillsTableShellMaxHeight = Math.max(s.skillsTableShellMaxHeight || 0, measured);
-                skillsShell.style.minHeight = `${s.skillsTableShellMaxHeight}px`;
-            }
-        }
         const tableBody = s.skillsList ? s.skillsList.querySelector('.skills-table-body') : null;
         if (tableBody) {
             const existingRow = tableBody.querySelector('.skills-no-results-row');
@@ -209,6 +225,8 @@ class FilterManager {
         } else {
             if (s.noResults) s.noResults.style.display = visibleCount === 0 ? 'block' : 'none';
         }
+
+        this.updateFilterResultsLine('skills-filter-results-count', visibleCount, totalSkills, 'skills', 'skill');
         const statusEl = document.getElementById('page-search-status');
         if (statusEl) {
             const hasSkeleton = !!s.skillsList.querySelector('.skeleton-item');

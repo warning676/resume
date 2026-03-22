@@ -7,7 +7,7 @@
             <div id="project-header" style="display: block;">
                 <h2 id="modal-title">Project Details</h2>
             </div>
-            <div id="skill-header" style="display: none; align-items: center; gap: 15px;">
+            <div id="skill-header" style="display: none;">
                 <img id="modal-skill-icon" src="" alt="" style="width: 32px; height: 32px; object-fit: contain;">
                 <h2 id="modal-title-main">Skill Details</h2>
             </div>
@@ -27,17 +27,16 @@
             </div>
             <div class="modal-info-pane">
                 <div id="project-info" style="display: block;">
-                    <h3 id="modal-info-title" style="color: #ffffff; margin-bottom: 5px; font-size: 1.3rem;"></h3>
-                    <p id="modal-date" style="color: #6a737d; font-size: 0.85rem; margin-bottom: 10px;"></p>
-                    <span id="modal-info-category" class="type-badge"
-                        style="display: block; margin-bottom: 15px;"></span>
-                    <p id="modal-description" style="margin-bottom: 25px;"></p>
+                    <div class="modal-project-heading">
+                        <p id="modal-date" class="modal-project-meta"></p>
+                        <h3 id="modal-info-title" class="modal-project-title"></h3>
+                        <span id="modal-info-category" class="type-badge modal-project-category"></span>
+                    </div>
+                    <p id="modal-description" class="modal-project-description"></p>
                     
                     <div id="film-festival-awards" style="display: none; margin-bottom: 25px;">
                         <hr style="border: 0; border-top: 1px solid #1f2428; margin-bottom: 15px;">
-                        <h4 style="color: #ffffff; font-size: 0.9rem; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Awards
-                        </h4>
+                        <h4 class="modal-project-section-label">Awards</h4>
                         <div id="awards-list" style="display: flex; flex-direction: column; gap: 8px;">
                         </div>
                     </div>
@@ -91,7 +90,7 @@
         <button id="sec-modal-prev" class="sec-modal-nav-btn prev" title="Previous Tool"></button>
         <button id="sec-modal-next" class="sec-modal-nav-btn next" title="Next Tool"></button>
         <div class="modal-header">
-            <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="display: flex;">
                 <img id="sec-modal-skill-icon" src="" alt=""
                     style="width: 32px; height: 32px; object-fit: contain;">
                 <h2 id="sec-modal-title-main">Skill Details</h2>

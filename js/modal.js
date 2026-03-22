@@ -534,7 +534,7 @@ class ModalManager {
                     if (headerTransitionTarget) {
                         headerTransitionTarget.style.transition = '';
                         headerTransitionTarget.style.opacity = '';
-                        headerTransitionTarget.style.transform = 'translate3d(0px, 0, 0)';
+                        headerTransitionTarget.style.transform = '';
                         headerTransitionTarget.style.willChange = '';
                     }
                     if (targetModal) {
@@ -710,13 +710,12 @@ class ModalManager {
             if (modalTitle) modalTitle.innerText = data.name.toUpperCase();
 
             const infoTitle = document.getElementById("modal-info-title");
-            if (infoTitle) infoTitle.innerText = data.name.toUpperCase();
+            if (infoTitle) infoTitle.innerText = data.name ? data.name.toUpperCase() : "";
 
             const infoCategory = document.getElementById("modal-info-category");
             if (infoCategory) {
-                infoCategory.innerText = (data.badge || "").toUpperCase();
-                infoCategory.style.display = "block";
-                infoCategory.style.visibility = data.badge ? "visible" : "hidden";
+                infoCategory.textContent = data.badge || "";
+                infoCategory.style.display = data.badge ? "inline-block" : "none";
             }
 
             const modalTools = document.getElementById("modal-tools");
@@ -818,7 +817,11 @@ class ModalManager {
             if (modalDesc) modalDesc.innerText = info;
 
             const modalDate = document.getElementById("modal-date");
-            if (modalDate) modalDate.innerText = Utils.formatFullDate(rawDate).toUpperCase();
+            if (modalDate) {
+                const dateStr = rawDate ? Utils.formatFullDate(rawDate).toUpperCase() : '';
+                modalDate.textContent = dateStr;
+                modalDate.style.display = dateStr ? 'block' : 'none';
+            }
 
             const awardsContainer = document.getElementById("film-festival-awards");
             const awardsList = document.getElementById("awards-list");
