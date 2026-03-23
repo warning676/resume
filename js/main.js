@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         coursesModalUseStandaloneList: false,
         coursesModalStandaloneList: null,
         coursesModalClosing: false,
+        disableCourseNavigationFromSkillModal: false,
         currentCourseIndex: -1,
         currentItemCard: null,
         currentGalleryIndex: 0,
@@ -414,6 +415,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.coursesModalUseStandaloneList = false;
         state.coursesModalStandaloneList = null;
         state.coursesModalClosing = false;
+        state.disableCourseNavigationFromSkillModal = false;
         if (state.coursesModal) state.coursesModal.classList.remove('courses-modal-over-modal');
         state.currentCourseIndex = -1;
         state.searchQuery = '';
@@ -2679,6 +2681,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const opts = options && typeof options === 'object' ? options : {};
         const nonInteractiveSkillName = String(opts.nonInteractiveSkillName || '').trim().toLowerCase();
         const disableSkillModalLinks = opts.disableSkillModalLinks === true;
+        const disableCourseNavigationFromSkillModal = opts.disableCourseNavigationFromSkillModal === true;
         const skills = state.allData && state.allData.skills ? state.allData.skills : [];
         const modalManager = state.modalManager;
         const toolsCtx = Array.isArray(skillToolsContext) && skillToolsContext.length ? skillToolsContext : list;
@@ -2711,6 +2714,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tag.addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (!state.openModalForItem) return;
+                    if (disableCourseNavigationFromSkillModal) {
+                        state.disableCourseNavigationFromSkillModal = true;
+                    }
                     state.openModalForItem(skillMatch, 'skill', toolsCtx);
                 });
             }
@@ -2970,9 +2976,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (state.coursesModalInfo) state.coursesModalInfo.textContent = infoText || 'No course information available.';
 
-        const courseModalLangTagOptions = state.coursesModal && state.coursesModal.classList.contains('courses-modal-over-modal')
-            ? { disableSkillModalLinks: true }
-            : undefined;
+        const courseModalLangTagOptions = {
+            disableCourseNavigationFromSkillModal: true,
+            ...(state.coursesModal && state.coursesModal.classList.contains('courses-modal-over-modal')
+                ? { disableSkillModalLinks: true }
+                : {})
+        };
 
         const featuredSection = state.coursesModalFeaturedSection;
         const featuredDesc = state.coursesModalFeaturedDesc;

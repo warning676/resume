@@ -760,6 +760,77 @@ footer[data-include="html/footer.html"] {
     transition: transform 0.18s ease;
 }
 
+button.inline-action-button:disabled::after {
+    width: 0;
+    height: 0;
+    background-image: none;
+    opacity: 0;
+    transition: none;
+}
+
+button.inline-action-button:disabled {
+    gap: 0;
+}
+
+button.inline-action-button:disabled:hover {
+    background-color: transparent;
+    border-color: #30363d;
+    color: #e1e4e8;
+    transform: none;
+}
+
+button.inline-action-button:disabled:hover::after {
+    width: 0;
+    height: 0;
+    background-image: none;
+    opacity: 0;
+    transform: none;
+}
+
+button.inline-action-button:disabled:active {
+    transform: none;
+}
+
+.inline-action-button[aria-disabled="true"] {
+    gap: 0;
+    user-select: text;
+    -webkit-user-select: text;
+    -ms-user-select: text;
+}
+
+.inline-action-button[aria-disabled="true"]::after {
+    width: 0;
+    height: 0;
+    background-image: none;
+    opacity: 0;
+    transition: none;
+}
+
+.inline-action-button[aria-disabled="true"]:hover {
+    background-color: transparent;
+    border-color: #30363d;
+    color: #e1e4e8;
+    transform: none;
+}
+
+.inline-action-button[aria-disabled="true"]:hover::after {
+    width: 0;
+    height: 0;
+    background-image: none;
+    opacity: 0;
+    transform: none;
+}
+
+.inline-action-button[aria-disabled="true"]:active {
+    transform: none;
+}
+
+.inline-action-button[aria-disabled="true"]:focus,
+.inline-action-button[aria-disabled="true"]:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
 .inline-action-button:hover {
     background-color: #30363d;
     border-color: #58a6ff;
@@ -4796,6 +4867,26 @@ button.inline-action-button {
 .modal-skill-course-project-course-id-below {
     margin-top: 2px;
     margin-bottom: 0;
+}
+
+.modal-skill-course-project-course-id-static {
+    display: inline-flex;
+    align-items: center;
+    background: transparent;
+    border: 1px solid #30363d !important;
+    padding: 8px 13px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e1e4e8;
+    margin-bottom: 0;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1;
+    cursor: default;
+    user-select: text;
+    -webkit-user-select: text;
+    -ms-user-select: text;
 }
 
 .modal-skill-course-project-card-lang-wrap {

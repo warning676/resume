@@ -346,6 +346,7 @@ class ModalManager {
         s.galleryToggleEl = null;
         s.galleryTargetModal = null;
         s.currentItemCard = null;
+        s.disableCourseNavigationFromSkillModal = false;
         this.syncPageScrollLock(false);
         try {
             const c = s.modal ? s.modal.querySelector('.modal-content') : null;
@@ -357,6 +358,7 @@ class ModalManager {
         const s = this.s;
         s.currentToolsContext = [];
         s.currentToolIndex = -1;
+        s.disableCourseNavigationFromSkillModal = false;
         this.syncPageScrollLock(false);
         try {
             const c = s.secModal ? s.secModal.querySelector('.modal-content') : null;
@@ -646,26 +648,38 @@ class ModalManager {
                 card.appendChild(span);
             }
             if (courseId) {
-                const courseBtn = document.createElement('button');
-                courseBtn.type = 'button';
-                courseBtn.className = 'inline-action-button courses-modal-featured-link modal-skill-course-project-course-id-below';
-                courseBtn.textContent = courseId;
-                courseBtn.style.setProperty('--inline-action-color', '#58a6ff');
-                courseBtn.setAttribute('aria-label', `Open course ${courseId} on the Courses page`);
-                courseBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const opener = typeof window !== 'undefined' ? window.openCoursesModalForCourseIdFromSkill : null;
-                    if (typeof opener === 'function') {
-                        opener(courseId);
-                    } else if (typeof window.navigateToSearchResult === 'function') {
-                        if (typeof this.dismissPortfolioModalsForNavigation === 'function') {
-                            this.dismissPortfolioModalsForNavigation();
+                const shouldDisableCourseNav = !!(
+                    s.disableCourseNavigationFromSkillModal
+                    || (s.coursesModal && s.coursesModal.style.display === 'flex')
+                );
+                if (shouldDisableCourseNav) {
+                    const courseText = document.createElement('span');
+                    courseText.className = 'software-tag modal-skill-course-project-course-id-below modal-skill-course-project-course-id-static';
+                    courseText.textContent = courseId;
+                    courseText.setAttribute('aria-disabled', 'true');
+                    card.appendChild(courseText);
+                } else {
+                    const courseBtn = document.createElement('button');
+                    courseBtn.type = 'button';
+                    courseBtn.className = 'inline-action-button courses-modal-featured-link modal-skill-course-project-course-id-below';
+                    courseBtn.textContent = courseId;
+                    courseBtn.style.setProperty('--inline-action-color', '#58a6ff');
+                    courseBtn.setAttribute('aria-label', `Open course ${courseId} on the Courses page`);
+                    courseBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const opener = typeof window !== 'undefined' ? window.openCoursesModalForCourseIdFromSkill : null;
+                        if (typeof opener === 'function') {
+                            opener(courseId);
+                        } else if (typeof window.navigateToSearchResult === 'function') {
+                            if (typeof this.dismissPortfolioModalsForNavigation === 'function') {
+                                this.dismissPortfolioModalsForNavigation();
+                            }
+                            window.navigateToSearchResult('/courses', courseId, 'course');
                         }
-                        window.navigateToSearchResult('/courses', courseId, 'course');
-                    }
-                });
-                card.appendChild(courseBtn);
+                    });
+                    card.appendChild(courseBtn);
+                }
             }
             if (projInfo) {
                 const p = document.createElement('p');
