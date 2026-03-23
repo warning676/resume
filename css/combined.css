@@ -4429,7 +4429,7 @@ body.dropdown-scroll-lock {
 
 .courses-table-shell {
     width: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
     border: 1px solid #30363d;
     border-radius: 8px;
     container-type: inline-size;
@@ -4528,7 +4528,6 @@ body.dropdown-scroll-lock {
 .courses-link2-icon {
     display: block;
     flex-shrink: 0;
-    vertical-align: middle;
 }
 
 #courses-table thead th:nth-child(3),
@@ -4584,8 +4583,9 @@ body.dropdown-scroll-lock {
     border-right: none;
 }
 
-.courses-table-shell > .courses-table tbody tr:last-child td,
-.courses-table-shell > .courses-table tbody tr:last-child th {
+.courses-table-shell > .courses-table tbody tr.last-visible-row td,
+.courses-table-shell > .courses-table tbody tr.last-visible-row th,
+.courses-table-shell > .courses-table tbody tr.skill-item.last-visible-row {
     border-bottom: none;
 }
 
@@ -4616,6 +4616,7 @@ body.dropdown-scroll-lock {
     cursor: pointer;
     transition: background-color 0.18s ease;
 }
+
 
 .courses-table tbody tr:hover {
     background: #0d1117;

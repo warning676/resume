@@ -256,6 +256,7 @@ class Renderer {
 
         s.updateTypeFilter(categories);
         s.sortSkills();
+        if (typeof s.filterSkills === 'function') s.filterSkills();
         if (typeof s.syncSkillSortIndicators === 'function') s.syncSkillSortIndicators();
 
     }

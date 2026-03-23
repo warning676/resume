@@ -3408,8 +3408,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.coursesTableBody.innerHTML = courses.map((course, index) => {
             const statusBadge = buildCourseBadge(course.status || '-', getCourseStatusBadgeClass(course.status));
             const gradeBadge = buildCourseBadge(course.grade || '-', getCourseGradeBadgeClass(course.grade));
+            const rowClasses = ['course-row'];
+            if (index === courses.length - 1 && courses.length === coursesTotalAll) rowClasses.push('last-visible-row');
             return `
-                <tr class="course-row" data-course-index="${index}">
+                <tr class="${rowClasses.join(' ')}" data-course-index="${index}">
                     <td>${escapeHtml(course.id || '-')}</td>
                     <td class="courses-name-cell">${buildCourseNameCellHtml(course)}</td>
                     <td>${escapeHtml(course.school || '-')}</td>

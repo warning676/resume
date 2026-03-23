@@ -234,6 +234,16 @@ class FilterManager {
         });
 
         const tableBody = s.skillsList ? s.skillsList.querySelector('.skills-table-body') : null;
+        let visibleIdx = 0;
+        let lastVisibleItem = null;
+        skillItems.forEach(item => {
+            item.classList.remove('last-visible-row');
+            if (item.style.display !== 'none') {
+                lastVisibleItem = item;
+                visibleIdx++;
+            }
+        });
+        if (lastVisibleItem && visibleCount === totalSkills) lastVisibleItem.classList.add('last-visible-row');
         if (tableBody) {
             const existingRow = tableBody.querySelector('.skills-no-results-row');
             if (visibleCount === 0) {
