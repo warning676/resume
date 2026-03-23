@@ -3762,6 +3762,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.addEventListener('keydown', (e) => {
                 if (state.externalLinkModal && state.externalLinkModal.classList.contains('active')) {
                     if (e.key === 'Escape') closeExternalLinkModal(false);
+                } else if (document.querySelector('.column-filter-header-flyout.open')) {
+                    if (e.key === 'Escape') closeAllColumnFilterMenus();
+                } else if (state.secModal && state.secModal.style.display === 'flex') {
+                    if (state.currentToolsContext.length > 1) {
+                        if (e.key === 'ArrowLeft') state.modalManager?.navigateTool(-1);
+                        if (e.key === 'ArrowRight') state.modalManager?.navigateTool(1);
+                    }
+                    if (e.key === 'Escape') state.modalManager?.resetSecModal();
+                } else if (state.coursesModal && state.coursesModal.style.display === 'flex' && state.coursesModal.classList.contains('courses-modal-over-modal')) {
+                    const courseNavLen = getCoursesModalCourseList().length;
+                    if (courseNavLen > 1) {
+                        if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
+                        if (e.key === 'ArrowRight') navigateCoursesModal(1);
+                    }
+                    if (e.key === 'Escape') closeCoursesModal();
+                } else if (state.modal && state.modal.style.display === 'flex') {
+                    if (state.showModalNavArrows) {
+                        if (e.key === 'ArrowLeft') state.modalManager?.navigateItem(-1);
+                        if (e.key === 'ArrowRight') state.modalManager?.navigateItem(1);
+                    }
+                    if (e.key === 'Escape') state.modalManager?.resetModal();
                 } else if (state.coursesModal && state.coursesModal.style.display === 'flex') {
                     const courseNavLen = getCoursesModalCourseList().length;
                     if (courseNavLen > 1) {
@@ -3769,20 +3790,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (e.key === 'ArrowRight') navigateCoursesModal(1);
                     }
                     if (e.key === 'Escape') closeCoursesModal();
-                } else if (state.secModal && state.secModal.style.display === 'flex') {
-                    if (state.currentToolsContext.length > 1) {
-                        if (e.key === 'ArrowLeft') state.modalManager?.navigateTool(-1);
-                        if (e.key === 'ArrowRight') state.modalManager?.navigateTool(1);
-                    }
-                    if (e.key === 'Escape') state.modalManager?.resetSecModal();
-                } else if (state.modal && state.modal.style.display === 'flex') {
-                    if (state.showModalNavArrows) {
-                        if (e.key === 'ArrowLeft') state.modalManager?.navigateItem(-1);
-                        if (e.key === 'ArrowRight') state.modalManager?.navigateItem(1);
-                    }
-                    if (e.key === 'Escape') state.modalManager?.resetModal();
-                } else if (document.querySelector('.column-filter-header-flyout.open')) {
-                    if (e.key === 'Escape') closeAllColumnFilterMenus();
                 }
             });
 
