@@ -115,6 +115,26 @@ class FilterManager {
         let visibleCount = 0;
         const dataCards = Array.from(s.portfolioGrid.querySelectorAll('.portfolio-card')).filter(c => !c.classList.contains('skeleton-item'));
         const totalCards = dataCards.length;
+        if (hasSkeleton && totalCards === 0) {
+            const skeletonCount = s.portfolioGrid.querySelectorAll('.portfolio-card.skeleton-item').length;
+            if (skeletonCount > 0) {
+                this.updateFilterResultsLine('portfolio-filter-results-count', skeletonCount, skeletonCount, 'projects', 'project');
+                const statusElSk = document.getElementById('page-search-status');
+                if (statusElSk) {
+                    const rawQ = s.searchQuery ? s.searchQuery.trim() : '';
+                    if (rawQ) {
+                        const safe = rawQ.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        statusElSk.classList.add('visible');
+                        statusElSk.innerHTML = `Showing results for "<span style="color:#58a6ff;">${safe}</span>"`;
+                    } else {
+                        statusElSk.classList.remove('visible');
+                        statusElSk.innerHTML = '';
+                    }
+                }
+                if (s.noResults) s.noResults.style.display = 'none';
+                return;
+            }
+        }
         dataCards.forEach(card => {
             const cardType = card.getAttribute('data-type') || '';
             const cardTools = (card.getAttribute('data-tools') || '').toLowerCase();
@@ -146,7 +166,13 @@ class FilterManager {
                 card.style.display = "none";
             }
         });
-        if (s.noResults) s.noResults.style.display = visibleCount === 0 ? "block" : "none";
+        if (visibleCount === 0 && totalCards > 0) {
+            s.portfolioGrid.style.minHeight = '';
+        }
+        if (s.noResults) {
+            const showNoMatch = visibleCount === 0 && (!hasSkeleton || totalCards > 0);
+            s.noResults.style.display = showNoMatch ? "block" : "none";
+        }
         this.updateFilterResultsLine('portfolio-filter-results-count', visibleCount, totalCards, 'projects', 'project');
         const statusEl = document.getElementById('page-search-status');
         if (statusEl) {
@@ -158,7 +184,7 @@ class FilterManager {
             } else if (rawQuery) {
                 const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 statusEl.classList.add('visible');
-                statusEl.innerHTML = `Showing ${visibleCount} ${visibleCount === 1 ? 'result' : 'results'} for "<span style="color:#58a6ff;">${safe}</span>"`;
+                statusEl.innerHTML = `Showing results for "<span style="color:#58a6ff;">${safe}</span>"`;
             } else {
                 statusEl.classList.remove('visible');
                 statusEl.innerHTML = '';
@@ -238,7 +264,7 @@ class FilterManager {
             } else if (rawQuery) {
                 const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 statusEl.classList.add('visible');
-                statusEl.innerHTML = `Showing ${visibleCount} ${visibleCount === 1 ? 'result' : 'results'} for "<span style="color:#58a6ff;">${safe}</span>"`;
+                statusEl.innerHTML = `Showing results for "<span style="color:#58a6ff;">${safe}</span>"`;
             } else {
                 statusEl.classList.remove('visible');
                 statusEl.innerHTML = '';

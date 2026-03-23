@@ -105,7 +105,14 @@ class ModalManager {
                 resolve({ ok, src: finalSrc || src, cached });
             };
             const timerId = setTimeout(() => finish(false, src), timeoutMs || 3000);
-            img.onload = () => finish(true, src);
+            const afterPixelsReady = () => {
+                if (typeof img.decode === 'function') {
+                    img.decode().then(() => finish(true, src)).catch(() => finish(true, src));
+                } else {
+                    finish(true, src);
+                }
+            };
+            img.onload = () => afterPixelsReady();
             img.onerror = () => finish(false, src);
             img.src = src;
         });
@@ -303,50 +310,79 @@ class ModalManager {
         if (galleryWrapper) galleryWrapper.style.display = '';
     }
 
-    resetModal() {
-        const s = this.s;
-        const finalizeReset = () => {
-            if (s.videoFrame) s.videoFrame.src = "";
-            const ex = document.getElementById("big-image-view");
-            if (ex) ex.remove();
-            const modalBody = document.querySelector(".modal-body-split");
-            if (modalBody) modalBody.scrollTop = 0;
-            const modalContent = document.querySelector(".modal-content");
-            if (modalContent) modalContent.scrollTop = 0;
-            const gal = document.getElementById("modal-gallery");
-            if (gal) gal.scrollLeft = 0;
-            if (s.modal) s.modal.classList.remove('gallery-collapsed');
-            s.galleryCollapsed = false;
-            s.canToggleGallery = false;
-            s.galleryHasRendered = false;
-            s.galleryEl = null;
-            s.galleryWrapper = null;
-            s.galleryToggleEl = null;
-            s.galleryTargetModal = null;
-            s.currentItemCard = null;
-            this.syncPageScrollLock(false);
-            try {
-                const c = s.modal ? s.modal.querySelector('.modal-content') : null;
-                if (c) c.classList.remove('no-side-padding');
-            } catch (e) {}
-        };
+    _abortModalTransition(modalEl) {
+        if (!modalEl) return;
+        if (modalEl._fadeTimer) {
+            clearTimeout(modalEl._fadeTimer);
+            modalEl._fadeTimer = null;
+        }
+        const contentEl = modalEl.querySelector('.modal-content, .external-link-modal-content');
+        modalEl.style.display = 'none';
+        modalEl.style.opacity = '';
+        modalEl.style.transition = '';
+        if (contentEl) {
+            contentEl.style.transform = '';
+            contentEl.style.transition = '';
+        }
+    }
 
-        this.fadeOutModal(s.modal, finalizeReset);
+    _finalizeMainModalReset() {
+        const s = this.s;
+        if (s.videoFrame) s.videoFrame.src = "";
+        const ex = document.getElementById("big-image-view");
+        if (ex) ex.remove();
+        const modalBody = document.querySelector(".modal-body-split");
+        if (modalBody) modalBody.scrollTop = 0;
+        const modalContent = document.querySelector(".modal-content");
+        if (modalContent) modalContent.scrollTop = 0;
+        const gal = document.getElementById("modal-gallery");
+        if (gal) gal.scrollLeft = 0;
+        if (s.modal) s.modal.classList.remove('gallery-collapsed');
+        s.galleryCollapsed = false;
+        s.canToggleGallery = false;
+        s.galleryHasRendered = false;
+        s.galleryEl = null;
+        s.galleryWrapper = null;
+        s.galleryToggleEl = null;
+        s.galleryTargetModal = null;
+        s.currentItemCard = null;
+        this.syncPageScrollLock(false);
+        try {
+            const c = s.modal ? s.modal.querySelector('.modal-content') : null;
+            if (c) c.classList.remove('no-side-padding');
+        } catch (e) {}
+    }
+
+    _finalizeSecModalReset() {
+        const s = this.s;
+        s.currentToolsContext = [];
+        s.currentToolIndex = -1;
+        this.syncPageScrollLock(false);
+        try {
+            const c = s.secModal ? s.secModal.querySelector('.modal-content') : null;
+            if (c) c.classList.remove('no-side-padding');
+        } catch (e) {}
+    }
+
+    dismissPortfolioModalsForNavigation() {
+        const s = this.s;
+        this._abortModalTransition(s.secModal);
+        this._abortModalTransition(s.modal);
+        s.currentToolsContext = [];
+        s.currentToolIndex = -1;
+        try {
+            const c = s.secModal ? s.secModal.querySelector('.modal-content') : null;
+            if (c) c.classList.remove('no-side-padding');
+        } catch (e) {}
+        this._finalizeMainModalReset();
+    }
+
+    resetModal() {
+        this.fadeOutModal(this.s.modal, () => this._finalizeMainModalReset());
     }
 
     resetSecModal() {
-        const s = this.s;
-        const finalizeReset = () => {
-            s.currentToolsContext = [];
-            s.currentToolIndex = -1;
-            this.syncPageScrollLock(false);
-            try {
-                const c = s.secModal ? s.secModal.querySelector('.modal-content') : null;
-                if (c) c.classList.remove('no-side-padding');
-            } catch (e) {}
-        };
-
-        this.fadeOutModal(s.secModal, finalizeReset);
+        this.fadeOutModal(this.s.secModal, () => this._finalizeSecModalReset());
     }
 
     showVideo(id, isVertical = false) {
@@ -558,6 +594,109 @@ class ModalManager {
         }
     }
 
+    populateSkillModalCourseProjectRows(prefix, data) {
+        const s = this.s;
+        const wrap = document.getElementById(prefix + 'modal-skill-course-project-cards-wrap');
+        const container = document.getElementById(prefix + 'modal-skill-course-project-cards');
+        const label = document.getElementById(prefix + 'modal-skill-course-project-cards-label');
+        if (!wrap || !container) return 0;
+        const skillKey = String(data.name || '').trim();
+        const getRows = s.getCourseProjectRowsForSkill;
+        const rows = typeof getRows === 'function' ? getRows(skillKey) : [];
+        container.innerHTML = '';
+        if (!rows.length) {
+            wrap.style.display = 'none';
+            if (label) label.style.display = '';
+            return 0;
+        }
+        wrap.style.display = 'block';
+        if (label) label.style.display = 'none';
+        const parseLangs = s.parseCourseLanguagesUsedRaw;
+        const appendTags = s.appendSoftwareLanguageTagsToContainer;
+        rows.forEach(row => {
+            const name = String(row.name || '').trim() || 'Project';
+            const linkRaw = String(row.link || '').trim();
+            const hasLink = /^https?:\/\//i.test(linkRaw);
+            const projInfo = String(row.info || '').trim();
+            const courseId = String(row.id ?? row.courseid ?? row.courseId ?? '').trim();
+            const courseTitleToken = (courseId || 'Course').toUpperCase();
+            const card = document.createElement('div');
+            card.className = 'modal-skill-course-project-card modal-skill-course-project-card-surface';
+            const sectionLabel = document.createElement('small');
+            sectionLabel.className = 'courses-modal-featured-label';
+            sectionLabel.textContent = `FEATURED PROJECT FROM ${courseTitleToken}`;
+            card.appendChild(sectionLabel);
+            if (hasLink) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'inline-action-button courses-modal-featured-link';
+                btn.textContent = name;
+                btn.style.setProperty('--inline-action-color', '#58a6ff');
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const fn = typeof window !== 'undefined' ? window.openExternalLinkWithPrompt : null;
+                    if (typeof fn === 'function') fn(linkRaw, name, 'Featured Project', projInfo);
+                });
+                card.appendChild(btn);
+            } else {
+                const span = document.createElement('span');
+                span.className = 'modal-skill-course-project-card-title';
+                span.textContent = name;
+                card.appendChild(span);
+            }
+            if (courseId) {
+                const courseBtn = document.createElement('button');
+                courseBtn.type = 'button';
+                courseBtn.className = 'inline-action-button courses-modal-featured-link modal-skill-course-project-course-id-below';
+                courseBtn.textContent = courseId;
+                courseBtn.style.setProperty('--inline-action-color', '#58a6ff');
+                courseBtn.setAttribute('aria-label', `Open course ${courseId} on the Courses page`);
+                courseBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (typeof this.dismissPortfolioModalsForNavigation === 'function') {
+                        this.dismissPortfolioModalsForNavigation();
+                    }
+                    if (typeof window.navigateToSearchResult === 'function') {
+                        window.navigateToSearchResult('/courses', courseId, 'course');
+                    }
+                });
+                card.appendChild(courseBtn);
+            }
+            if (projInfo) {
+                const p = document.createElement('p');
+                p.className = 'courses-modal-featured-desc';
+                p.style.display = 'block';
+                p.textContent = projInfo;
+                card.appendChild(p);
+            }
+            const projectLangs = typeof parseLangs === 'function'
+                ? parseLangs(row.languagesUsed || row.languagesused)
+                : [];
+            if (projectLangs.length && typeof appendTags === 'function') {
+                const langWrap = document.createElement('div');
+                langWrap.className = 'courses-modal-featured-lang-wrap modal-skill-course-project-card-lang-wrap';
+                langWrap.style.display = 'block';
+                const langLabel = document.createElement('small');
+                langLabel.className = 'courses-modal-featured-project-lang-label';
+                langLabel.textContent = projectLangs.length === 1 ? 'Project Language' : 'Project Languages';
+                const langContainer = document.createElement('div');
+                langContainer.className = 'courses-modal-featured-languages';
+                langContainer.setAttribute(
+                    'aria-label',
+                    projectLangs.length === 1 ? 'Programming language used in featured project' : 'Programming languages used in featured project'
+                );
+                appendTags(langContainer, projectLangs, projectLangs, skillKey ? { nonInteractiveSkillName: skillKey } : undefined);
+                langWrap.appendChild(langLabel);
+                langWrap.appendChild(langContainer);
+                card.appendChild(langWrap);
+            }
+            container.appendChild(card);
+        });
+        return rows.length;
+    }
+
     openModalForItem(cardOrData, typeOverride = null, toolsContext = null) {
         const s = this.s;
         const isSkill = (cardOrData instanceof HTMLElement)
@@ -669,6 +808,39 @@ class ModalManager {
                 } else {
                     certContainer.style.display = "none";
                     certName.innerText = "-";
+                }
+            }
+
+            const courseProjectCardCount = this.populateSkillModalCourseProjectRows(prefix, data);
+
+            const langWrap = document.getElementById(prefix + 'modal-skill-course-project-lang-wrap');
+            const langContainer = document.getElementById(prefix + 'modal-skill-course-project-languages');
+            const langLabel = document.getElementById(prefix + 'modal-skill-course-project-lang-label');
+            if (langWrap && langContainer) {
+                if (courseProjectCardCount > 0) {
+                    langWrap.style.display = 'none';
+                    langContainer.innerHTML = '';
+                } else {
+                    const skillKey = String(data.name || '').trim();
+                    const getLangs = s.getAggregatedCourseProjectLanguagesForSkill;
+                    const appendTags = s.appendSoftwareLanguageTagsToContainer;
+                    const projectLangs = typeof getLangs === 'function' ? getLangs(skillKey) : [];
+                    if (projectLangs.length && typeof appendTags === 'function') {
+                        langWrap.style.display = 'block';
+                        if (langLabel) {
+                            langLabel.textContent = projectLangs.length === 1 ? 'Course project language' : 'Course project languages';
+                        }
+                        langContainer.setAttribute(
+                            'aria-label',
+                            projectLangs.length === 1
+                                ? 'Programming language from course projects using this skill'
+                                : 'Programming languages from course projects using this skill'
+                        );
+                        appendTags(langContainer, projectLangs, projectLangs, { nonInteractiveSkillName: skillKey });
+                    } else {
+                        langWrap.style.display = 'none';
+                        langContainer.innerHTML = '';
+                    }
                 }
             }
 
@@ -835,21 +1007,43 @@ class ModalManager {
                         const locationParts = (award.location || '').split('|').map(part => part.trim());
                         const school = locationParts[0] || '';
                         const festival = locationParts[1] || '';
-                        
+
                         const awardItem = document.createElement('div');
-                        awardItem.className = 'award-item';
-                        awardItem.innerHTML = `
-                            <div style="background: #000000; padding: 0; margin-bottom: 8px;">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 2px;">
-                                    <span class="awards-badge" style="cursor: default; font-size: 0.8rem; padding: 5px 11px; text-transform: uppercase;">${award.award}</span>
-                                    <span style="color: #ffffff; font-size: 0.75rem; white-space: nowrap; opacity: 0.7;">${award.date}</span>
-                                </div>
-                                <div style="display: flex; flex-direction: column; gap: 2px;">
-                                    <span style="color: #ffffff; font-size: 0.75rem; opacity: 0.85;">${festival}</span>
-                                    <span style="color: #ffffff; font-size: 0.65rem; opacity: 0.6;">${school}</span>
-                                </div>
-                            </div>
-                        `;
+                        awardItem.className = 'modal-award-item';
+
+                        const row = document.createElement('div');
+                        row.className = 'modal-award-row';
+
+                        const nameEl = document.createElement('span');
+                        nameEl.className = 'film-award-name';
+                        nameEl.textContent = (award.award || '').toString();
+
+                        const dateEl = document.createElement('span');
+                        dateEl.className = 'modal-award-date';
+                        dateEl.textContent = (award.date || '').toString();
+
+                        row.appendChild(nameEl);
+                        row.appendChild(dateEl);
+                        awardItem.appendChild(row);
+
+                        if (festival || school) {
+                            const loc = document.createElement('div');
+                            loc.className = 'modal-award-loc';
+                            if (festival) {
+                                const fe = document.createElement('span');
+                                fe.className = 'modal-award-loc-festival';
+                                fe.textContent = festival;
+                                loc.appendChild(fe);
+                            }
+                            if (school) {
+                                const se = document.createElement('span');
+                                se.className = 'modal-award-loc-school';
+                                se.textContent = school;
+                                loc.appendChild(se);
+                            }
+                            awardItem.appendChild(loc);
+                        }
+
                         awardsList.appendChild(awardItem);
                     });
                 } else {

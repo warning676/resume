@@ -12,6 +12,57 @@ let globalSearchRequestId = 0;
 let globalSearchLatestQuery = '';
 let renderedSearchResults = [];
 const searchModalFadeMs = 180;
+const globalSearchFilterableTypes = new Set(['skill', 'course', 'video', 'game']);
+
+function getGlobalSearchTypeFilterSet() {
+    const modal = document.getElementById('global-search-modal');
+    const set = new Set();
+    if (!modal) {
+        globalSearchFilterableTypes.forEach((t) => set.add(t));
+        return set;
+    }
+    modal.querySelectorAll('.global-search-type-filter:checked').forEach((cb) => {
+        const v = String(cb.value || '').toLowerCase();
+        if (v) set.add(v);
+    });
+    return set;
+}
+
+function resetGlobalSearchTypeFilters() {
+    const modal = document.getElementById('global-search-modal');
+    if (!modal) return;
+    modal.querySelectorAll('.global-search-type-filter').forEach((cb) => {
+        cb.checked = true;
+    });
+}
+
+function renderGlobalSearchEmptyPlaceholder() {
+    const el = document.getElementById('search-results');
+    if (!el) return;
+    el.innerHTML = '<div class="global-search-results-layout"><div class="global-search-results-meta global-search-results-meta--reserved" aria-hidden="true"></div><div class="search-no-results"><div class="search-no-results-text">Start typing to search</div><div class="search-no-results-hint">Search across all projects, skills, achievements, activities, and courses</div></div></div>';
+}
+
+function buildGlobalSearchResultsMetaHtml(query, visibleCount, totalCount) {
+    const safeQ = escapeHtml(query);
+    const t = Math.max(0, Math.floor(Number(totalCount) || 0));
+    const v = Math.max(0, Math.floor(Number(visibleCount) || 0));
+    let countLabel;
+    if (t === 0) {
+        countLabel = '0 results';
+    } else if (v === t) {
+        countLabel = `${t} ${t === 1 ? 'result' : 'results'}`;
+    } else {
+        const noun = t === 1 ? 'result' : 'results';
+        countLabel = `${v} of ${t} ${noun} (${t - v} hidden)`;
+    }
+    return `
+        <div class="global-search-results-meta">
+            <div class="page-search-status visible global-search-query-status">Showing results for "<span style="color: #58a6ff;">${safeQ}</span>"</div>
+            <div class="global-search-results-aside" aria-live="polite">
+                <p class="filter-results-count global-search-results-count">${countLabel}</p>
+            </div>
+        </div>`;
+}
 
 function initializeGlobalSearch() {
     const searchBtn = document.getElementById('global-search-btn');
@@ -24,7 +75,8 @@ function initializeGlobalSearch() {
     
     const searchCloseBtn = searchModal.querySelector('.search-close-btn');
     const searchResults = document.getElementById('search-results');
-    const searchClearBtn = document.getElementById('global-search-clear');
+    const searchClearBtn = document.getElementById('global-search-clear')
+        || searchModal.querySelector('.search-header .search-container .input-clear-button');
     
     if (searchBtn.dataset.initialized) {
         return;
@@ -33,6 +85,12 @@ function initializeGlobalSearch() {
 
     searchBtn.addEventListener('click', () => {
         openGlobalSearch();
+    });
+
+    searchModal.querySelectorAll('.global-search-type-filter').forEach((cb) => {
+        cb.addEventListener('change', () => {
+            performSearch((searchInput && searchInput.value) || '');
+        });
     });
 
     searchCloseBtn.addEventListener('click', () => {
@@ -115,6 +173,7 @@ function openGlobalSearch() {
     const searchModal = document.getElementById('global-search-modal');
     const searchInput = document.getElementById('global-search-input');
     const searchResults = document.getElementById('search-results');
+    const contentEl = searchModal && searchModal.querySelector('.search-modal-content');
 
     if (!searchModal) return;
 
@@ -126,19 +185,26 @@ function openGlobalSearch() {
     searchModal.classList.add('active');
     searchModal.style.transition = `opacity ${searchModalFadeMs}ms ease`;
     searchModal.style.opacity = '0';
+    if (contentEl) {
+        contentEl.style.transition = `transform ${searchModalFadeMs}ms ease`;
+        contentEl.style.transform = 'translateY(8px)';
+    }
     requestAnimationFrame(() => {
         searchModal.style.opacity = '1';
+        if (contentEl) contentEl.style.transform = 'translateY(0)';
     });
     Utils.syncPageScrollLock(true);
     searchInput.value = '';
-    
-    const searchClearBtn = document.getElementById('global-search-clear');
+    resetGlobalSearchTypeFilters();
+
+    const searchClearBtn = document.getElementById('global-search-clear')
+        || searchModal.querySelector('.search-header .search-container .input-clear-button');
     if (searchClearBtn) searchClearBtn.classList.remove('visible');
     
     if (searchResults) {
-        searchResults.innerHTML = '<div class="search-no-results"><div class="search-no-results-text">Start typing to search</div><div class="search-no-results-hint">Search across all projects, skills, achievements, activities, and courses</div></div>';
+        renderGlobalSearchEmptyPlaceholder();
     }
-    
+
     searchInput.focus();
     
     ensureGlobalSearchDataLoaded();
@@ -156,24 +222,45 @@ function closeGlobalSearch() {
         searchModal._fadeTimer = null;
     }
 
+    const clearGlobalSearchFields = () => {
+        if (searchInput) searchInput.value = '';
+        const searchClearBtn = document.getElementById('global-search-clear')
+            || searchModal.querySelector('.search-header .search-container .input-clear-button');
+        if (searchClearBtn) searchClearBtn.classList.remove('visible');
+        if (searchResults) searchResults.innerHTML = '';
+    };
+
+    const contentEl = searchModal.querySelector('.search-modal-content');
+
     if (!searchModal.classList.contains('active')) {
         searchModal.style.opacity = '';
+        searchModal.style.transition = '';
+        if (contentEl) {
+            contentEl.style.transform = '';
+            contentEl.style.transition = '';
+        }
         Utils.syncPageScrollLock(false);
+        clearGlobalSearchFields();
     } else {
         searchModal.style.transition = `opacity ${searchModalFadeMs}ms ease`;
         searchModal.style.opacity = '0';
+        if (contentEl) {
+            contentEl.style.transition = `transform ${searchModalFadeMs}ms ease`;
+            contentEl.style.transform = 'translateY(8px)';
+        }
         searchModal._fadeTimer = setTimeout(() => {
             searchModal.classList.remove('active');
             searchModal.style.opacity = '';
+            searchModal.style.transition = '';
+            if (contentEl) {
+                contentEl.style.transform = '';
+                contentEl.style.transition = '';
+            }
             searchModal._fadeTimer = null;
             Utils.syncPageScrollLock(false);
+            clearGlobalSearchFields();
         }, searchModalFadeMs + 20);
     }
-    
-    if (searchInput) searchInput.value = '';
-    const searchClearBtn = document.getElementById('global-search-clear');
-    if (searchClearBtn) searchClearBtn.classList.remove('visible');
-    if (searchResults) searchResults.innerHTML = '';
 }
 
 async function loadAllSearchData() {
@@ -215,6 +302,62 @@ function ensureGlobalSearchDataLoaded() {
     return globalSearchDataLoadPromise;
 }
 
+function parseFlexibleDateMs(raw) {
+    return Utils.parseFlexibleDateStringMs(raw);
+}
+
+function parseSearchItemTimestampMs(item, type) {
+    if (!item) return 0;
+    if (type === 'video' || type === 'game') {
+        let best = parseFlexibleDateMs(item.date);
+        if (type === 'video' && window.state && window.state.filmFestivalAwards) {
+            const awards = window.state.filmFestivalAwards[item.name];
+            if (awards && awards.length) {
+                awards.forEach((a) => {
+                    const t = parseFlexibleDateMs(a && a.date);
+                    if (t > best) best = t;
+                });
+            }
+        }
+        return best;
+    }
+    if (type === 'skill') {
+        return parseFlexibleDateMs(item.lastUsed);
+    }
+    if (type === 'course') {
+        const y = item.completionYear ?? item.completionyear;
+        const n = Number.parseInt(String(y || '').trim(), 10);
+        if (Number.isFinite(n) && n >= 1970 && n <= 2100) {
+            return new Date(n, 11, 31).getTime();
+        }
+        return 0;
+    }
+    if (type === 'achievement') {
+        let t = parseFlexibleDateMs(item.date);
+        if (!t && item.name) t = parseFlexibleDateMs(item.name);
+        return t;
+    }
+    if (type === 'activity') {
+        const end = item.enddate || item.ended || item.endDate;
+        const start = item.startdate || item.started || item.startDate;
+        const endMs = parseFlexibleDateMs(end);
+        const startMs = parseFlexibleDateMs(start);
+        return Math.max(endMs, startMs);
+    }
+    return 0;
+}
+
+function getSearchRecencyScoreBoost(tsMs) {
+    if (!tsMs || !Number.isFinite(tsMs)) return 0;
+    const now = Date.now();
+    const clampedTs = Math.min(tsMs, now + 86400000);
+    const ageMs = Math.max(0, now - clampedTs);
+    const ageYears = ageMs / (365.25 * 86400000);
+    const cap = 36;
+    const decayYears = 2.25;
+    return cap * Math.exp(-ageYears / decayYears);
+}
+
 function renderSearchLoadingState(query) {
     const searchResults = document.getElementById('search-results');
     if (!searchResults) return;
@@ -234,12 +377,7 @@ function performSearch(query) {
     const searchResults = document.getElementById('search-results');
     
     if (!query || query.trim().length === 0) {
-        searchResults.innerHTML = `
-            <div class="page-search-status" style="visibility: hidden;">&nbsp;</div>
-            <div class="search-no-results">
-                <div class="search-no-results-text">Start typing to search</div>
-                <div class="search-no-results-hint">Search across all projects, skills, achievements, activities, and courses</div>
-            </div>`;
+        renderGlobalSearchEmptyPlaceholder();
         return;
     }
     
@@ -281,6 +419,7 @@ function performSearch(query) {
         }
         
         if (score > 0) {
+            score += getSearchRecencyScoreBoost(parseSearchItemTimestampMs(item, 'video'));
             results.push({
                 type: 'video',
                 data: item,
@@ -291,8 +430,9 @@ function performSearch(query) {
     });
 
     globalSearchData.games.forEach(item => {
-        const score = getMatchScore(item, queryLower, ['name', 'info', 'badge']);
+        let score = getMatchScore(item, queryLower, ['name', 'info', 'badge']);
         if (score > 0) {
+            score += getSearchRecencyScoreBoost(parseSearchItemTimestampMs(item, 'game'));
             results.push({
                 type: 'game',
                 data: item,
@@ -329,6 +469,7 @@ function performSearch(query) {
         }
         
         if (score > 0) {
+            score += getSearchRecencyScoreBoost(parseSearchItemTimestampMs(item, 'skill'));
             results.push({
                 type: 'skill',
                 data: item,
@@ -353,6 +494,7 @@ function performSearch(query) {
         }
         
         if (score > 0) {
+            score += getSearchRecencyScoreBoost(parseSearchItemTimestampMs(item, 'achievement'));
             results.push({
                 type: 'achievement',
                 data: item,
@@ -371,6 +513,7 @@ function performSearch(query) {
         }
 
         if (score > 0) {
+            score += getSearchRecencyScoreBoost(parseSearchItemTimestampMs(item, 'activity'));
             results.push({
                 type: 'activity',
                 data: item,
@@ -381,11 +524,12 @@ function performSearch(query) {
     });
 
     globalSearchData.courses.forEach(item => {
-        let score = getMatchScore(item, queryLower, ['id', 'name', 'school', 'type', 'status', 'grade', 'creditsearned', 'info']);
+        let score = getMatchScore(item, queryLower, ['id', 'name', 'school', 'type', 'status', 'grade', 'creditsearned', 'info', 'languagesUsed', 'languagesused']);
         if (queryLower.includes('course') || queryLower.includes('class') || queryLower.includes('credits')) {
             score += 12;
         }
         if (score > 0) {
+            score += getSearchRecencyScoreBoost(parseSearchItemTimestampMs(item, 'course'));
             results.push({
                 type: 'course',
                 data: item,
@@ -395,9 +539,19 @@ function performSearch(query) {
         }
     });
 
-    results.sort((a, b) => b.score - a.score);
+    const allowedTypes = getGlobalSearchTypeFilterSet();
+    const filtered = results.filter((r) => {
+        if (globalSearchFilterableTypes.has(r.type)) return allowedTypes.has(r.type);
+        return true;
+    });
 
-    renderSearchResults(results, query);
+    filtered.sort((a, b) => {
+        const byScore = b.score - a.score;
+        if (byScore !== 0) return byScore;
+        return parseSearchItemTimestampMs(b.data, b.type) - parseSearchItemTimestampMs(a.data, a.type);
+    });
+
+    renderSearchResults(filtered, query, results.length);
 }
 
 function getMatchScore(item, queryLower, fields) {
@@ -566,26 +720,24 @@ function getSearchResultDescription(result) {
     return result.data.info || result.data.badge || '';
 }
 
-function renderSearchResults(results, query) {
+function renderSearchResults(results, query, totalUnfiltered) {
     const searchResults = document.getElementById('search-results');
     renderedSearchResults = results;
-    
+    const total = Math.max(0, Math.floor(Number(totalUnfiltered) || 0));
+
     if (results.length === 0) {
         searchResults.innerHTML = `
-            <div class="page-search-status visible">
-                Showing 0 results for "<span style="color: #58a6ff;">${escapeHtml(query)}</span>"
-            </div>
+            <div class="global-search-results-layout">
+            ${buildGlobalSearchResultsMetaHtml(query, 0, total)}
             <div class="search-no-results">
                 <div class="search-no-results-text">No results found</div>
                 <div class="search-no-results-hint">Try different keywords</div>
+            </div>
             </div>`;
         return;
     }
-    
-    let html = `
-        <div class="page-search-status visible">
-            Showing results for "<span style="color: #58a6ff;">${escapeHtml(query)}</span>" (${results.length} ${results.length === 1 ? 'result' : 'results'})
-        </div>`;
+
+    let html = buildGlobalSearchResultsMetaHtml(query, results.length, total);
 
     html += results.map((result, index) => {
         const rawTitle = result.data.name || 'Untitled';
@@ -701,7 +853,8 @@ function findAchievementEntryElement(title, options = {}) {
     const textSelectors = [
         '#presidents-list-items span',
         '#honor-roll-items span',
-        '#nominations-items span'
+        '#nominations-items span',
+        '#festival-awards-container .card-info h3'
     ];
 
     const selectors = preferLink
@@ -725,6 +878,22 @@ function scrollToAchievementEntry(title) {
 }
 
 function centerAndClickAchievementLink(title) {
+    const normalizedTitle = normalizeAchievementText(title);
+    if (normalizedTitle) {
+        const cards = document.querySelectorAll('#festival-awards-container .portfolio-card[data-name]');
+        for (const card of cards) {
+            const dn = normalizeAchievementText(card.getAttribute('data-name'));
+            if (!dn) continue;
+            if (dn === normalizedTitle || dn.includes(normalizedTitle) || normalizedTitle.includes(dn)) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                setTimeout(() => {
+                    card.click();
+                }, 340);
+                return true;
+            }
+        }
+    }
+
     const targetLink = findAchievementEntryElement(title, { preferLink: true });
     if (!targetLink || targetLink.tagName !== 'A') return false;
 
@@ -987,7 +1156,15 @@ function openModalForSearchResult(title, type) {
             if (window.state) {
                 window.state.courseSearchQuery = query;
             }
-            coursesSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            if (window.state && typeof window.state.applyCoursesFilterAndSort === 'function') {
+                window.state.applyCoursesFilterAndSort();
+            } else {
+                coursesSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            const coursesClearBtn = document.getElementById('courses-search-clear');
+            if (coursesClearBtn) {
+                coursesClearBtn.classList.toggle('visible', query.length > 0);
+            }
         }
 
         const rows = Array.from(document.querySelectorAll('.course-row[data-course-index]'));
@@ -1039,3 +1216,6 @@ function openModalForSearchResult(title, type) {
         }, 100);
     }
 }
+
+window.navigateToSearchResult = navigateToSearchResult;
+window.openModalForSearchResult = openModalForSearchResult;

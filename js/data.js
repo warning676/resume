@@ -243,7 +243,7 @@ class DataService {
     }
 
     async loadAllData() {
-        const sheets = ['videos', 'games', 'skills', 'Achievements', 'School', 'Courses'];
+        const sheets = ['videos', 'games', 'skills', 'Achievements', 'School', 'Courses', 'Course Projects'];
         const data = {};
         let allCached = true;
         try {
@@ -279,6 +279,7 @@ class DataService {
             'Completion Year': 'completionYear',
             'Credits Earned': 'creditsEarned',
             'Course ID': 'courseid',
+            'ID': 'id',
             'Languages Used': 'languagesUsed',
             'Tools': 'tools',
             'YouTube Link': 'youtube',

@@ -106,9 +106,13 @@ class Renderer {
                 let awardsHTML = '';
                 let awardsSearchData = '';
                 if (awards && awards.length > 0) {
+                    const escAttr = (v) => String(v ?? '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/</g, '&lt;');
                     const awardsList = awards.map(a => `${a.award} - ${a.location}`).join('\n');
                     awardsSearchData = awards.map(a => `${a.award} ${a.location}`).join(' ');
-                    awardsHTML = `<span class="awards-badge" title="${awardsList}">WON AWARDS</span>`;
+                    awardsHTML = `<div class="card-awards-stack"><span class="card-awards-row" title="${escAttr(awardsList)}"><span class="card-awards-icon" aria-hidden="true">${Utils.lucideTrophySvg({ size: 18, className: 'lucide lucide-trophy' })}</span><span class="card-awards-label">Won awards</span></span></div>`;
                 } else {
                     awardsHTML = '';
                 }
@@ -160,6 +164,7 @@ class Renderer {
         s.updateTypeFilter(categories);
         s.updateToolFilter(toolsMap);
         s.sortCards();
+        if (s.filterCards) s.filterCards();
     }
 
     renderSkills(skills) {

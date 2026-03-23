@@ -56,6 +56,53 @@ class Utils {
         return Number.isFinite(fallback) ? fallback : 0;
     }
 
+    static parseMonthRangeYearEndMs(input) {
+        const str = String(input || '');
+        const match = str.match(/\b([A-Za-z]{3,9})\s*-\s*([A-Za-z]{3,9})\s+(\d{4})\b/);
+        if (!match) return 0;
+        const y = Number.parseInt(match[3], 10);
+        const endTok = String(match[2] || '').toLowerCase().replace(/\./g, '').trim();
+        const head = endTok.slice(0, 3);
+        const monthEnd = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 }[head];
+        if (!Number.isFinite(y) || y < 1970 || y > 2100 || monthEnd === undefined) return 0;
+        const lastDay = new Date(y, monthEnd + 1, 0, 23, 59, 59, 999).getTime();
+        return Number.isFinite(lastDay) ? lastDay : 0;
+    }
+
+    static parseAcademicTermEndMs(input) {
+        const s = String(input || '');
+        const m = s.match(/\b(fall|autumn|spring|summer|winter)\s+(\d{4})\b/i);
+        if (!m) return 0;
+        const term = m[1].toLowerCase();
+        const y = Number.parseInt(m[2], 10);
+        if (!Number.isFinite(y) || y < 1970 || y > 2100) return 0;
+        if (term === 'fall' || term === 'autumn') return new Date(y, 11, 31, 23, 59, 59, 999).getTime();
+        if (term === 'spring') return new Date(y, 4, 31, 23, 59, 59, 999).getTime();
+        if (term === 'summer') return new Date(y, 7, 31, 23, 59, 59, 999).getTime();
+        if (term === 'winter') return new Date(y, 0, 31, 23, 59, 59, 999).getTime();
+        return 0;
+    }
+
+    static parseFlexibleDateStringMs(raw) {
+        if (raw == null || raw === '') return 0;
+        const s = String(raw).trim();
+        if (!s) return 0;
+        const my = Utils.parseMonthYearToTime(s);
+        if (my) return my;
+        const termEnd = Utils.parseAcademicTermEndMs(s);
+        if (termEnd) return termEnd;
+        const rangeEnd = Utils.parseMonthRangeYearEndMs(s);
+        if (rangeEnd) return rangeEnd;
+        const t = new Date(s.replace(/-/g, '/')).getTime();
+        return Number.isFinite(t) ? t : 0;
+    }
+
+    static parseAchievementRecencyMs(name, date) {
+        let t = Utils.parseFlexibleDateStringMs(date);
+        if (!t && name) t = Utils.parseFlexibleDateStringMs(name);
+        return t;
+    }
+
     static extractYouTubeID(input) {
         if (!input) return '';
         
@@ -75,6 +122,12 @@ class Utils {
         }
         
         return input.trim();
+    }
+
+    static lucideTrophySvg(options = {}) {
+        const size = Number(options.size) || 18;
+        const cls = String(options.className || 'lucide lucide-trophy').replace(/"/g, '');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${cls}"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`;
     }
 
     static syncPageScrollLock(locked) {

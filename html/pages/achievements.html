@@ -19,32 +19,33 @@
         </div>
 
         <div style="margin-top: 14px;">
-            <div style="margin-bottom: 14px;">
-                <h4
-                    style="color: #ffffff; font-size: 0.9rem; margin-bottom: 10px; border-left: 2px solid #58a6ff; padding-left: 10px;">
-                    PRESIDENT'S LIST</h4>
-
+            <div class="achievement-snhu-section">
+                <h4 class="achievement-snhu-section-title">PRESIDENT'S LIST</h4>
+                <p class="achievement-snhu-list-intro">Full-time undergraduate students who earn a term GPA of 3.700 or higher are named to the
+                    President&rsquo;s List at SNHU. Full-time status means 12 credits over each 16-week term or paired 8-week terms grouped in
+                    fall, winter/spring, and summer.</p>
                 <div style="margin-left: 12px;">
-                    <div id="presidents-list-items" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div id="presidents-list-items" class="achievement-term-chips" style="display: flex; gap: 20px; flex-wrap: wrap;">
                         <div class="skeleton-element" style="height: 18px; width: 170px; border-radius: 4px;"></div>
                         <div class="skeleton-element" style="height: 18px; width: 150px; border-radius: 4px;"></div>
                         <div class="skeleton-element" style="height: 18px; width: 180px; border-radius: 4px;"></div>
                     </div>
                 </div>
+                <div id="achievement-presidents-detail" class="achievement-term-detail" hidden></div>
             </div>
 
-            <div style="margin-bottom: 14px;">
-                <h4
-                    style="color: #ffffff; font-size: 0.9rem; margin-bottom: 10px; border-left: 2px solid #58a6ff; padding-left: 10px;">
-                    HONOR ROLL</h4>
-
+            <div class="achievement-snhu-section">
+                <h4 class="achievement-snhu-section-title">HONOR ROLL</h4>
+                <p class="achievement-snhu-list-intro">SNHU Honor Roll includes full-time and part-time undergraduate, graduate, and coursework-only students (online or
+                    campus) who earn a GPA of 3.5 or higher for an individual 8-week term.</p>
                 <div style="margin-left: 12px;">
-                    <div id="honor-roll-items" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div id="honor-roll-items" class="achievement-term-chips" style="display: flex; gap: 20px; flex-wrap: wrap;">
                         <div class="skeleton-element" style="height: 18px; width: 160px; border-radius: 4px;"></div>
                         <div class="skeleton-element" style="height: 18px; width: 175px; border-radius: 4px;"></div>
                         <div class="skeleton-element" style="height: 18px; width: 145px; border-radius: 4px;"></div>
                     </div>
                 </div>
+                <div id="achievement-honor-detail" class="achievement-term-detail" hidden></div>
             </div>
         </div>
     </div>
@@ -75,21 +76,52 @@
 
 <div class="page-intro section-intro" style="border-bottom: none; margin-bottom: -10px; margin-top: 25px;">
     <h2>FILM FESTIVAL RECOGNITION</h2>
-    <p>Awards won for collaborative video projects with Seth. Click the video title to view
-        the winning video.</p>
+    <p>Awards won for collaborative video projects with Seth. Click a card to open the video.</p>
 </div>
 
 <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428;">
     <div class="achievement-info">
         <span class="software-tag">AWARDS</span>
         <h3>Festival Wins & Best-in-Category</h3>
-        <p>High School Film Festivals</p>
+        <p class="achievement-festival-intro">High School Film Festivals</p>
 
-        <div id="festival-awards-container"
-            style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px;">
-            <div class="skeleton-element" style="height: 140px; border-radius: 6px;"></div>
-            <div class="skeleton-element" style="height: 140px; border-radius: 6px;"></div>
-            <div class="skeleton-element" style="height: 140px; border-radius: 6px;"></div>
+        <div id="festival-awards-container" class="portfolio-grid">
+            <div class="portfolio-card skeleton-item">
+                <div class="card-thumb">
+                    <div class="skeleton-element" style="width: 100%; height: 100%;"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-info">
+                        <div class="skeleton-element" style="width: 38%; height: 11px; margin-bottom: 8px; border-radius: 999px;"></div>
+                        <div class="skeleton-element" style="width: 78%; height: 18px; margin-bottom: 10px; border-radius: 999px;"></div>
+                        <div class="skeleton-element" style="width: 42%; height: 14px; border-radius: 999px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="portfolio-card skeleton-item">
+                <div class="card-thumb">
+                    <div class="skeleton-element" style="width: 100%; height: 100%;"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-info">
+                        <div class="skeleton-element" style="width: 38%; height: 11px; margin-bottom: 8px; border-radius: 999px;"></div>
+                        <div class="skeleton-element" style="width: 78%; height: 18px; margin-bottom: 10px; border-radius: 999px;"></div>
+                        <div class="skeleton-element" style="width: 42%; height: 14px; border-radius: 999px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="portfolio-card skeleton-item">
+                <div class="card-thumb">
+                    <div class="skeleton-element" style="width: 100%; height: 100%;"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-info">
+                        <div class="skeleton-element" style="width: 38%; height: 11px; margin-bottom: 8px; border-radius: 999px;"></div>
+                        <div class="skeleton-element" style="width: 78%; height: 18px; margin-bottom: 10px; border-radius: 999px;"></div>
+                        <div class="skeleton-element" style="width: 42%; height: 14px; border-radius: 999px;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

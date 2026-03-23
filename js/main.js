@@ -66,7 +66,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         coursesModalInfo: null,
         coursesModalProgrammingLanguagesLabel: null,
         coursesModalProgrammingLanguagesContainer: null,
-
+        coursesModalFeaturedSection: null,
+        coursesModalFeaturedDesc: null,
+        coursesModalFeaturedLink: null,
+        coursesModalFeaturedLangWrap: null,
+        coursesModalFeaturedLanguages: null,
+        coursesModalFeaturedProjectLangLabel: null,
         selectedCategories: ['all'],
         selectedTools: ['all'],
         selectedSort: null,
@@ -506,6 +511,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.coursesModalProgrammingLanguagesLabel = document.getElementById('courses-modal-programming-languages-label');
         state.coursesModalProgrammingLanguagesContainer = document.getElementById('courses-modal-programming-languages');
         state.coursesModalYear = document.getElementById('courses-modal-year');
+        state.coursesModalFeaturedSection = document.getElementById('courses-modal-featured-section');
+        state.coursesModalFeaturedDesc = document.getElementById('courses-modal-featured-desc');
+        state.coursesModalFeaturedLink = document.getElementById('courses-modal-featured-link');
+        state.coursesModalFeaturedLangWrap = document.getElementById('courses-modal-featured-lang-wrap');
+        state.coursesModalFeaturedLanguages = document.getElementById('courses-modal-featured-languages');
+        state.coursesModalFeaturedProjectLangLabel = document.getElementById('courses-modal-featured-project-lang-label');
     };
 
 
@@ -817,12 +828,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('festival-awards-container');
         if (!container) return;
 
-        if (!document.getElementById('award-link-styles')) {
-            const style = document.createElement('style');
-            style.id = 'award-link-styles';
-            style.textContent = '.award-video-link:hover { text-decoration: underline !important; }';
-            document.head.appendChild(style);
-        }
+        const esc = (v) => String(v ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
 
         const awards = state.filmFestivalAwards;
         if (!awards || Object.keys(awards).length === 0) {
@@ -831,97 +841,115 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const normalize = (s) => (s || '').toString().toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        const videos = state.allData?.videos || [];
 
-        const awardsByType = {};
+        const entries = Object.entries(awards)
+            .map(([projectName, projectAwards]) => {
+                if (!Array.isArray(projectAwards) || !projectAwards.length) return null;
+                const nName = normalize(projectName);
+                const project = videos.find(v => normalize(v.name) === nName)
+                    || videos.find(v => normalize(v.name).includes(nName))
+                    || videos.find(v => nName.includes(normalize(v.name)));
+                if (!project) return null;
+                return { project, projectAwards };
+            })
+            .filter(Boolean);
 
-        Object.entries(awards).forEach(([projectName, projectAwards]) => {
-            if (Array.isArray(projectAwards)) {
-                projectAwards.forEach(award => {
-                    if (!awardsByType[award.award]) {
-                        awardsByType[award.award] = [];
-                    }
-                    awardsByType[award.award].push({
-                        projectName,
-                        date: award.date || '',
-                        location: award.location || ''
-                    });
-                });
-            }
-        });
-
-        const awardVideos = [];
-        const addedVideoNames = new Set();
-
-        Object.entries(awardsByType).forEach(([awardName, wins]) => {
-            wins.forEach(win => {
-                const nName = normalize(win.projectName);
-                if (!addedVideoNames.has(nName)) {
-                    const videos = state.allData?.videos || [];
-                    const project = videos.find(v => normalize(v.name) === nName)
-                        || videos.find(v => normalize(v.name).includes(nName))
-                        || videos.find(v => nName.includes(normalize(v.name)));
-                    if (project) {
-                        awardVideos.push(project);
-                        addedVideoNames.add(nName);
-                    }
-                }
-            });
-        });
-
-        container.innerHTML = '';
-        Object.entries(awardsByType).forEach(([awardName, wins]) => {
-            const card = document.createElement('div');
-            card.style.cssText = 'background: #000000; border: 1px solid #30363d; padding: 12px; border-radius: 6px; display: flex; flex-direction: column;';
-
-            let cardHTML = `<strong style="color: #ffffff; font-size: 0.85rem; text-transform: uppercase; display: block; margin-bottom: 8px;">${awardName}</strong>`;
-            cardHTML += '<div style="display: flex; flex-direction: column; gap: 12px;">';
-
-            wins.forEach((win, index) => {
-                const locationParts = win.location.split('|').map(part => part.trim());
-                const school = locationParts[0] || '';
-                const festival = locationParts[1] || '';
-
-                cardHTML += `<div style="display: flex; flex-direction: column;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
-                        <span class="award-video-link" data-project="${win.projectName}" role="button" tabindex="0" style="color: #58a6ff; text-decoration: none; font-size: 0.9rem; line-height: 1.2; cursor: pointer;">${win.projectName}</span>
-                        <span style="color: #8b949e; font-size: 0.75rem; white-space: nowrap; margin-top: 2px;">${win.date}</span>
-                    </div>
-                    <small style="color: #8b949e; font-size: 0.75rem; line-height: 1.4;">${festival}<br/><span style="font-size: 0.65rem; opacity: 0.8;">${school}</span></small>
-                </div>`;
-            });
-
-            cardHTML += '</div>';
-            card.innerHTML = cardHTML;
-            container.appendChild(card);
-        });
-
-        if (container._clickHandler) {
-            container.removeEventListener('click', container._clickHandler);
+        if (!entries.length) {
+            container.innerHTML = '<p style="color: #8b949e;">No awards found.</p>';
+            return;
         }
 
-        container._clickHandler = (e) => {
-            const link = e.target.closest('.award-video-link');
-            if (!link) return;
+        const awardTime = (a) => Utils.parseMonthYearToTime((a && a.date) || '');
+        entries.forEach((e) => {
+            e.projectAwards = [...e.projectAwards].sort((x, y) => awardTime(y) - awardTime(x));
+        });
+        entries.sort((a, b) => {
+            const am = Math.max(0, ...a.projectAwards.map(awardTime));
+            const bm = Math.max(0, ...b.projectAwards.map(awardTime));
+            return bm - am;
+        });
 
-            e.preventDefault();
-            e.stopPropagation();
+        const awardVideos = entries.map((e) => e.project);
+        const fixPath = (p) => (state.renderer && typeof state.renderer.fixImagePath === 'function')
+            ? state.renderer.fixImagePath(p)
+            : p;
 
-            const projectName = link.getAttribute('data-project');
-            const nName = normalize(projectName);
+        container.innerHTML = '';
 
-            const project = awardVideos.find(v => normalize(v.name) === nName)
-                || awardVideos.find(v => normalize(v.name).includes(nName))
-                || awardVideos.find(v => nName.includes(normalize(v.name)));
+        entries.forEach(({ project, projectAwards }) => {
+            let thumbSrc = project.resolvedThumb || (project.gallery && project.gallery[0]) || '';
+            const youtubeID = Utils.extractYouTubeID(project.youtube || '');
+            const hasValidYoutube = youtubeID && youtubeID.trim() !== '' && youtubeID !== 'YOUTUBE_ID_HERE';
+            if (hasValidYoutube) {
+                thumbSrc = project.resolvedThumb || `https://i.ytimg.com/vi/${youtubeID}/hqdefault.jpg`;
+            } else {
+                thumbSrc = project.resolvedThumb || fixPath(thumbSrc);
+            }
 
-            if (project && state.modalManager) {
+            const awardLines = projectAwards.map((a) => {
+                const locationParts = String(a.location || '').split('|').map((part) => part.trim());
+                const school = locationParts[0] || '';
+                const festival = locationParts[1] || '';
+                let locHtml = '';
+                if (festival || school) {
+                    locHtml = '<div class="modal-award-loc">';
+                    if (festival) locHtml += `<span class="modal-award-loc-festival">${esc(festival)}</span>`;
+                    if (school) locHtml += `<span class="modal-award-loc-school">${esc(school)}</span>`;
+                    locHtml += '</div>';
+                }
+                return `<li class="festival-award-line"><div class="festival-award-line-body"><span class="festival-award-prize">${esc(a.award)}</span>${locHtml}</div><span class="festival-award-date">${esc(a.date)}</span></li>`;
+            }).join('');
+
+            const card = document.createElement('div');
+            card.className = 'portfolio-card festival-award-card';
+            card.setAttribute('data-name', project.name || '');
+            card.setAttribute('data-date', project.date || '');
+            card.setAttribute('data-info', project.info || '');
+            card.setAttribute('data-tools', project.tools || '');
+            card.setAttribute('data-youtube', project.youtube || '');
+            card.setAttribute('data-type', project.badge || '');
+            card.setAttribute('data-badge', project.badge || '');
+            card.setAttribute('data-gallery', project.gallery ? project.gallery.join(', ') : '');
+
+            card.innerHTML = `
+                <div class="card-thumb">
+                    <img alt="${esc(project.name || '')}" loading="lazy">
+                </div>
+                <div class="card-content">
+                    <div class="card-info">
+                        <h3>${esc(project.name || '')}</h3>
+                        <ul class="festival-award-list">${awardLines}</ul>
+                    </div>
+                </div>`;
+
+            const imgElement = card.querySelector('img');
+            if (imgElement) {
+                imgElement.src = thumbSrc;
+                if (hasValidYoutube) {
+                    imgElement.onload = function () {
+                        if (this.naturalWidth === 120 && this.naturalHeight === 90) {
+                            this.style.opacity = '0.3';
+                            this.style.filter = 'blur(2px)';
+                        }
+                    };
+                    imgElement.onerror = function () {
+                        this.style.opacity = '0.3';
+                    };
+                }
+            }
+
+            card.addEventListener('click', () => {
                 state.achievementVideos = awardVideos;
                 state.currentAchievementVideoIndex = awardVideos.indexOf(project);
-                state.showModalNavArrows = true;
-                state.modalManager.openModalForItem(project, 'videos', awardVideos);
-            }
-        };
+                state.showModalNavArrows = awardVideos.length > 1;
+                if (state.modalManager) {
+                    state.modalManager.openModalForItem(project, 'videos');
+                }
+            });
 
-        container.addEventListener('click', container._clickHandler);
+            container.appendChild(card);
+        });
     };
 
     function gradeToPoints(grade) {
@@ -1198,7 +1226,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const link = (row?.link || '').toString().trim();
             const info = (row?.info || '').toString().trim();
             if (!name) return;
-            const item = { name, link, info };
+            const date = (row?.date || '').toString().trim();
+            const item = { name, link, info, date };
             const isSNHU = collegeSchoolNames.some(schoolName => school.includes(schoolName));
             const isERHS = highSchoolNames.some(schoolName => school.includes(schoolName));
 
@@ -1206,6 +1235,85 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (type.includes('honor') && (isSNHU || !school)) grouped.honorRoll.push({ ...item, category: 'Honor Roll' });
             else if (type.includes('nomination') && (isERHS || !school)) grouped.nominations.push({ ...item, category: 'Nominations' });
         });
+
+        const meritVerifyIntroText = 'The button below opens SNHU Merit Pages in a new tab. There you can see the official badge or listing for this term to confirm the award.';
+        const meritVerifyModalExtra = 'The destination is SNHU Merit Pages, where the official recognition badge or listing for this term is displayed.';
+
+        const renderTermChipsWithDetail = (container, detailRoot, items, categoryLabel) => {
+            container.innerHTML = '';
+            if (detailRoot) {
+                detailRoot.innerHTML = '';
+                detailRoot.hidden = true;
+            }
+            if (!items.length) {
+                const empty = document.createElement('span');
+                empty.style.color = '#8b949e';
+                empty.style.fontSize = '0.9rem';
+                empty.textContent = 'No entries yet.';
+                container.appendChild(empty);
+                return;
+            }
+            if (!detailRoot) return;
+
+            const bodyEl = document.createElement('p');
+            bodyEl.className = 'achievement-term-detail-body';
+
+            const footerEl = document.createElement('div');
+            footerEl.className = 'achievement-term-detail-footer';
+            footerEl.hidden = true;
+
+            const verifyIntro = document.createElement('p');
+            verifyIntro.className = 'achievement-term-verify-intro';
+            verifyIntro.textContent = meritVerifyIntroText;
+
+            const verifyBtn = document.createElement('button');
+            verifyBtn.type = 'button';
+            verifyBtn.className = 'inline-action-button achievement-merit-verify-button';
+            verifyBtn.style.setProperty('--inline-action-color', '#58a6ff');
+            verifyBtn.textContent = 'View Verification on Merit Pages';
+
+            footerEl.appendChild(verifyIntro);
+            footerEl.appendChild(verifyBtn);
+            detailRoot.appendChild(bodyEl);
+            detailRoot.appendChild(footerEl);
+            detailRoot.hidden = false;
+
+            let selectedChip = null;
+
+            const applyTermSelection = (item, chip) => {
+                if (selectedChip) selectedChip.classList.remove('is-selected');
+                chip.classList.add('is-selected');
+                selectedChip = chip;
+                const infoText = String(item.info || '').trim();
+                bodyEl.textContent = infoText || `Recognition for ${item.name}.`;
+                const hasLink = /^https?:\/\//i.test(item.link);
+                footerEl.hidden = !hasLink;
+                verifyBtn.onclick = hasLink
+                    ? (e) => {
+                        e.preventDefault();
+                        const modalInfo = [infoText, meritVerifyModalExtra].filter(Boolean).join('\n\n');
+                        openExternalLinkWithPrompt(
+                            item.link,
+                            item.name || 'Merit Pages',
+                            categoryLabel,
+                            modalInfo || meritVerifyModalExtra
+                        );
+                    }
+                    : null;
+            };
+
+            items.forEach((item) => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'achievement-term-chip';
+                chip.textContent = item.name;
+                chip.addEventListener('click', () => applyTermSelection(item, chip));
+                container.appendChild(chip);
+            });
+
+            const firstChip = container.querySelector('.achievement-term-chip');
+            if (firstChip) applyTermSelection(items[0], firstChip);
+        };
 
         const renderInlineItems = (container, items, textColor = '#58a6ff') => {
             container.innerHTML = '';
@@ -1258,8 +1366,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         };
 
-        renderInlineItems(presidentsContainer, grouped.presidents, '#58a6ff');
-        renderInlineItems(honorRollContainer, grouped.honorRoll, '#58a6ff');
+        const sortAchievementTermsNewestFirst = (items) => {
+            items.sort(
+                (a, b) =>
+                    Utils.parseAchievementRecencyMs(b.name, b.date) - Utils.parseAchievementRecencyMs(a.name, a.date)
+            );
+        };
+        sortAchievementTermsNewestFirst(grouped.presidents);
+        sortAchievementTermsNewestFirst(grouped.honorRoll);
+
+        const presidentsDetailEl = document.getElementById('achievement-presidents-detail');
+        const honorDetailEl = document.getElementById('achievement-honor-detail');
+        renderTermChipsWithDetail(presidentsContainer, presidentsDetailEl, grouped.presidents, "President's List");
+        renderTermChipsWithDetail(honorRollContainer, honorDetailEl, grouped.honorRoll, 'Honor Roll');
         renderInlineItems(nominationsContainer, grouped.nominations, '#e1e4e8');
         scrollToFocusedSchoolCard();
     };
@@ -1432,28 +1551,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toText = (value) => (value ?? '').toString().trim();
 
     const syncCoursesModalScrollLock = (locked) => {
-        const body = document.body;
-        const html = document.documentElement;
-        if (!body || !html) return;
-
-        if (locked) {
-            body.style.overflow = 'hidden';
-            html.style.overflow = 'hidden';
-            body.classList.add('modal-open');
-            return;
-        }
-
-        const searchModal = document.getElementById('global-search-modal');
-        const searchModalOpen = !!(searchModal && searchModal.classList.contains('active'));
-        const mainModalOpen = !!(state.modal && state.modal.style.display === 'flex');
-        const secModalOpen = !!(state.secModal && state.secModal.style.display === 'flex');
-        const coursesModalOpen = !!(state.coursesModal && state.coursesModal.style.display === 'flex');
-        const hasOpenDropdown = !!document.querySelector('.custom-select-container.open, .multi-select-container.open, .column-filter-menu.open');
-        if (searchModalOpen || mainModalOpen || secModalOpen || coursesModalOpen || hasOpenDropdown) return;
-
-        body.style.overflow = '';
-        html.style.overflow = '';
-        body.classList.remove('modal-open');
+        Utils.syncPageScrollLock(!!locked);
     };
 
     const closeAllColumnFilterMenus = () => {
@@ -2088,11 +2186,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!target || typeof target.closest !== 'function') return false;
             const el = target.nodeType === Node.TEXT_NODE ? target.parentElement : target;
             if (!el) return false;
-            const ind = el.closest('.column-filter-menu-indicator.is-active');
+            if (el.closest('.column-filter-label-actions')) return true;
+            const ind = el.closest('.column-filter-menu-indicator');
             if (ind && !ind.classList.contains('is-disabled')) return true;
             const vis = el.closest('.column-visibility-toggle');
             if (vis && !vis.disabled) return true;
             return false;
+        };
+
+        const isColumnFilterLabelKeyboardSubmenuTarget = target => {
+            if (!target || typeof target.closest !== 'function') return false;
+            const el = target.nodeType === Node.TEXT_NODE ? target.parentElement : target;
+            if (!el) return false;
+            if (el.classList && el.classList.contains('column-filter-column-label')) return true;
+            return !!(el.closest && el.closest('.column-filter-label-text'));
         };
 
         usableDefinitions.forEach(definition => {
@@ -2128,7 +2235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 onChange();
                 renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, undefined, discriminationContext);
             });
-            if (canFilter && definitionIsActive) {
+            if (canFilter) {
                 labelIndicator.addEventListener('mouseenter', closeAllColumnFilterSubmenus);
             }
 
@@ -2163,10 +2270,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 labelActions.appendChild(toggleButton);
             }
 
-            labelText.addEventListener('mouseenter', () => activateDefinition(definition.key));
-            label.addEventListener('mouseenter', ev => {
-                if (!isInteractableColumnFilterControlTarget(ev.target)) activateDefinition(definition.key);
-            });
+            const handleColumnFilterLabelPointerForSubmenu = (ev) => {
+                if (isInteractableColumnFilterControlTarget(ev.target)) return;
+                const actions = label.querySelector('.column-filter-label-actions');
+                if (actions) {
+                    const split = actions.getBoundingClientRect().left - 2;
+                    if (ev.clientX >= split) {
+                        closeAllColumnFilterSubmenus();
+                        return;
+                    }
+                }
+                activateDefinition(definition.key);
+            };
+
+            label.addEventListener('mouseenter', handleColumnFilterLabelPointerForSubmenu);
+            label.addEventListener('mousemove', handleColumnFilterLabelPointerForSubmenu);
 
             label.appendChild(labelText);
             label.appendChild(labelActions);
@@ -2302,21 +2420,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (next && menu.contains(next)) return;
                 closeMenu();
             });
-            item.addEventListener('click', () => {
-                activateDefinition(definition.key);
+            item.addEventListener('click', (ev) => {
+                if (ev.target.closest?.('.column-filter-submenu')) return;
+                if (ev.target !== label && !label.contains(ev.target)) return;
+                handleColumnFilterLabelPointerForSubmenu(ev);
             });
             item.addEventListener('mouseenter', (ev) => {
-                if (isInteractableColumnFilterControlTarget(ev.target)) {
-                    closeAllColumnFilterSubmenus();
-                    return;
-                }
-                activateDefinition(definition.key);
+                if (ev.target.closest?.('.column-filter-submenu')) return;
+                if (ev.target !== label && !label.contains(ev.target)) return;
+                handleColumnFilterLabelPointerForSubmenu(ev);
+            });
+            item.addEventListener('mousemove', (ev) => {
+                if (ev.target.closest?.('.column-filter-submenu')) return;
+                if (ev.target !== label && !label.contains(ev.target)) return;
+                handleColumnFilterLabelPointerForSubmenu(ev);
             });
             item.addEventListener('focusin', (ev) => {
                 if (isInteractableColumnFilterControlTarget(ev.target)) {
                     closeAllColumnFilterSubmenus();
                     return;
                 }
+                if (!isColumnFilterLabelKeyboardSubmenuTarget(ev.target)) return;
                 activateDefinition(definition.key);
             });
             menu.appendChild(item);
@@ -2604,6 +2728,140 @@ document.addEventListener('DOMContentLoaded', async () => {
             ).items;
     };
 
+    const appendSoftwareLanguageTagsToContainer = (container, langStrings, skillToolsContext, options) => {
+        if (!container) return;
+        container.innerHTML = '';
+        const list = Array.isArray(langStrings) ? langStrings : [];
+        if (!list.length) return;
+        const opts = options && typeof options === 'object' ? options : {};
+        const nonInteractiveSkillName = String(opts.nonInteractiveSkillName || '').trim().toLowerCase();
+        const skills = state.allData && state.allData.skills ? state.allData.skills : [];
+        const modalManager = state.modalManager;
+        const toolsCtx = Array.isArray(skillToolsContext) && skillToolsContext.length ? skillToolsContext : list;
+
+        const languageEntries = list.map((lang) => {
+            const langLower = lang.toLowerCase();
+            const skillMatch = skills.find(sk => String(sk.name || '').toLowerCase() === langLower)
+                || skills.find(sk => String(sk.name || '').toLowerCase().includes(langLower))
+                || skills.find(sk => langLower.includes(String(sk.name || '').toLowerCase()));
+            const fixedSrc = (skillMatch && skillMatch.icon)
+                ? (modalManager && typeof modalManager.fixImagePath === 'function'
+                    ? modalManager.fixImagePath(skillMatch.icon)
+                    : skillMatch.icon)
+                : '';
+            return { lang, skillMatch, fixedSrc };
+        });
+
+        languageEntries.forEach(({ lang, skillMatch, fixedSrc }) => {
+            const tag = document.createElement('span');
+            tag.className = 'software-tag';
+
+            const isSelf = !!(nonInteractiveSkillName && skillMatch
+                && String(skillMatch.name || '').trim().toLowerCase() === nonInteractiveSkillName);
+            if (isSelf) {
+                tag.classList.add('software-tag-current-skill');
+            }
+
+            if (skillMatch && !isSelf) {
+                tag.classList.add('clickable-tool');
+                tag.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (!state.openModalForItem) return;
+                    state.openModalForItem(skillMatch, 'skill', toolsCtx);
+                });
+            }
+
+            if (fixedSrc) {
+                const iconWrap = document.createElement('span');
+                iconWrap.className = 'tool-icon-wrap';
+                const icon = document.createElement('img');
+                icon.className = 'tool-icon';
+                icon.alt = lang.toUpperCase();
+                icon.style.opacity = '0';
+                let revealed = false;
+                const revealIcon = () => {
+                    if (revealed) return;
+                    revealed = true;
+                    if (typeof icon.decode === 'function') {
+                        icon.decode().then(() => {
+                            icon.style.opacity = '1';
+                        }).catch(() => {
+                            icon.style.opacity = '1';
+                        });
+                    } else {
+                        requestAnimationFrame(() => {
+                            icon.style.opacity = '1';
+                        });
+                    }
+                };
+                icon.onload = revealIcon;
+                icon.onerror = () => {
+                    icon.style.opacity = '0.5';
+                };
+                icon.src = fixedSrc;
+                if (icon.complete && icon.naturalWidth > 0) {
+                    revealIcon();
+                }
+                iconWrap.appendChild(icon);
+                tag.appendChild(iconWrap);
+            }
+
+            const text = document.createElement('span');
+            text.innerText = lang.toUpperCase();
+            tag.appendChild(text);
+
+            if (skillMatch) {
+                const isCertified = skillMatch.certified === true || String(skillMatch.certified || '').toLowerCase() === 'true';
+                if (isCertified) {
+                    const cert = document.createElement('span');
+                    cert.className = 'grid-certified-badge';
+                    cert.title = skillMatch.certName || skillMatch.name || 'Certified';
+                    cert.innerText = 'CERTIFIED';
+                    tag.appendChild(cert);
+                }
+            }
+
+            container.appendChild(tag);
+        });
+    };
+
+    const languageStringRefersToSkill = (langStr, skillName) => {
+        const skills = state.allData && state.allData.skills ? state.allData.skills : [];
+        const sn = String(skillName || '').trim().toLowerCase();
+        if (!sn) return false;
+        const langLower = String(langStr || '').trim().toLowerCase();
+        if (!langLower) return false;
+        const skillMatch = skills.find(sk => String(sk.name || '').toLowerCase() === langLower)
+            || skills.find(sk => String(sk.name || '').toLowerCase().includes(langLower))
+            || skills.find(sk => langLower.includes(String(sk.name || '').toLowerCase()));
+        return !!(skillMatch && String(skillMatch.name || '').trim().toLowerCase() === sn);
+    };
+
+    const getCourseProjectRowsForSkill = (skillName) => {
+        const projects = Array.isArray(state.allData?.['Course Projects']) ? state.allData['Course Projects'] : [];
+        const sn = String(skillName || '').trim().toLowerCase();
+        if (!sn) return [];
+        return projects.filter(row => {
+            const list = parseCourseLanguagesUsedRaw(row.languagesUsed || row.languagesused);
+            return list.some(lang => languageStringRefersToSkill(lang, sn));
+        });
+    };
+
+    const getAggregatedCourseProjectLanguagesForSkill = (skillName) => {
+        const rows = getCourseProjectRowsForSkill(skillName);
+        const aggregated = [];
+        const seen = new Set();
+        rows.forEach(row => {
+            parseCourseLanguagesUsedRaw(row.languagesUsed || row.languagesused).forEach(lang => {
+                const key = String(lang).trim().toLowerCase();
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                aggregated.push(String(lang).trim());
+            });
+        });
+        return aggregated;
+    };
+
     const normalizeCourses = (rows) => {
         return (Array.isArray(rows) ? rows : []).map((row, index) => {
             const id = toText(row.id || row.courseid);
@@ -2695,6 +2953,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `<span class="proficiency-badge ${badgeClass}">${escapeHtml(label)}</span>`;
     };
 
+    const normalizeCourseIdForProjectMatch = (v) => String(v ?? '').trim().toLowerCase();
+
+    const findCourseProjectRowForCourse = (course) => {
+        const rows = Array.isArray(state.allData?.['Course Projects']) ? state.allData['Course Projects'] : [];
+        const key = normalizeCourseIdForProjectMatch(course?.id);
+        if (!key) return null;
+        return rows.find(r => {
+            const rid = normalizeCourseIdForProjectMatch(r?.id ?? r?.courseid ?? r?.courseId);
+            return rid && rid === key;
+        }) || null;
+    };
+
+    const getCourseNameByCourseId = (courseId) => {
+        const key = normalizeCourseIdForProjectMatch(courseId);
+        if (!key) return '';
+        const rows = normalizeCourses(state.allData?.Courses || []);
+        const match = rows.find(c => normalizeCourseIdForProjectMatch(c.id) === key);
+        const n = match && String(match.name || '').trim();
+        return n || '';
+    };
+
+    const coursesLink2IconSvg = `<svg class="courses-link2-icon" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M9 17H7A5 5 0 0 1 7 7h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7h2a5 5 0 1 1 0 10h-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    const buildCourseNameCellHtml = (course) => {
+        const rawName = course?.name;
+        const safeName = escapeHtml(rawName && String(rawName).trim() ? rawName : '-');
+        const projectRow = findCourseProjectRowForCourse(course);
+        const linkRaw = projectRow ? toText(projectRow.link).trim() : '';
+        const hasLink = /^https?:\/\//i.test(linkRaw);
+        if (!projectRow || !hasLink) {
+            return `<span class="courses-name-cell-inner"><span class="courses-name-text">${safeName}</span></span>`;
+        }
+        const suffix = `<span class="courses-name-featured-suffix"><span class="courses-name-featured-icon">${coursesLink2IconSvg}</span><span class="courses-name-featured-label">Featured project</span></span>`;
+        return `<span class="courses-name-cell-inner"><span class="courses-name-text">${safeName}</span>${suffix}</span>`;
+    };
+
     const populateCoursesModal = (index) => {
         if (!state.filteredCourses.length || index < 0 || index >= state.filteredCourses.length) return;
         state.currentCourseIndex = index;
@@ -2726,8 +3020,68 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (state.coursesModalInfo) state.coursesModalInfo.textContent = infoText || 'No course information available.';
 
-        const skills = state.allData && state.allData.skills ? state.allData.skills : [];
-        const modalManager = state.modalManager;
+        const featuredSection = state.coursesModalFeaturedSection;
+        const featuredDesc = state.coursesModalFeaturedDesc;
+        const featuredLink = state.coursesModalFeaturedLink;
+        const featuredLangWrap = state.coursesModalFeaturedLangWrap;
+        const featuredLangContainer = state.coursesModalFeaturedLanguages;
+        if (featuredSection && featuredDesc && featuredLink) {
+            const projectRow = findCourseProjectRowForCourse(course);
+            const linkRaw = projectRow ? toText(projectRow.link).trim() : '';
+            const hasLink = /^https?:\/\//i.test(linkRaw);
+            const projName = projectRow ? toText(projectRow.name).trim() : '';
+            if (projectRow && hasLink) {
+                const displayName = projName || 'View project';
+                const projInfo = toText(projectRow.info).trim();
+                const projectLangs = parseCourseLanguagesUsedRaw(projectRow.languagesUsed || projectRow.languagesused);
+                featuredSection.classList.add('is-visible');
+                featuredSection.setAttribute('aria-hidden', 'false');
+                if (projInfo) {
+                    featuredDesc.textContent = projInfo;
+                    featuredDesc.style.display = 'block';
+                } else {
+                    featuredDesc.textContent = '';
+                    featuredDesc.style.display = 'none';
+                }
+                if (featuredLangWrap && featuredLangContainer) {
+                    if (projectLangs.length) {
+                        featuredLangWrap.style.display = 'block';
+                        const projLangLabel = state.coursesModalFeaturedProjectLangLabel
+                            || featuredLangWrap.querySelector('.courses-modal-featured-project-lang-label');
+                        if (projLangLabel) {
+                            projLangLabel.textContent = projectLangs.length === 1 ? 'Project Language' : 'Project Languages';
+                        }
+                        if (featuredLangContainer) {
+                            featuredLangContainer.setAttribute(
+                                'aria-label',
+                                projectLangs.length === 1 ? 'Programming language used in featured project' : 'Programming languages used in featured project'
+                            );
+                        }
+                        appendSoftwareLanguageTagsToContainer(featuredLangContainer, projectLangs, projectLangs);
+                    } else {
+                        featuredLangWrap.style.display = 'none';
+                        featuredLangContainer.innerHTML = '';
+                    }
+                }
+                featuredLink.style.setProperty('--inline-action-color', '#58a6ff');
+                featuredLink.textContent = displayName;
+                featuredLink.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openExternalLinkWithPrompt(linkRaw, displayName, 'Featured Project', projInfo);
+                };
+            } else {
+                featuredSection.classList.remove('is-visible');
+                featuredSection.setAttribute('aria-hidden', 'true');
+                featuredDesc.textContent = '';
+                featuredDesc.style.display = 'none';
+                if (featuredLangWrap) featuredLangWrap.style.display = 'none';
+                if (featuredLangContainer) featuredLangContainer.innerHTML = '';
+                featuredLink.textContent = '';
+                featuredLink.onclick = null;
+            }
+        }
+
         let languages = parseCourseLanguagesUsedRaw(course.languagesUsed);
         if (!languages.length && languagesSectionMatch) {
             languages = parseCourseLanguagesUsedRaw(languagesSectionMatch[1]);
@@ -2736,77 +3090,66 @@ document.addEventListener('DOMContentLoaded', async () => {
         const labelEl = state.coursesModalProgrammingLanguagesLabel;
         const containerEl = state.coursesModalProgrammingLanguagesContainer;
         if (labelEl && containerEl) {
-            containerEl.innerHTML = '';
             if (!languages.length) {
                 labelEl.style.display = 'none';
                 containerEl.style.display = 'none';
+                containerEl.innerHTML = '';
             } else {
+                labelEl.textContent = languages.length === 1 ? 'Course Language' : 'Course Languages';
+                containerEl.setAttribute(
+                    'aria-label',
+                    languages.length === 1 ? 'Programming language used in this course' : 'Programming languages used in this course'
+                );
                 labelEl.style.display = 'block';
                 containerEl.style.display = 'flex';
-
-                const languageEntries = languages.map((lang) => {
-                    const langLower = lang.toLowerCase();
-                    const skillMatch = skills.find(sk => String(sk.name || '').toLowerCase() === langLower)
-                        || skills.find(sk => String(sk.name || '').toLowerCase().includes(langLower))
-                        || skills.find(sk => langLower.includes(String(sk.name || '').toLowerCase()));
-
-                    const fixedSrc = (skillMatch && skillMatch.icon)
-                        ? (modalManager && typeof modalManager.fixImagePath === 'function'
-                            ? modalManager.fixImagePath(skillMatch.icon)
-                            : skillMatch.icon)
-                        : '';
-
-                    return { lang, skillMatch, fixedSrc };
-                });
-
-                languageEntries.forEach(({ lang, skillMatch, fixedSrc }) => {
-                    const tag = document.createElement('span');
-                    tag.className = 'software-tag';
-
-                    if (skillMatch) {
-                        tag.classList.add('clickable-tool');
-                        tag.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            if (!state.openModalForItem) return;
-                            state.openModalForItem(skillMatch, 'skill', languages);
-                        });
-                    }
-
-                    if (fixedSrc) {
-                        const iconWrap = document.createElement('span');
-                        iconWrap.className = 'tool-icon-wrap';
-                        const icon = document.createElement('img');
-                        icon.className = 'tool-icon';
-                        icon.alt = lang.toUpperCase();
-                        icon.src = fixedSrc;
-                        icon.style.opacity = '1';
-                        iconWrap.appendChild(icon);
-                        tag.appendChild(iconWrap);
-                    }
-
-                    const text = document.createElement('span');
-                    text.innerText = lang.toUpperCase();
-                    tag.appendChild(text);
-
-                    if (skillMatch) {
-                        const isCertified = skillMatch.certified === true || String(skillMatch.certified || '').toLowerCase() === 'true';
-                        if (isCertified) {
-                            const cert = document.createElement('span');
-                            cert.className = 'grid-certified-badge';
-                            cert.title = skillMatch.certName || skillMatch.name || 'Certified';
-                            cert.innerText = 'CERTIFIED';
-                            tag.appendChild(cert);
-                        }
-                    }
-
-                    containerEl.appendChild(tag);
-                });
+                appendSoftwareLanguageTagsToContainer(containerEl, languages, languages);
             }
         }
         updateCoursesModalNavState();
     };
 
-    const preloadProgrammingLanguageIconsForCourses = (coursesRows) => {
+    const getLanguageIconUrlsForCourse = (course) => {
+        if (!course || !state.modalManager) return [];
+        const skills = Array.isArray(state.allData?.skills) ? state.allData.skills : [];
+        if (!skills.length) return [];
+        const skillsByLowerName = new Map();
+        skills.forEach((sk) => {
+            const n = sk && String(sk.name || '').trim().toLowerCase();
+            if (n && !skillsByLowerName.has(n)) skillsByLowerName.set(n, sk);
+        });
+        const languageRegex = /Programming Languages Used\s*:\s*([\s\S]*)$/i;
+        const langs = new Set();
+        parseCourseLanguagesUsedRaw(course.languagesUsed || course.languagesused).forEach((l) => langs.add(l));
+        const rawInfo = toText(course.info);
+        const match = rawInfo.match(languageRegex);
+        if (match) parseCourseLanguagesUsedRaw(match[1]).forEach((l) => langs.add(l));
+        const projectRow = findCourseProjectRowForCourse(course);
+        if (projectRow) {
+            parseCourseLanguagesUsedRaw(projectRow.languagesUsed || projectRow.languagesused).forEach((l) => langs.add(l));
+        }
+        const urls = new Set();
+        langs.forEach((lang) => {
+            const langLower = lang.toLowerCase();
+            let skill = skillsByLowerName.get(langLower);
+            if (!skill) {
+                skill = skills.find((sk) => String(sk.name || '').toLowerCase().includes(langLower))
+                    || skills.find((sk) => langLower.includes(String(sk.name || '').toLowerCase()));
+            }
+            if (!skill || !skill.icon) return;
+            const fixedSrc = state.modalManager.fixImagePath(skill.icon);
+            if (fixedSrc) urls.add(fixedSrc);
+        });
+        return [...urls];
+    };
+
+    const primeCourseRowLanguageIcons = (course) => {
+        if (!state.modalManager || !course) return;
+        getLanguageIconUrlsForCourse(course).forEach((src) => {
+            state.modalManager.preloadImage(src, 4000);
+        });
+    };
+
+    const preloadProgrammingLanguageIconsForCourses = (coursesRows, projectRows) => {
         if (state.coursesProgrammingLanguageIconsPreloaded) return Promise.resolve();
         if (state.coursesLanguageIconsPreloadPromise) return state.coursesLanguageIconsPreloadPromise;
         if (!state.modalManager) return Promise.resolve();
@@ -2829,6 +3172,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (match) {
                 parseCourseLanguagesUsedRaw(match[1]).forEach(lang => languages.add(lang));
             }
+        });
+        (Array.isArray(projectRows) ? projectRows : []).forEach(row => {
+            parseCourseLanguagesUsedRaw(row && (row.languagesUsed || row.languagesused)).forEach(lang => languages.add(lang));
         });
         if (!languages.size) {
             state.coursesProgrammingLanguageIconsPreloaded = true;
@@ -2887,7 +3233,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!state.coursesModal || !state.filteredCourses.length) return;
         if (index < 0 || index >= state.filteredCourses.length) return;
 
-        await preloadProgrammingLanguageIconsForCourses(state.allData?.Courses || []);
+        await preloadProgrammingLanguageIconsForCourses(state.allData?.Courses || [], state.allData?.['Course Projects'] || []);
+
+        const courseForIcons = state.filteredCourses[index];
+        if (courseForIcons && state.modalManager) {
+            const iconUrls = getLanguageIconUrlsForCourse(courseForIcons);
+            if (iconUrls.length) {
+                await Promise.all(iconUrls.map((src) => state.modalManager.preloadImage(src, 4000)));
+            }
+        }
 
         populateCoursesModal(index);
         updateCoursesModalNavState();
@@ -2907,17 +3261,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!state.coursesModal) return;
         state.coursesModal.setAttribute('aria-hidden', 'true');
 
-        state.coursesModal.classList.remove('open');
         if (state.coursesModal._closeTimer) clearTimeout(state.coursesModal._closeTimer);
         state.coursesModal._closeTimer = null;
 
         if (state.modalManager?.fadeOutModal) {
             state.modalManager.fadeOutModal(state.coursesModal, () => {
+                state.coursesModal.classList.remove('open');
                 syncCoursesModalScrollLock(false);
             });
             return;
         }
 
+        state.coursesModal.classList.remove('open');
         state.coursesModal._closeTimer = setTimeout(() => {
             if (state.coursesModal) state.coursesModal.style.display = 'none';
             syncCoursesModalScrollLock(false);
@@ -2944,10 +3299,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const transitionTargets = [titleWrap, body].filter(Boolean);
         if (!transitionTargets.length) return;
-
-        transitionTargets.forEach(target => {
-            target.classList.remove('courses-swap-out-next', 'courses-swap-out-prev', 'courses-swap-in-next', 'courses-swap-in-prev');
-        });
 
         if (prefersReducedMotion) {
             transitionTargets.forEach(target => {
@@ -2997,7 +3348,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         target.style.transition = '';
                         target.style.willChange = '';
                         target.style.opacity = '';
-                        target.style.transform = '';
+                        if (target === body) {
+                            target.style.transform = 'translate3d(0px, 0, 0)';
+                        } else {
+                            target.style.transform = '';
+                        }
                     });
                 }, durationMs + 30);
             });
@@ -3032,7 +3387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const rawQuery = state.courseSearchQuery ? state.courseSearchQuery.trim() : '';
                 if (rawQuery) {
                     const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    statusEl.innerHTML = `Showing 0 results for "<span style="color:#58a6ff;">${safe}</span>"`;
+                    statusEl.innerHTML = `Showing results for "<span style="color:#58a6ff;">${safe}</span>"`;
                 } else {
                     statusEl.innerHTML = emptyMsg;
                 }
@@ -3048,7 +3403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `
                 <tr class="course-row" data-course-index="${index}">
                     <td>${escapeHtml(course.id || '-')}</td>
-                    <td>${escapeHtml(course.name || '-')}</td>
+                    <td class="courses-name-cell">${buildCourseNameCellHtml(course)}</td>
                     <td>${escapeHtml(course.school || '-')}</td>
                     <td>${escapeHtml(course.type || '-')}</td>
                     <td>${statusBadge}</td>
@@ -3063,6 +3418,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const index = Number.parseInt(row.getAttribute('data-course-index') || '-1', 10);
                 if (Number.isFinite(index) && index >= 0) openCoursesModal(index);
             });
+            const primeRowIcons = () => {
+                const index = Number.parseInt(row.getAttribute('data-course-index') || '-1', 10);
+                const course = Number.isFinite(index) && index >= 0 ? courses[index] : null;
+                if (course) primeCourseRowLanguageIcons(course);
+            };
+            row.addEventListener('pointerenter', primeRowIcons);
+            row.addEventListener('pointerdown', primeRowIcons);
         });
 
         const statusEl = document.getElementById('courses-search-status');
@@ -3071,7 +3433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (rawQuery) {
                 const safe = rawQuery.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 statusEl.classList.add('visible');
-                statusEl.innerHTML = `Showing ${courses.length} ${courses.length === 1 ? 'result' : 'results'} for "<span style="color:#58a6ff;">${safe}</span>"`;
+                statusEl.innerHTML = `Showing results for "<span style="color:#58a6ff;">${safe}</span>"`;
             } else {
                 statusEl.classList.remove('visible');
                 statusEl.innerHTML = '';
@@ -3103,7 +3465,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!matchesColumn('grade', course.grade)) return false;
 
             if (!query) return true;
-            const searchBlob = `${course.id} ${course.name} ${course.school} ${course.type} ${course.info} ${course.languagesUsed || ''} ${course.status} ${course.completionYear || ''} ${course.grade} ${course.credits}`.toLowerCase();
+            const proj = findCourseProjectRowForCourse(course);
+            const projBlob = proj
+                ? `${toText(proj.name)} ${toText(proj.info)} ${toText(proj.link)} featured project`.toLowerCase()
+                : '';
+            const searchBlob = `${course.id} ${course.name} ${course.school} ${course.type} ${course.info} ${course.languagesUsed || ''} ${course.status} ${course.completionYear || ''} ${course.grade} ${course.credits} ${projBlob}`.toLowerCase();
             return searchBlob.includes(query);
         });
 
@@ -3470,19 +3836,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!state.allData.games) sheetsNeeded.push('games');
             if (!state.allData.skills) sheetsNeeded.push('skills');
         }
-        if (route === '/technical' && !state.allData.skills) sheetsNeeded.push('skills');
+        if (route === '/technical') {
+            if (!state.allData.skills) sheetsNeeded.push('skills');
+            if (!state.allData['Course Projects']) sheetsNeeded.push('Course Projects');
+        }
         if (route === '/courses') {
             if (!state.allData.Courses) sheetsNeeded.push('Courses');
+            if (!state.allData['Course Projects']) sheetsNeeded.push('Course Projects');
             if (!state.allData.skills) sheetsNeeded.push('skills');
         }
         if ((route === '/' || route === '/bio') && !state.allData.School) sheetsNeeded.push('School');
         if ((route === '/' || route === '/bio') && !state.allData.Courses) sheetsNeeded.push('Courses');
+        if ((route === '/' || route === '/bio') && !state.allData['Course Projects']) sheetsNeeded.push('Course Projects');
         if (route === '/achievements') {
             if (!state.allData.videos) sheetsNeeded.push('videos');
             if (!state.allData.skills) sheetsNeeded.push('skills');
             if (!state.allData.Achievements) sheetsNeeded.push('Achievements');
             if (!state.allData.School) sheetsNeeded.push('School');
             if (!state.allData.Courses) sheetsNeeded.push('Courses');
+            if (!state.allData['Course Projects']) sheetsNeeded.push('Course Projects');
         }
         if (route === '/activities' && !state.allData.Activities) sheetsNeeded.push('Activities');
 
@@ -3547,7 +3919,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if ((data.Courses || []).length && (data.skills || []).length && state.modalManager) {
-                preloadProgrammingLanguageIconsForCourses(data.Courses).catch(() => {});
+                preloadProgrammingLanguageIconsForCourses(data.Courses, data['Course Projects']).catch(() => {});
             }
 
             if (state.portfolioGrid) {
@@ -3557,6 +3929,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (!isCached && (!state.didPrimeSkeletons || state.primedSkeletonTarget !== 'portfolio' || state.primedSkeletonCount !== projectData.length)) {
                     state.renderer.showSkeletons(state.portfolioGrid, projectData.length);
+                }
+                if (projectData.length > 0 && state.filterCards) {
+                    state.filterCards();
                 }
 
                 if (projectData.length === 0) {
@@ -3569,6 +3944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ? 'No games match the current filters.'
                         : 'No videos match the current filters.';
                     state.portfolioGrid.innerHTML = `<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">${emptyMsg}</p>`;
+                    if (state.filterCards) state.filterCards();
                 }
                 if (projectData.length > 0) {
                     const startTime = Date.now();
@@ -3628,6 +4004,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (state.filterSkills) state.filterSkills();
                 });
             }
+
+            if (state.currentRoute === '/technical' && data['Course Projects']) {
+                preloadProgrammingLanguageIconsForCourses([], data['Course Projects']).catch(() => {});
+            }
         })
             .catch(() => {
             });
@@ -3654,6 +4034,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.renderer = new Renderer(state);
 
         state.openModalForItem = (...args) => state.modalManager.openModalForItem(...args);
+        state.appendSoftwareLanguageTagsToContainer = appendSoftwareLanguageTagsToContainer;
+        state.parseCourseLanguagesUsedRaw = parseCourseLanguagesUsedRaw;
+        state.getAggregatedCourseProjectLanguagesForSkill = getAggregatedCourseProjectLanguagesForSkill;
+        state.getCourseProjectRowsForSkill = getCourseProjectRowsForSkill;
+        state.getCourseNameByCourseId = getCourseNameByCourseId;
         state.filterCards = () => state.filterManager.filterCards();
         state.filterSkills = () => state.filterManager.filterSkills();
         state.sortCards = () => state.filterManager.sortCards();
