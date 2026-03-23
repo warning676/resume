@@ -630,6 +630,28 @@ footer[data-include="html/footer.html"] {
     margin-top: 0px;
 }
 
+.achievements-section-intro {
+    border-bottom: none;
+    margin-top: 25px;
+    margin-bottom: 0;
+}
+
+.achievements-section-intro--film {
+    margin-bottom: 16px;
+}
+
+.achievements-section-intro--film+.achievement-card {
+    margin-top: 12px;
+}
+
+.achievements-section-intro--certs {
+    margin-bottom: 20px;
+}
+
+.achievements-section-intro--certs+div[data-fragment="controls"] {
+    margin-top: 0;
+}
+
 #page-root>.page-intro {
     display: block;
 }
@@ -666,7 +688,17 @@ footer[data-include="html/footer.html"] {
 }
 
 #presidents-list-items,
-#honor-roll-items,
+#honor-roll-items {
+    min-height: 24px;
+    margin-left: 12px;
+    color: #e1e4e8;
+    font-size: 0.9rem;
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 8px 10px;
+}
+
 #nominations-items {
     min-height: 24px;
 }
@@ -684,105 +716,11 @@ footer[data-include="html/footer.html"] {
 }
 
 .achievement-info p.achievement-snhu-list-intro {
-    margin: 0 0 24px 12px;
+    margin: 0 0 10px 12px;
     color: #b1bac4;
     font-size: 0.88rem;
     line-height: 1.55;
     max-width: 52rem;
-}
-
-.achievement-term-detail {
-    margin: 18px 12px 0;
-    padding: 0;
-    background: #000000;
-    border: 1px solid #30363d;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    overflow: hidden;
-}
-
-.achievement-term-detail-body {
-    margin: 0;
-    padding: 24px 20px 28px;
-    color: #e1e4e8;
-    font-size: 0.9rem;
-    line-height: 1.55;
-    white-space: pre-line;
-}
-
-.achievement-term-detail-footer {
-    margin: 0;
-    padding: 24px 20px 26px;
-    background: #000000;
-    border-top: 1px solid #30363d;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-}
-
-.achievement-term-detail-footer[hidden] {
-    display: none !important;
-}
-
-.achievement-term-verify-intro {
-    padding: 0;
-    color: #8b949e;
-    font-size: 0.82rem;
-    line-height: 1.55;
-}
-
-.achievement-info p.achievement-term-verify-intro {
-    margin: 0;
-}
-
-button.inline-action-button.achievement-merit-verify-button {
-    margin-top: 0;
-    margin-bottom: 0;
-    background: #000000;
-    border-color: #30363d;
-    color: #e1e4e8;
-}
-
-button.inline-action-button.achievement-merit-verify-button:hover {
-    background-color: #30363d;
-    border-color: #58a6ff;
-    color: #ffffff;
-}
-
-button.inline-action-button.achievement-merit-verify-button:active {
-    border-color: #58a6ff;
-    transform: scale(0.955);
-}
-
-button.achievement-term-chip {
-    cursor: pointer;
-    font-family: inherit;
-    display: inline-flex;
-    align-items: center;
-    color: #e1e4e8;
-    border: 1px solid #30363d;
-    background: transparent;
-    font-size: 0.85rem;
-    font-weight: 700;
-    line-height: 1;
-    border-radius: 6px;
-    padding: 8px 13px;
-    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
-}
-
-button.achievement-term-chip:hover {
-    background-color: #30363d;
-    border-color: #58a6ff;
-    color: #ffffff;
-}
-
-button.achievement-term-chip.is-selected {
-    border-color: #58a6ff;
-    color: #ffffff;
-    background: rgba(88, 166, 255, 0.1);
 }
 
 .achievement-inline-item {
@@ -2700,35 +2638,6 @@ body.dropdown-scroll-lock {
     letter-spacing: 0.05em;
 }
 
-#project-info .modal-awards-heading {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-#project-info .modal-awards-icon-wrap {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    flex-shrink: 0;
-    border-radius: 8px;
-    background: rgba(227, 179, 65, 0.1);
-    border: 1px solid rgba(227, 179, 65, 0.35);
-    color: #e3b341;
-    box-sizing: border-box;
-}
-
-#project-info .modal-awards-icon-wrap .lucide-trophy {
-    display: block;
-}
-
-#project-info .modal-awards-heading-text {
-    flex: 1;
-    min-width: 0;
-}
-
 #project-info .modal-project-heading {
     display: flex;
     flex-direction: column;
@@ -3056,6 +2965,22 @@ body.dropdown-scroll-lock {
     animation-delay: 0.10s;
 }
 
+.search-modal.active .search-type-filters > .search-type-filter-item:nth-child(6) {
+    animation-delay: 0.12s;
+}
+
+.search-modal.active .search-type-filters > .search-type-filter-item:nth-child(7) {
+    animation-delay: 0.14s;
+}
+
+.search-modal.active .search-type-filters > .search-type-filter-item:nth-child(8) {
+    animation-delay: 0.16s;
+}
+
+.search-modal.active .search-type-filters > .search-type-filter-item:nth-child(9) {
+    animation-delay: 0.18s;
+}
+
 .global-search-results-layout {
     display: flex;
     flex-direction: column;
@@ -3356,6 +3281,12 @@ body.dropdown-scroll-lock {
     background-color: rgba(139, 148, 158, 0.2);
     border: 1px solid rgba(139, 148, 158, 0.5);
     color: #8b949e;
+}
+
+.search-result-type.type-project {
+    background-color: rgba(147, 197, 253, 0.2);
+    border: 1px solid rgba(147, 197, 253, 0.5);
+    color: #93c5fd;
 }
 
 .search-result-type.type-certified {
@@ -4710,6 +4641,10 @@ body.dropdown-scroll-lock {
 #courses-modal {
     opacity: 0;
     transition: opacity 0.18s ease;
+}
+
+#courses-modal.courses-modal-over-modal {
+    z-index: 100200 !important;
 }
 
 #courses-modal.open {

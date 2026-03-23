@@ -4,7 +4,8 @@ let globalSearchData = {
     skills: [],
     achievements: [],
     activities: [],
-    courses: []
+    courses: [],
+    projects: []
 };
 
 let globalSearchDataLoadPromise = null;
@@ -12,7 +13,7 @@ let globalSearchRequestId = 0;
 let globalSearchLatestQuery = '';
 let renderedSearchResults = [];
 const searchModalFadeMs = 180;
-const globalSearchFilterableTypes = new Set(['skill', 'course', 'video', 'game']);
+const globalSearchFilterableTypes = new Set(['skill', 'course', 'project', 'video', 'game', 'achievement', 'activity']);
 
 function getGlobalSearchTypeFilterSet() {
     const modal = document.getElementById('global-search-modal');
@@ -28,12 +29,29 @@ function getGlobalSearchTypeFilterSet() {
     return set;
 }
 
+function syncGlobalSearchAllCheckboxState(modal) {
+    if (!modal) return;
+    const allCheckbox = modal.querySelector('.global-search-type-filter[value="all"]');
+    if (!allCheckbox) return;
+    const others = Array.from(modal.querySelectorAll('.global-search-type-filter'))
+        .filter((cb) => String(cb.value || '').toLowerCase() !== 'all');
+    allCheckbox.checked = others.length > 0 && others.every((cb) => cb.checked);
+}
+
+function applyGlobalSearchAllToggle(modal, checked) {
+    if (!modal) return;
+    modal.querySelectorAll('.global-search-type-filter').forEach((cb) => {
+        cb.checked = !!checked;
+    });
+}
+
 function resetGlobalSearchTypeFilters() {
     const modal = document.getElementById('global-search-modal');
     if (!modal) return;
     modal.querySelectorAll('.global-search-type-filter').forEach((cb) => {
         cb.checked = true;
     });
+    syncGlobalSearchAllCheckboxState(modal);
 }
 
 function renderGlobalSearchEmptyPlaceholder() {
@@ -89,6 +107,15 @@ function initializeGlobalSearch() {
 
     searchModal.querySelectorAll('.global-search-type-filter').forEach((cb) => {
         cb.addEventListener('change', () => {
+            if (searchModal.dataset.syncingGlobalSearchFilters === 'true') return;
+            searchModal.dataset.syncingGlobalSearchFilters = 'true';
+            const value = String(cb.value || '').toLowerCase();
+            if (value === 'all') {
+                applyGlobalSearchAllToggle(searchModal, cb.checked);
+            } else {
+                syncGlobalSearchAllCheckboxState(searchModal);
+            }
+            searchModal.dataset.syncingGlobalSearchFilters = 'false';
             performSearch((searchInput && searchInput.value) || '');
         });
     });
@@ -285,7 +312,8 @@ async function loadAllSearchData() {
         loadSheetSafe('skills', 'skills'),
         loadSheetSafe('Achievements', 'achievements'),
         loadSheetSafe('Activities', 'activities'),
-        loadSheetSafe('Courses', 'courses')
+        loadSheetSafe('Courses', 'courses'),
+        loadSheetSafe('Course Projects', 'projects')
     ]);
 }
 
@@ -539,6 +567,21 @@ function performSearch(query) {
         }
     });
 
+    globalSearchData.projects.forEach(item => {
+        let score = getMatchScore(item, queryLower, ['name', 'info', 'id', 'courseid', 'courseId', 'languagesUsed', 'languagesused', 'link']);
+        if (queryLower.includes('project') || queryLower.includes('course project') || queryLower.includes('featured')) {
+            score += 14;
+        }
+        if (score > 0) {
+            results.push({
+                type: 'project',
+                data: item,
+                score: score,
+                route: '/courses'
+            });
+        }
+    });
+
     const allowedTypes = getGlobalSearchTypeFilterSet();
     const filtered = results.filter((r) => {
         if (globalSearchFilterableTypes.has(r.type)) return allowedTypes.has(r.type);
@@ -703,6 +746,14 @@ function getSearchResultDescription(result) {
         return parts.join('\n');
     }
 
+    if (result.type === 'project') {
+        const courseId = String(result.data.id || result.data.courseid || result.data.courseId || '').trim();
+        const info = String(result.data.info || '').trim();
+        if (courseId && info) return `${courseId}\n${info}`;
+        if (courseId) return courseId;
+        return info;
+    }
+
     if (result.type !== 'achievement') {
         return result.data.info || result.data.badge || '';
     }
@@ -761,6 +812,8 @@ function renderSearchResults(results, query, totalUnfiltered) {
             typeName = 'Activity';
         } else if (result.type === 'course') {
             typeName = 'Course';
+        } else if (result.type === 'project') {
+            typeName = 'Project';
         }
         badges.push(`<span class="search-result-type ${typeClass}">${typeName}</span>`);
         
@@ -1014,6 +1067,28 @@ async function navigateToSearchResultByIndex(index) {
         }
 
         waitForDataToLoad().then(focusCourse);
+        return;
+    }
+
+    if (result.type === 'project') {
+        const courseRoute = '/courses';
+        closeGlobalSearch();
+
+        const focusProjectCourse = () => {
+            const query = String(result.data.id || result.data.courseid || result.data.courseId || '').trim();
+            if (!query) return;
+            openModalForSearchResult(query, 'course');
+        };
+
+        if (window.location.pathname !== courseRoute && !window.location.pathname.endsWith(courseRoute)) {
+            navigateTo(courseRoute);
+            waitForDataToLoad().then(() => {
+                setTimeout(focusProjectCourse, 300);
+            });
+            return;
+        }
+
+        waitForDataToLoad().then(focusProjectCourse);
         return;
     }
 

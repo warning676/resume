@@ -86,6 +86,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         hiddenCourseColumns: {},
         hiddenSkillColumns: {},
         filteredCourses: [],
+        coursesModalUseStandaloneList: false,
+        coursesModalStandaloneList: null,
+        coursesModalClosing: false,
         currentCourseIndex: -1,
         currentItemCard: null,
         currentGalleryIndex: 0,
@@ -408,6 +411,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.hiddenCourseColumns = {};
         state.hiddenSkillColumns = {};
         state.filteredCourses = [];
+        state.coursesModalUseStandaloneList = false;
+        state.coursesModalStandaloneList = null;
+        state.coursesModalClosing = false;
+        if (state.coursesModal) state.coursesModal.classList.remove('courses-modal-over-modal');
         state.currentCourseIndex = -1;
         state.searchQuery = '';
         state.courseSearchQuery = '';
@@ -1236,86 +1243,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (type.includes('nomination') && (isERHS || !school)) grouped.nominations.push({ ...item, category: 'Nominations' });
         });
 
-        const meritVerifyIntroText = 'The button below opens SNHU Merit Pages in a new tab. There you can see the official badge or listing for this term to confirm the award.';
         const meritVerifyModalExtra = 'The destination is SNHU Merit Pages, where the official recognition badge or listing for this term is displayed.';
 
-        const renderTermChipsWithDetail = (container, detailRoot, items, categoryLabel) => {
-            container.innerHTML = '';
-            if (detailRoot) {
-                detailRoot.innerHTML = '';
-                detailRoot.hidden = true;
-            }
-            if (!items.length) {
-                const empty = document.createElement('span');
-                empty.style.color = '#8b949e';
-                empty.style.fontSize = '0.9rem';
-                empty.textContent = 'No entries yet.';
-                container.appendChild(empty);
-                return;
-            }
-            if (!detailRoot) return;
-
-            const bodyEl = document.createElement('p');
-            bodyEl.className = 'achievement-term-detail-body';
-
-            const footerEl = document.createElement('div');
-            footerEl.className = 'achievement-term-detail-footer';
-            footerEl.hidden = true;
-
-            const verifyIntro = document.createElement('p');
-            verifyIntro.className = 'achievement-term-verify-intro';
-            verifyIntro.textContent = meritVerifyIntroText;
-
-            const verifyBtn = document.createElement('button');
-            verifyBtn.type = 'button';
-            verifyBtn.className = 'inline-action-button achievement-merit-verify-button';
-            verifyBtn.style.setProperty('--inline-action-color', '#58a6ff');
-            verifyBtn.textContent = 'View Verification on Merit Pages';
-
-            footerEl.appendChild(verifyIntro);
-            footerEl.appendChild(verifyBtn);
-            detailRoot.appendChild(bodyEl);
-            detailRoot.appendChild(footerEl);
-            detailRoot.hidden = false;
-
-            let selectedChip = null;
-
-            const applyTermSelection = (item, chip) => {
-                if (selectedChip) selectedChip.classList.remove('is-selected');
-                chip.classList.add('is-selected');
-                selectedChip = chip;
-                const infoText = String(item.info || '').trim();
-                bodyEl.textContent = infoText || `Recognition for ${item.name}.`;
-                const hasLink = /^https?:\/\//i.test(item.link);
-                footerEl.hidden = !hasLink;
-                verifyBtn.onclick = hasLink
-                    ? (e) => {
-                        e.preventDefault();
-                        const modalInfo = [infoText, meritVerifyModalExtra].filter(Boolean).join('\n\n');
-                        openExternalLinkWithPrompt(
-                            item.link,
-                            item.name || 'Merit Pages',
-                            categoryLabel,
-                            modalInfo || meritVerifyModalExtra
-                        );
-                    }
-                    : null;
-            };
-
-            items.forEach((item) => {
-                const chip = document.createElement('button');
-                chip.type = 'button';
-                chip.className = 'achievement-term-chip';
-                chip.textContent = item.name;
-                chip.addEventListener('click', () => applyTermSelection(item, chip));
-                container.appendChild(chip);
-            });
-
-            const firstChip = container.querySelector('.achievement-term-chip');
-            if (firstChip) applyTermSelection(items[0], firstChip);
-        };
-
-        const renderInlineItems = (container, items, textColor = '#58a6ff') => {
+        const renderInlineItems = (container, items, textColor = '#58a6ff', extraOptions) => {
+            const opts = extraOptions && typeof extraOptions === 'object' ? extraOptions : {};
+            const meritExtra = opts.meritExtra;
+            const omitDescription = opts.omitDescription === true;
             container.innerHTML = '';
             if (!items.length) {
                 const empty = document.createElement('span');
@@ -1341,7 +1274,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     anchor.textContent = item.name;
                     anchor.addEventListener('click', (e) => {
                         e.preventDefault();
-                        openExternalLinkWithPrompt(item.link, item.name || 'External Link', item.category || 'Achievement', item.info || '');
+                        let modalInfo = '';
+                        if (meritExtra) {
+                            modalInfo = [String(item.info || '').trim(), meritExtra].filter(Boolean).join('\n\n');
+                        } else {
+                            modalInfo = item.info || '';
+                        }
+                        openExternalLinkWithPrompt(
+                            item.link,
+                            item.name || 'External Link',
+                            item.category || 'Achievement',
+                            modalInfo || meritExtra || ''
+                        );
                     });
                     wrapper.appendChild(anchor);
                 } else {
@@ -1352,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     wrapper.appendChild(plain);
                 }
 
-                if (item.info) {
+                if (!omitDescription && item.info) {
                     const info = document.createElement('span');
                     info.style.color = '#8b949e';
                     info.style.fontSize = '0.82rem';
@@ -1375,10 +1319,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         sortAchievementTermsNewestFirst(grouped.presidents);
         sortAchievementTermsNewestFirst(grouped.honorRoll);
 
-        const presidentsDetailEl = document.getElementById('achievement-presidents-detail');
-        const honorDetailEl = document.getElementById('achievement-honor-detail');
-        renderTermChipsWithDetail(presidentsContainer, presidentsDetailEl, grouped.presidents, "President's List");
-        renderTermChipsWithDetail(honorRollContainer, honorDetailEl, grouped.honorRoll, 'Honor Roll');
+        renderInlineItems(presidentsContainer, grouped.presidents, '#58a6ff', {
+            meritExtra: meritVerifyModalExtra,
+            omitDescription: true
+        });
+        renderInlineItems(honorRollContainer, grouped.honorRoll, '#58a6ff', {
+            meritExtra: meritVerifyModalExtra,
+            omitDescription: true
+        });
         renderInlineItems(nominationsContainer, grouped.nominations, '#e1e4e8');
         scrollToFocusedSchoolCard();
     };
@@ -2420,11 +2368,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (next && menu.contains(next)) return;
                 closeMenu();
             });
-            item.addEventListener('click', (ev) => {
-                if (ev.target.closest?.('.column-filter-submenu')) return;
-                if (ev.target !== label && !label.contains(ev.target)) return;
-                handleColumnFilterLabelPointerForSubmenu(ev);
-            });
             item.addEventListener('mouseenter', (ev) => {
                 if (ev.target.closest?.('.column-filter-submenu')) return;
                 if (ev.target !== label && !label.contains(ev.target)) return;
@@ -2735,6 +2678,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!list.length) return;
         const opts = options && typeof options === 'object' ? options : {};
         const nonInteractiveSkillName = String(opts.nonInteractiveSkillName || '').trim().toLowerCase();
+        const disableSkillModalLinks = opts.disableSkillModalLinks === true;
         const skills = state.allData && state.allData.skills ? state.allData.skills : [];
         const modalManager = state.modalManager;
         const toolsCtx = Array.isArray(skillToolsContext) && skillToolsContext.length ? skillToolsContext : list;
@@ -2762,7 +2706,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tag.classList.add('software-tag-current-skill');
             }
 
-            if (skillMatch && !isSelf) {
+            if (skillMatch && !isSelf && !disableSkillModalLinks) {
                 tag.classList.add('clickable-tool');
                 tag.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -2927,9 +2871,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return sorted;
     };
 
-    const getVisibleCourseIndexes = () => {
-        return state.filteredCourses.map((_, index) => index);
+    const getCoursesModalCourseList = () => {
+        if (state.coursesModalUseStandaloneList && Array.isArray(state.coursesModalStandaloneList) && state.coursesModalStandaloneList.length) {
+            return state.coursesModalStandaloneList;
+        }
+        return state.filteredCourses;
     };
+
+    const getVisibleCourseIndexes = () => getCoursesModalCourseList().map((_, index) => index);
 
     const getCourseStatusBadgeClass = (status) => {
         const value = toText(status).toLowerCase();
@@ -2990,9 +2939,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const populateCoursesModal = (index) => {
-        if (!state.filteredCourses.length || index < 0 || index >= state.filteredCourses.length) return;
+        const courseList = getCoursesModalCourseList();
+        if (!courseList.length || index < 0 || index >= courseList.length) return;
         state.currentCourseIndex = index;
-        const course = state.filteredCourses[index];
+        const course = courseList[index];
 
         if (state.coursesModalTitle) state.coursesModalTitle.textContent = course.name || 'Course Details';
         if (state.coursesModalId) state.coursesModalId.textContent = course.id || '-';
@@ -3019,6 +2969,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (state.coursesModalInfo) state.coursesModalInfo.textContent = infoText || 'No course information available.';
+
+        const courseModalLangTagOptions = state.coursesModal && state.coursesModal.classList.contains('courses-modal-over-modal')
+            ? { disableSkillModalLinks: true }
+            : undefined;
 
         const featuredSection = state.coursesModalFeaturedSection;
         const featuredDesc = state.coursesModalFeaturedDesc;
@@ -3057,7 +3011,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 projectLangs.length === 1 ? 'Programming language used in featured project' : 'Programming languages used in featured project'
                             );
                         }
-                        appendSoftwareLanguageTagsToContainer(featuredLangContainer, projectLangs, projectLangs);
+                        appendSoftwareLanguageTagsToContainer(featuredLangContainer, projectLangs, projectLangs, courseModalLangTagOptions);
                     } else {
                         featuredLangWrap.style.display = 'none';
                         featuredLangContainer.innerHTML = '';
@@ -3102,7 +3056,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 );
                 labelEl.style.display = 'block';
                 containerEl.style.display = 'flex';
-                appendSoftwareLanguageTagsToContainer(containerEl, languages, languages);
+                appendSoftwareLanguageTagsToContainer(containerEl, languages, languages, courseModalLangTagOptions);
             }
         }
         updateCoursesModalNavState();
@@ -3214,7 +3168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const updateCoursesModalNavState = () => {
-        const canNavigate = state.filteredCourses.length > 1;
+        const canNavigate = getCoursesModalCourseList().length > 1;
         if (state.coursesModalPrev) {
             state.coursesModalPrev.style.display = canNavigate ? '' : 'none';
             state.coursesModalPrev.disabled = !canNavigate;
@@ -3229,13 +3183,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    const clearCoursesModalOverlayState = () => {
+        state.coursesModalUseStandaloneList = false;
+        state.coursesModalStandaloneList = null;
+        if (state.coursesModal) {
+            state.coursesModal.classList.remove('courses-modal-over-modal');
+        }
+    };
+
     const openCoursesModal = async (index) => {
-        if (!state.coursesModal || !state.filteredCourses.length) return;
-        if (index < 0 || index >= state.filteredCourses.length) return;
+        const courseList = getCoursesModalCourseList();
+        if (!state.coursesModal || !courseList.length) return;
+        if (index < 0 || index >= courseList.length) return;
+        state.coursesModalClosing = false;
 
         await preloadProgrammingLanguageIconsForCourses(state.allData?.Courses || [], state.allData?.['Course Projects'] || []);
 
-        const courseForIcons = state.filteredCourses[index];
+        const courseForIcons = courseList[index];
         if (courseForIcons && state.modalManager) {
             const iconUrls = getLanguageIconUrlsForCourse(courseForIcons);
             if (iconUrls.length) {
@@ -3259,6 +3223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const closeCoursesModal = () => {
         if (!state.coursesModal) return;
+        state.coursesModalClosing = true;
         state.coursesModal.setAttribute('aria-hidden', 'true');
 
         if (state.coursesModal._closeTimer) clearTimeout(state.coursesModal._closeTimer);
@@ -3267,6 +3232,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (state.modalManager?.fadeOutModal) {
             state.modalManager.fadeOutModal(state.coursesModal, () => {
                 state.coursesModal.classList.remove('open');
+                clearCoursesModalOverlayState();
+                state.coursesModalClosing = false;
                 syncCoursesModalScrollLock(false);
             });
             return;
@@ -3275,9 +3242,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.coursesModal.classList.remove('open');
         state.coursesModal._closeTimer = setTimeout(() => {
             if (state.coursesModal) state.coursesModal.style.display = 'none';
+            clearCoursesModalOverlayState();
+            state.coursesModalClosing = false;
             syncCoursesModalScrollLock(false);
         }, 190);
     };
+
+    const openCoursesModalForCourseIdFromSkill = async (courseIdRaw) => {
+        if (!state.coursesModal) return;
+        const lookupKey = normalizeCourseIdForProjectMatch(courseIdRaw);
+        if (!lookupKey) return;
+        const all = normalizeCourses(state.allData?.Courses || []);
+        const course = all.find(c => normalizeCourseIdForProjectMatch(c.id) === lookupKey);
+        if (!course) return;
+        if (state.coursesModalUseStandaloneList && state.coursesModal.classList.contains('open') && !state.coursesModalClosing) {
+            const list = getCoursesModalCourseList();
+            const cur = list[state.currentCourseIndex];
+            if (cur && normalizeCourseIdForProjectMatch(cur.id) === lookupKey) return;
+            state.coursesModalStandaloneList = [course];
+            populateCoursesModal(0);
+            updateCoursesModalNavState();
+            return;
+        }
+        const skillModalStacked =
+            (state.modal && state.modal.style.display === 'flex' && state.modal.classList.contains('modal-skill'))
+            || (state.secModal && state.secModal.style.display === 'flex');
+        if (skillModalStacked) {
+            state.coursesModal.classList.add('courses-modal-over-modal');
+        }
+        state.coursesModalUseStandaloneList = true;
+        state.coursesModalStandaloneList = [course];
+        await openCoursesModal(0);
+    };
+
+    window.closeCoursesModal = closeCoursesModal;
+    window.openCoursesModalForCourseIdFromSkill = openCoursesModalForCourseIdFromSkill;
 
     const navigateCoursesModal = (delta) => {
         const visibleIndexes = getVisibleCourseIndexes();
@@ -3669,27 +3668,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (state.coursesFilterButton && state.coursesFilterMenu) {
             renderCoursesColumnFilter();
         }
-
-        if (!state.coursesModalClose?.dataset.boundCoursesModal) {
-            if (state.coursesModalClose) {
-                state.coursesModalClose.dataset.boundCoursesModal = 'true';
-                state.coursesModalClose.addEventListener('click', closeCoursesModal);
-            }
-            if (state.coursesModalPrev) {
-                state.coursesModalPrev.dataset.boundCoursesModal = 'true';
-                state.coursesModalPrev.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    navigateCoursesModal(-1);
-                });
-            }
-            if (state.coursesModalNext) {
-                state.coursesModalNext.dataset.boundCoursesModal = 'true';
-                state.coursesModalNext.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    navigateCoursesModal(1);
-                });
-            }
-        }
     };
 
     const renderCourses = () => {
@@ -3714,6 +3692,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (externalCancelBtn) externalCancelBtn.onclick = () => closeExternalLinkModal(false);
         if (externalStayBtn) externalStayBtn.onclick = () => closeExternalLinkModal(false);
         if (externalContinueBtn) externalContinueBtn.onclick = () => closeExternalLinkModal(true);
+
+        if (state.coursesModalClose && !state.coursesModalClose.dataset.boundCoursesModal) {
+            state.coursesModalClose.dataset.boundCoursesModal = 'true';
+            state.coursesModalClose.addEventListener('click', closeCoursesModal);
+        }
+        if (state.coursesModalPrev && !state.coursesModalPrev.dataset.boundCoursesModal) {
+            state.coursesModalPrev.dataset.boundCoursesModal = 'true';
+            state.coursesModalPrev.addEventListener('click', (event) => {
+                event.stopPropagation();
+                navigateCoursesModal(-1);
+            });
+        }
+        if (state.coursesModalNext && !state.coursesModalNext.dataset.boundCoursesModal) {
+            state.coursesModalNext.dataset.boundCoursesModal = 'true';
+            state.coursesModalNext.addEventListener('click', (event) => {
+                event.stopPropagation();
+                navigateCoursesModal(1);
+            });
+        }
 
         if (state.prevBtn) {
             state.prevBtn.onclick = (e) => {
@@ -3756,6 +3753,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.addEventListener('keydown', (e) => {
                 if (state.externalLinkModal && state.externalLinkModal.classList.contains('active')) {
                     if (e.key === 'Escape') closeExternalLinkModal(false);
+                } else if (state.coursesModal && state.coursesModal.style.display === 'flex') {
+                    const courseNavLen = getCoursesModalCourseList().length;
+                    if (courseNavLen > 1) {
+                        if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
+                        if (e.key === 'ArrowRight') navigateCoursesModal(1);
+                    }
+                    if (e.key === 'Escape') closeCoursesModal();
                 } else if (state.secModal && state.secModal.style.display === 'flex') {
                     if (state.currentToolsContext.length > 1) {
                         if (e.key === 'ArrowLeft') state.modalManager?.navigateTool(-1);
@@ -3768,12 +3772,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (e.key === 'ArrowRight') state.modalManager?.navigateItem(1);
                     }
                     if (e.key === 'Escape') state.modalManager?.resetModal();
-                } else if (state.coursesModal && state.coursesModal.style.display === 'flex') {
-                    if (state.filteredCourses.length > 1) {
-                        if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
-                        if (e.key === 'ArrowRight') navigateCoursesModal(1);
-                    }
-                    if (e.key === 'Escape') closeCoursesModal();
                 } else if (document.querySelector('.column-filter-header-flyout.open')) {
                     if (e.key === 'Escape') closeAllColumnFilterMenus();
                 }

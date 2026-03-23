@@ -655,10 +655,13 @@ class ModalManager {
                 courseBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (typeof this.dismissPortfolioModalsForNavigation === 'function') {
-                        this.dismissPortfolioModalsForNavigation();
-                    }
-                    if (typeof window.navigateToSearchResult === 'function') {
+                    const opener = typeof window !== 'undefined' ? window.openCoursesModalForCourseIdFromSkill : null;
+                    if (typeof opener === 'function') {
+                        opener(courseId);
+                    } else if (typeof window.navigateToSearchResult === 'function') {
+                        if (typeof this.dismissPortfolioModalsForNavigation === 'function') {
+                            this.dismissPortfolioModalsForNavigation();
+                        }
                         window.navigateToSearchResult('/courses', courseId, 'course');
                     }
                 });
@@ -699,6 +702,11 @@ class ModalManager {
 
     openModalForItem(cardOrData, typeOverride = null, toolsContext = null) {
         const s = this.s;
+        const coursesModalEl = document.getElementById('courses-modal');
+        if (coursesModalEl && coursesModalEl.classList.contains('courses-modal-over-modal') && coursesModalEl.style.display === 'flex') {
+            const closer = typeof window !== 'undefined' ? window.closeCoursesModal : null;
+            if (typeof closer === 'function') closer();
+        }
         const isSkill = (cardOrData instanceof HTMLElement)
             ? cardOrData.classList.contains('skill-item')
             : (typeOverride === 'skill');
