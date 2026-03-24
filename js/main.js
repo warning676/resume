@@ -537,25 +537,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const showCoursesSkeleton = (count) => {
-        if (!state.coursesTableBody || count <= 0) return;
-        const rowWidths = [
-            [190, 126, 92, 94, 60, 42, 60],
-            [222, 138, 84, 102, 58, 46, 58],
-            [204, 120, 98, 88, 62, 44, 62],
-            [208, 126, 98, 96, 62, 42, 62],
-        ];
+        if (!state.coursesTableBody) return;
+        const skeletonRows = Math.max(3, count);
+        const visibleRows = Math.min(5, skeletonRows);
         let html = '';
-        for (let i = 0; i < count; i++) {
-            const w = rowWidths[i % rowWidths.length];
+        for (let i = 0; i < visibleRows; i++) {
             html += `<tr class="courses-skeleton-row">
-                <td><div class="skeleton-element" style="width:44px;height:14px;border-radius:999px;"></div></td>
-                <td><div class="skeleton-element" style="width:${w[0]}px;height:14px;border-radius:999px;"></div></td>
-                <td><div class="skeleton-element" style="width:${w[1]}px;height:14px;border-radius:999px;"></div></td>
-                <td><div class="skeleton-element" style="width:${w[2]}px;height:14px;border-radius:999px;"></div></td>
-                <td><div class="skeleton-element" style="width:${w[3]}px;height:14px;border-radius:999px;"></div></td>
-                <td><div class="skeleton-element" style="width:${w[4]}px;height:14px;border-radius:999px;"></div></td>
-                <td><div class="skeleton-element" style="width:${w[5]}px;height:14px;border-radius:999px;"></div></td>
-                <td><div class="skeleton-element" style="width:${w[6]}px;height:14px;border-radius:999px;"></div></td>
+                <td colspan="8" style="padding: 8px 0;">
+                    <div class="skeleton-element" style="width: ${80 - i * 10}%; height: 16px; border-radius: 999px;"></div>
+                </td>
             </tr>`;
         }
         state.coursesTableBody.innerHTML = html;
@@ -583,23 +573,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const primeSkeletons = () => {
         state.skeletonKey = getSkeletonKey();
-        if (!state.skeletonKey) return;
+        if (!state.skeletonKey || !state.renderer) return;
         const cachedCount = getStoredCount(state.skeletonKey);
-        if (!cachedCount || !state.renderer) return;
+
         if (state.portfolioGrid) {
-            state.renderer.showSkeletons(state.portfolioGrid, cachedCount);
+            const targetCount = cachedCount > 0 ? cachedCount : 6;
+            state.renderer.showSkeletons(state.portfolioGrid, targetCount);
             state.didPrimeSkeletons = true;
-            state.primedSkeletonCount = cachedCount;
+            state.primedSkeletonCount = targetCount;
             state.primedSkeletonTarget = 'portfolio';
         } else if (state.skillsList) {
-            state.renderer.showSkeletons(state.skillsList, cachedCount);
+            const targetCount = cachedCount > 0 ? cachedCount : 4;
+            state.renderer.showSkeletons(state.skillsList, targetCount);
             state.didPrimeSkeletons = true;
-            state.primedSkeletonCount = cachedCount;
+            state.primedSkeletonCount = targetCount;
             state.primedSkeletonTarget = 'skills';
         } else if (state.coursesTableBody) {
-            showCoursesSkeleton(cachedCount);
+            const targetCount = cachedCount > 0 ? cachedCount : 3;
+            showCoursesSkeleton(targetCount);
             state.didPrimeSkeletons = true;
-            state.primedSkeletonCount = cachedCount;
+            state.primedSkeletonCount = targetCount;
             state.primedSkeletonTarget = 'courses';
         }
     };
@@ -3854,6 +3847,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         syncDropdownScrollLock();
     };
 
+
+    const animateIconHover = (element, directionClass) => {
+        if (!element) return;
+        element.classList.add(directionClass);
+        setTimeout(() => {
+            element.classList.remove(directionClass);
+        }, 200);
+    };
+
     const ensureGlobalEvents = (() => {
         let bound = false;
         return () => {
@@ -3867,28 +3869,52 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (e.key === 'Escape') closeAllColumnFilterMenus();
                 } else if (state.secModal && state.secModal.style.display === 'flex') {
                     if (state.currentToolsContext.length > 1) {
-                        if (e.key === 'ArrowLeft') state.modalManager?.navigateTool(-1);
-                        if (e.key === 'ArrowRight') state.modalManager?.navigateTool(1);
+                        if (e.key === 'ArrowLeft') {
+                            state.modalManager?.navigateTool(-1);
+                            animateIconHover(state.secPrevBtn, 'icon-hover-effect-prev');
+                        }
+                        if (e.key === 'ArrowRight') {
+                            state.modalManager?.navigateTool(1);
+                            animateIconHover(state.secNextBtn, 'icon-hover-effect-next');
+                        }
                     }
                     if (e.key === 'Escape') state.modalManager?.resetSecModal();
                 } else if (state.coursesModal && state.coursesModal.style.display === 'flex' && state.coursesModal.classList.contains('courses-modal-over-modal')) {
                     const courseNavLen = getCoursesModalCourseList().length;
                     if (courseNavLen > 1) {
-                        if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
-                        if (e.key === 'ArrowRight') navigateCoursesModal(1);
+                        if (e.key === 'ArrowLeft') {
+                            navigateCoursesModal(-1);
+                            animateIconHover(state.coursesModalPrev, 'icon-hover-effect-prev');
+                        }
+                        if (e.key === 'ArrowRight') {
+                            navigateCoursesModal(1);
+                            animateIconHover(state.coursesModalNext, 'icon-hover-effect-next');
+                        }
                     }
                     if (e.key === 'Escape') closeCoursesModal();
                 } else if (state.modal && state.modal.style.display === 'flex') {
                     if (state.showModalNavArrows) {
-                        if (e.key === 'ArrowLeft') state.modalManager?.navigateItem(-1);
-                        if (e.key === 'ArrowRight') state.modalManager?.navigateItem(1);
+                        if (e.key === 'ArrowLeft') {
+                            state.modalManager?.navigateItem(-1);
+                            animateIconHover(state.prevBtn, 'icon-hover-effect-prev');
+                        }
+                        if (e.key === 'ArrowRight') {
+                            state.modalManager?.navigateItem(1);
+                            animateIconHover(state.nextBtn, 'icon-hover-effect-next');
+                        }
                     }
                     if (e.key === 'Escape') state.modalManager?.resetModal();
                 } else if (state.coursesModal && state.coursesModal.style.display === 'flex') {
                     const courseNavLen = getCoursesModalCourseList().length;
                     if (courseNavLen > 1) {
-                        if (e.key === 'ArrowLeft') navigateCoursesModal(-1);
-                        if (e.key === 'ArrowRight') navigateCoursesModal(1);
+                        if (e.key === 'ArrowLeft') {
+                            navigateCoursesModal(-1);
+                            simulateClick(state.coursesModalPrev);
+                        }
+                        if (e.key === 'ArrowRight') {
+                            navigateCoursesModal(1);
+                            simulateClick(state.coursesModalNext);
+                        }
                     }
                     if (e.key === 'Escape') closeCoursesModal();
                 }
@@ -4324,126 +4350,121 @@ document.addEventListener('DOMContentLoaded', async () => {
         const root = document.getElementById('page-root');
         if (!root) return;
 
-        if (route === '/achievements') {
-            root.innerHTML = `
-                <div class="page-intro">
-                    <div class="skeleton-element" style="width: 280px; height: 34px; border-radius: 6px; margin-bottom: 10px;"></div>
-                    <div class="skeleton-element" style="width: 420px; max-width: 90%; height: 14px; border-radius: 4px;"></div>
-                </div>
-                <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428; margin-top: 20px;">
-                    <div class="achievement-info">
-                        <div class="skeleton-element" style="width: 56px; height: 20px; border-radius: 6px;"></div>
-                        <div class="skeleton-element" style="width: 320px; max-width: 80%; height: 26px; border-radius: 6px; margin-top: 14px;"></div>
-                        <div class="skeleton-element" style="width: 210px; height: 13px; border-radius: 4px; margin-top: 8px;"></div>
-                        <div style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 12px;">
-                            <div class="skeleton-element" style="width: 180px; height: 14px; border-radius: 4px;"></div>
-                            <div class="skeleton-element" style="width: 160px; height: 14px; border-radius: 4px;"></div>
-                            <div class="skeleton-element" style="width: 220px; height: 14px; border-radius: 4px;"></div>
-                            <div class="skeleton-element" style="width: 150px; height: 14px; border-radius: 4px;"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428; margin-top: 20px;">
-                    <div class="achievement-info">
-                        <div class="skeleton-element" style="width: 56px; height: 20px; border-radius: 6px;"></div>
-                        <div class="skeleton-element" style="width: 290px; max-width: 80%; height: 26px; border-radius: 6px; margin-top: 14px;"></div>
-                        <div class="skeleton-element" style="width: 250px; height: 13px; border-radius: 4px; margin-top: 8px;"></div>
-                        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-                            <div class="skeleton-element" style="width: 260px; max-width: 90%; height: 14px; border-radius: 4px;"></div>
-                            <div class="skeleton-element" style="width: 220px; max-width: 90%; height: 14px; border-radius: 4px;"></div>
-                        </div>
-                    </div>
-                </div>
-                <hr style="border: 0; border-top: 1px solid #1f2428; margin-top: 25px;">
-                <div class="achievement-card" style="background: #000000; border: 1px solid #1f2428; margin-top: 20px;">
-                    <div class="achievement-info">
-                        <div class="skeleton-element" style="width: 64px; height: 20px; border-radius: 6px;"></div>
-                        <div class="skeleton-element" style="width: 320px; max-width: 85%; height: 26px; border-radius: 6px; margin-top: 14px;"></div>
-                        <div class="skeleton-element" style="width: 220px; height: 13px; border-radius: 4px; margin-top: 8px;"></div>
-                        <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
-                            <div class="skeleton-element" style="height: 110px; border-radius: 6px;"></div>
-                            <div class="skeleton-element" style="height: 110px; border-radius: 6px;"></div>
-                            <div class="skeleton-element" style="height: 110px; border-radius: 6px;"></div>
-                        </div>
-                    </div>
-                </div>
-                <hr style="border: 0; border-top: 1px solid #1f2428; margin-top: 25px;">
-                <div style="margin-top: 15px;">
-                    <div class="skeleton-element" style="width: 230px; height: 30px; border-radius: 6px; margin-bottom: 10px;"></div>
-                    <div class="skeleton-element" style="width: 360px; max-width: 90%; height: 14px; border-radius: 4px; margin-bottom: 18px;"></div>
-                    <div class="skeleton-element" style="width: 100%; height: 320px; border-radius: 8px;"></div>
+        const pageIntroSkeleton = (titleWidth = 220, subtitleWidth = 460) => `
+            <div class="page-intro">
+                <div class="skeleton-element" style="width: ${titleWidth}px; height: 24px; border-radius: 6px; margin-bottom: 10px;"></div>
+                <div class="skeleton-element" style="width: ${subtitleWidth}px; height: 14px; border-radius: 4px;"></div>
+            </div>
+        `;
+
+        const controlsSkeleton = () => `
+            <div data-fragment="controls" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:12px;">
+                <div class="skeleton-element" style="height: 36px; width:100%; border-radius: 10px;"></div>
+                <div class="skeleton-element" style="height: 36px; width:100%; border-radius: 10px;"></div>
+                <div class="skeleton-element" style="height: 36px; width:100%; border-radius: 10px;"></div>
+                <div class="skeleton-element" style="height: 36px; width:100%; border-radius: 10px;"></div>
+                <div class="skeleton-element" style="height: 36px; width:100%; border-radius: 10px;"></div>
+            </div>
+        `;
+
+        const tableSkeleton = (rows = 3, isSkills = false) => {
+            const headerCols = isSkills
+                ? ['Name', 'Category', 'Proficiency', 'Last Used']
+                : ['ID', 'Name', 'School', 'Type', 'Status', 'Credits', 'Year', 'Grade'];
+
+            const rowCells = () => {
+                if (isSkills) {
+                    const widths = [90, 70, 60, 80];
+                    return widths.map(width => `<td><div class="skeleton-element" style="width: ${width}px; height: 14px; border-radius: 999px;"></div></td>`).join('');
+                }
+
+                const widths = [40, 180, 120, 80, 70, 60, 60, 50];
+                return widths.map(width => `<td><div class="skeleton-element" style="width: ${width}px; height: 14px; border-radius: 999px;"></div></td>`).join('');
+            };
+
+            const rowsHtml = Array.from({ length: rows }).map(() => `
+                <tr class="courses-skeleton-row">
+                    ${rowCells()}
+                </tr>
+            `).join('');
+
+            return `
+                <div class="courses-table-shell ${isSkills ? 'skills-table-shell' : ''}" style="margin-top:16px;">
+                    <table class="courses-table ${isSkills ? 'skills-table' : ''}">
+                        <thead>
+                            <tr>${headerCols.map(col => `<th>${col}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
                 </div>
             `;
-            return;
-        }
+        };
 
-        root.innerHTML = `
-            <div class="page-intro">
-                <div class="skeleton-element" style="width: 260px; height: 34px; border-radius: 6px; margin-bottom: 10px;"></div>
-                <div class="skeleton-element" style="width: 420px; max-width: 90%; height: 14px; border-radius: 4px;"></div>
-            </div>
-            ${(route === '/courses' || route === '/technical') ? `
-            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:24px; margin-bottom:18px;">
-                <div class="skeleton-element" style="flex:1 1 320px; min-width:240px; height: 36px; border-radius: 10px;"></div>
-                <div class="skeleton-element" style="width: 150px; height: 36px; border-radius: 10px;"></div>
-                <div class="skeleton-element" style="width: 164px; height: 36px; border-radius: 10px;"></div>
-                <div class="skeleton-element" style="width: 36px; height: 36px; border-radius: 10px;"></div>
-            </div>
-            <div class="courses-table-shell" style="margin-top:0;">
-                <table class="courses-table" style="min-width:820px;">
-                    <thead>
-                        <tr>
-                            <th><div class="skeleton-element" style="width:36px; height:12px; border-radius:999px;"></div></th>
-                            <th><div class="skeleton-element" style="width:76px; height:12px; border-radius:999px;"></div></th>
-                            <th><div class="skeleton-element" style="width:64px; height:12px; border-radius:999px;"></div></th>
-                            <th><div class="skeleton-element" style="width:52px; height:12px; border-radius:999px;"></div></th>
-                            <th><div class="skeleton-element" style="width:62px; height:12px; border-radius:999px;"></div></th>
-                            <th><div class="skeleton-element" style="width:54px; height:12px; border-radius:999px;"></div></th>
-                            <th><div class="skeleton-element" style="width:96px; height:12px; border-radius:999px;"></div></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><div class="skeleton-element" style="width:44px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:180px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:120px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:96px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:88px; height:18px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:70px; height:18px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:64px; height:14px; border-radius:999px;"></div></td>
-                        </tr>
-                        <tr>
-                            <td><div class="skeleton-element" style="width:44px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:220px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:138px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:86px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:102px; height:18px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:76px; height:18px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:58px; height:14px; border-radius:999px;"></div></td>
-                        </tr>
-                        <tr>
-                            <td><div class="skeleton-element" style="width:44px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:194px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:114px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:104px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:92px; height:18px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:68px; height:18px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:60px; height:14px; border-radius:999px;"></div></td>
-                        </tr>
-                        <tr>
-                            <td><div class="skeleton-element" style="width:44px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:208px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:126px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:98px; height:14px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:96px; height:18px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:72px; height:18px; border-radius:999px;"></div></td>
-                            <td><div class="skeleton-element" style="width:62px; height:14px; border-radius:999px;"></div></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>` : `
-            <div class="skeleton-element" style="width: 100%; height: 420px; border-radius: 10px; margin-top: 16px;"></div>`}
-        `;
+        const projectSkeletonCards = (count = 6) => {
+            let html = '<div id="portfolio-grid" class="portfolio-grid">';
+            for (let i = 0; i < count; i++) {
+                html += '<div class="portfolio-card skeleton-item"><div class="card-thumb"><div class="skeleton-element" style="width:100%;height:100%;border-radius:8px;"></div></div><div class="card-content"><div class="card-info"><div class="skeleton-element" style="width: 38%; height: 11px; margin-bottom: 8px; border-radius: 999px;"></div><div class="skeleton-element" style="width: 78%; height: 18px; margin-bottom: 10px; border-radius: 999px;"></div><div class="skeleton-element" style="width: 42%; height: 14px; border-radius: 999px;"></div></div></div></div>';
+            }
+            html += '</div>';
+            return html;
+        };
+
+        switch (route) {
+            case '/videos':
+            case '/games':
+                root.innerHTML = `
+                    ${pageIntroSkeleton(220, 460)}
+                    ${projectSkeletonCards(6)}
+                `;
+                return;
+            case '/courses':
+                root.innerHTML = `
+                    ${pageIntroSkeleton(220, 460)}
+                    ${controlsSkeleton()}
+                    <div class="courses-dashboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:12px;">
+                        <div class="skeleton-element" style="height: 48px; border-radius: 8px;"></div>
+                        <div class="skeleton-element" style="height: 48px; border-radius: 8px;"></div>
+                        <div class="skeleton-element" style="height: 48px; border-radius: 8px;"></div>
+                    </div>
+                `;
+                return;
+            case '/bio':
+                root.innerHTML = `
+                    ${pageIntroSkeleton(240, 420)}
+                    ${controlsSkeleton()}
+                    <div style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
+                        ${Array.from({ length: 3 }).map(() => '<div class="skeleton-element" style="height: 108px; border-radius: 8px;"></div>').join('')}
+                    </div>
+                `;
+                return;
+            case '/activities':
+                root.innerHTML = `
+                    ${pageIntroSkeleton(220, 420)}
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:16px;">
+                        ${Array.from({ length: 4 }).map(() => '<div class="achievement-card"><div class="skeleton-element" style="width:100%;height:110px;border-radius:8px;"></div></div>').join('')}
+                    </div>
+                `;
+                return;
+            case '/achievements':
+                root.innerHTML = `
+                    ${pageIntroSkeleton(280, 420)}
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:20px;">
+                        ${Array.from({ length: 3 }).map(() => '<div class="achievement-card"><div class="skeleton-element" style="width:100%;height:120px;border-radius:8px;"></div></div>').join('')}
+                    </div>
+                `;
+                return;
+            case '/technical':
+                root.innerHTML = `
+                    ${pageIntroSkeleton(220, 420)}
+                    ${controlsSkeleton()}
+                `;
+                return;
+            default:
+                root.innerHTML = `
+                    ${pageIntroSkeleton(160, 300)}
+                `;
+                return;
+        }
     };
 
     const injectSharedHeaderFooter = async () => {

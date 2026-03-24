@@ -24,46 +24,70 @@ class Renderer {
         if (!container) return;
         const isPortfolioGrid = container.id === 'portfolio-grid' || container.id === 'recent-work-grid';
         const isSkillsGrid = container.id === 'skills-list';
-
+        const isCoursesTable = container.id === 'courses-table-body' || (container.parentElement && container.parentElement.id === 'courses-table-body');
         container.style.visibility = 'visible';
         container.style.display = isPortfolioGrid ? 'grid' : 'block';
-
-        if (isSkillsGrid) {
-            const rowWidths = [
-                [126, 96, 94, 82],
-                [142, 112, 102, 76],
-                [118, 88, 90, 84],
-                [134, 104, 98, 78],
-            ];
-            let rows = '';
+        if (isSkillsGrid || isCoursesTable) {
+            container.innerHTML = '';
+            const table = document.createElement('table');
+            table.className = 'courses-table skills-table';
+            const thead = document.createElement('thead');
+            thead.innerHTML = '<tr><th>Name</th><th>Category</th><th>Proficiency</th><th>Last Used</th></tr>';
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            tbody.className = isSkillsGrid ? 'skills-table-body' : 'courses-table-body';
             for (let i = 0; i < count; i++) {
-                const w = rowWidths[i % rowWidths.length];
-                rows += `<tr class="courses-skeleton-row">
-                    <td><div style="display:flex;align-items:center;gap:10px;"><div class="skeleton-element" style="width:28px;height:28px;border-radius:4px;flex-shrink:0;"></div><div style="min-width:0;"><div class="skeleton-element" style="width:${w[0]}px;max-width:100%;height:14px;border-radius:999px;"></div></div></div></td>
-                    <td><div class="skeleton-element" style="width:${w[1]}px;height:14px;border-radius:999px;"></div></td>
-                    <td><div class="skeleton-element" style="width:${w[2]}px;height:18px;border-radius:999px;"></div></td>
-                    <td><div class="skeleton-element" style="width:${w[3]}px;height:14px;border-radius:999px;"></div></td>
-                </tr>`;
+                const tr = document.createElement('tr');
+                tr.className = 'courses-skeleton-row';
+                for (let j = 0; j < 4; j++) {
+                    const td = document.createElement('td');
+                    const div = document.createElement('div');
+                    div.className = 'skeleton-element';
+                    div.style.height = j === 2 ? '18px' : '14px';
+                    div.style.borderRadius = '999px';
+                    div.style.width = j === 0 ? '120px' : (j === 1 ? '90px' : (j === 2 ? '90px' : '80px'));
+                    td.appendChild(div);
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
             }
-            container.innerHTML = `<div class="courses-table-shell skills-table-shell"><table class="courses-table skills-table"><thead><tr><th>Name</th><th>Category</th><th>Proficiency</th><th>Last Used</th></tr></thead><tbody class="skills-table-body">${rows}</tbody></table></div>`;
+            table.appendChild(tbody);
+            const shell = document.createElement('div');
+            shell.className = 'courses-table-shell skills-table-shell';
+            shell.appendChild(table);
+            container.appendChild(shell);
             return;
         }
-
         if (isPortfolioGrid) {
-            const skel = `
-                <div class="portfolio-card skeleton-item">
-                    <div class="card-thumb"><div class="skeleton-element" style="width: 100%; height: 100%;"></div></div>
-                    <div class="card-content">
-                        <div class="card-info">
-                            <div class="skeleton-element" style="width: 38%; height: 11px; margin-bottom: 8px; border-radius: 999px;"></div>
-                            <div class="skeleton-element" style="width: 78%; height: 18px; margin-bottom: 10px; border-radius: 999px;"></div>
-                            <div class="skeleton-element" style="width: 42%; height: 14px; border-radius: 999px;"></div>
-                        </div>
-                    </div>
-                </div>`;
-            let html = '';
-            for (let i = 0; i < count; i++) html += skel;
-            container.innerHTML = html;
+            container.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const card = document.createElement('div');
+                card.className = 'portfolio-card skeleton-item';
+                const thumb = document.createElement('div');
+                thumb.className = 'card-thumb';
+                const thumbSkel = document.createElement('div');
+                thumbSkel.className = 'skeleton-element';
+                thumbSkel.style.width = '100%';
+                thumbSkel.style.height = '100%';
+                thumb.appendChild(thumbSkel);
+                card.appendChild(thumb);
+                const content = document.createElement('div');
+                content.className = 'card-content';
+                const info = document.createElement('div');
+                info.className = 'card-info';
+                for (let j = 0; j < 3; j++) {
+                    const infoSkel = document.createElement('div');
+                    infoSkel.className = 'skeleton-element';
+                    infoSkel.style.borderRadius = '999px';
+                    infoSkel.style.marginBottom = j === 2 ? '0' : (j === 1 ? '10px' : '8px');
+                    infoSkel.style.height = j === 1 ? '18px' : (j === 2 ? '14px' : '11px');
+                    infoSkel.style.width = j === 0 ? '38%' : (j === 1 ? '78%' : '42%');
+                    info.appendChild(infoSkel);
+                }
+                content.appendChild(info);
+                card.appendChild(content);
+                container.appendChild(card);
+            }
         } else {
             container.innerHTML = '';
         }
@@ -107,7 +131,15 @@ class Renderer {
                     const dateHTML = displayDate ? `<p class="card-meta-date">${displayDate}</p>` : '';
                     const badgeHTML = project.badge ? `<span class="type-badge">${project.badge}</span>` : '';
                     
-                    const awards = s.filmFestivalAwards ? s.filmFestivalAwards[project.name] : null;
+                    // Only show festival awards for items that are videos (or already have awards parsed).
+                    // This avoids games inheriting awards by name when a video shares the same title.
+                    let awards = null;
+                    if (Array.isArray(project.awards) && project.awards.length > 0) {
+                        awards = project.awards;
+                    } else if (project.youtube && s.filmFestivalAwards) {
+                        awards = s.filmFestivalAwards[project.name] || null;
+                    }
+
                     let awardsHTML = '';
                     let awardsSearchData = '';
                     if (awards && awards.length > 0) {

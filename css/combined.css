@@ -107,8 +107,8 @@ nav {
 }
 
 .nav-container {
-    display: grid;
-    grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     padding: 10px 0;
     max-width: 1500px;
@@ -122,19 +122,38 @@ nav {
     color: #58a6ff;
     letter-spacing: 1px;
     text-transform: uppercase;
-    justify-self: start;
 }
 
 .nav-links {
     display: flex;
     gap: 8px;
     position: static;
-    justify-self: center;
-    flex-wrap: wrap;
     align-items: center;
+    margin-left: auto;
 }
 
-.nav-links a,
+.nav-links a {
+    color: #ffffff;
+    font-weight: 700;
+    font-family: inherit;
+    line-height: 1;
+    text-decoration: none;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.45px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 7px 10px;
+    background: transparent;
+    cursor: pointer;
+    margin-right: 0;
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    transform-origin: center;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, transform 0.24s cubic-bezier(0, 0, 0.2, 1);
+}
+
 .search-trigger-btn {
     color: #ffffff;
     font-weight: 700;
@@ -285,6 +304,8 @@ footer[data-include="html/footer.html"] {
 }
 
 .skeleton-element {
+    display: block;
+    box-sizing: border-box;
     animation: skeleton-pulse 1.5s infinite ease-in-out;
     background-color: #0d1117;
 }
@@ -1463,6 +1484,7 @@ body.dropdown-scroll-lock {
     flex-shrink: 0;
     background-repeat: no-repeat;
     background-position: center;
+    transition: transform 0.16s cubic-bezier(0, 0, 0.2, 1);
     background-size: 16px 16px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     transform-origin: 50% 55%;
@@ -2011,6 +2033,23 @@ body.dropdown-scroll-lock {
     background-repeat: no-repeat;
     background-position: center;
     background-size: 24px 24px;
+    transition: transform 0.16s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.gallery-nav-btn.prev:hover::before {
+    transform: translateX(-1px);
+}
+
+.gallery-nav-btn.next:hover::before {
+    transform: translateX(1px);
+}
+
+.icon-hover-effect-prev::before {
+    transform: translateX(-3px);
+}
+
+.icon-hover-effect-next::before {
+    transform: translateX(3px);
 }
 
 .gallery-nav-btn.prev::before {
@@ -2477,12 +2516,7 @@ body.dropdown-scroll-lock {
     z-index: 10;
     overflow: hidden;
     outline: none;
-    transition: background 0.2s ease, color 0.2s ease, transform 0.16s cubic-bezier(0, 0, 0.2, 1);
-}
-
-.modal-nav-btn:active,
-.sec-modal-nav-btn:active {
-    transform: scale(0.97);
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 .modal-nav-btn::before,
@@ -2494,6 +2528,19 @@ body.dropdown-scroll-lock {
     background-repeat: no-repeat;
     background-position: center;
     background-size: 24px 24px;
+    transition: transform 0.16s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.modal-nav-btn.prev:hover::before,
+.sec-modal-nav-btn.prev:hover::before,
+.icon-hover-effect-prev::before {
+    transform: translateX(-1px);
+}
+
+.modal-nav-btn.next:hover::before,
+.sec-modal-nav-btn.next:hover::before,
+.icon-hover-effect-next::before {
+    transform: translateX(1px);
 }
 
 .modal-nav-btn.prev::before,
@@ -2886,7 +2933,8 @@ body.dropdown-scroll-lock {
     appearance: none;
     display: inline-flex;
     align-items: center;
-    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    transform-origin: center;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, transform 0.24s cubic-bezier(0, 0, 0.2, 1);
 }
 
 .search-trigger-btn:hover {
