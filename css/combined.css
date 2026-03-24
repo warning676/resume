@@ -154,7 +154,7 @@ nav {
     display: inline-flex;
     align-items: center;
     transform-origin: center;
-    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, transform 0.24s cubic-bezier(0, 0, 0.2, 1);
 }
 
 .nav-links a:hover,
@@ -610,8 +610,7 @@ footer[data-include="html/footer.html"] {
 #page-root .bio-section h2,
 #page-root #education > h2 {
     font-size: 2rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-weight: bold;
     line-height: 1.2;
     color: #ffffff;
     margin-top: 0;
@@ -747,48 +746,19 @@ footer[data-include="html/footer.html"] {
     transition: transform 0.24s cubic-bezier(0, 0, 0.2, 1), background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-.inline-action-button::after {
-    content: '';
-    width: 14px;
-    height: 14px;
+.inline-action-button svg {
+    transition: transform 0.24s cubic-bezier(0, 0, 0.2, 1);
     flex-shrink: 0;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 14px 14px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23e1e4e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
-    transform: translateX(0);
-    transition: transform 0.18s ease;
 }
 
-button.inline-action-button:disabled::after {
-    width: 0;
-    height: 0;
-    background-image: none;
-    opacity: 0;
-    transition: none;
+.inline-action-button:hover {
+    background-color: #30363d;
+    border-color: #58a6ff;
+    color: #ffffff;
 }
 
-button.inline-action-button:disabled {
-    gap: 0;
-}
-
-button.inline-action-button:disabled:hover {
-    background-color: transparent;
-    border-color: #30363d;
-    color: #e1e4e8;
-    transform: none;
-}
-
-button.inline-action-button:disabled:hover::after {
-    width: 0;
-    height: 0;
-    background-image: none;
-    opacity: 0;
-    transform: none;
-}
-
-button.inline-action-button:disabled:active {
-    transform: none;
+.inline-action-button:active {
+    transform: scale(0.97);
 }
 
 .inline-action-button[aria-disabled="true"] {
@@ -837,8 +807,8 @@ button.inline-action-button:disabled:active {
     color: #ffffff;
 }
 
-.inline-action-button:hover::after {
-    transform: translateX(1px);
+.inline-action-button:hover svg {
+    transform: translateX(2px);
 }
 
 .inline-action-button:active {
@@ -1041,6 +1011,7 @@ button.inline-action-button:disabled:active {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .card-thumb img {
@@ -1089,7 +1060,7 @@ button.inline-action-button:disabled:active {
 .card-meta-date {
     margin: 0;
     padding: 0;
-    color: #8b949e;
+    color: #c9d1d9;
     font-size: 0.72rem;
     line-height: 1.35;
     letter-spacing: 0.06em;
@@ -2500,13 +2471,18 @@ body.dropdown-scroll-lock {
     color: #e1e4e8;
     font-size: 0;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10;
     overflow: hidden;
     outline: none;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.16s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.modal-nav-btn:active,
+.sec-modal-nav-btn:active {
+    transform: scale(0.97);
 }
 
 .modal-nav-btn::before,

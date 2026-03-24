@@ -22,7 +22,7 @@ class Renderer {
 
     showSkeletons(container, count) {
         if (!container) return;
-        const isPortfolioGrid = container.id === 'portfolio-grid';
+        const isPortfolioGrid = container.id === 'portfolio-grid' || container.id === 'recent-work-grid';
         const isSkillsGrid = container.id === 'skills-list';
 
         container.style.visibility = 'visible';
@@ -70,101 +70,140 @@ class Renderer {
         }
     }
 
-    renderProjects(projects) {
+    renderProjects(projects, targetContainer = null, isSecondary = false) {
         const s = this.s;
-        if (!s.portfolioGrid || !projects) return;
-        s.portfolioGrid.innerHTML = '';
+        const container = targetContainer || s.portfolioGrid;
+        if (!container || !projects) return;
+        
+        const skeletons = Array.from(container.querySelectorAll('.skeleton-item'));
+        const hasInitialSkeletons = skeletons.length > 0;
 
-        projects.forEach(project => {
-            try {
-                const card = document.createElement('div');
-                card.className = 'portfolio-card';
-                card.setAttribute('data-name', project.name || '');
-                card.setAttribute('data-date', project.date || '');
-                card.setAttribute('data-info', project.info || '');
-                card.setAttribute('data-tools', project.tools || '');
-                card.setAttribute('data-youtube', project.youtube || '');
-                card.setAttribute('data-type', project.badge || '');
-                card.setAttribute('data-badge', project.badge || '');
-                card.setAttribute('data-gallery', project.gallery ? project.gallery.join(', ') : '');
+        const projectPromises = projects.map((project, index) => {
+            return new Promise((resolve) => {
+                try {
+                    const card = document.createElement('div');
+                    card.className = 'portfolio-card';
+                    card.style.display = 'none';
+                    card.setAttribute('data-name', project.name || '');
+                    card.setAttribute('data-date', project.date || '');
+                    card.setAttribute('data-info', project.info || '');
+                    card.setAttribute('data-tools', project.tools || '');
+                    card.setAttribute('data-youtube', project.youtube || '');
+                    card.setAttribute('data-type', project.badge || '');
+                    card.setAttribute('data-badge', project.badge || '');
+                    card.setAttribute('data-gallery', project.gallery ? project.gallery.join(', ') : '');
 
-                let thumbSrc = project.resolvedThumb || project.gallery?.[0] || '';
-                const youtubeID = Utils.extractYouTubeID(project.youtube || '');
-                const hasValidYoutube = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
-                if (hasValidYoutube) {
-                    thumbSrc = project.resolvedThumb || `https://i.ytimg.com/vi/${youtubeID}/hqdefault.jpg`;
-                } else {
-                    thumbSrc = project.resolvedThumb || this.fixImagePath(thumbSrc);
-                }
+                    const youtubeID = Utils.extractYouTubeID(project.youtube || '');
+                    const hasValidYoutube = youtubeID && youtubeID.trim() !== "" && youtubeID !== "YOUTUBE_ID_HERE";
+                    const galleryThumb = project.gallery?.[0] ? this.fixImagePath(project.gallery[0]) : '';
+                    
+                    let thumbSrc = project.resolvedThumb ? this.fixImagePath(project.resolvedThumb) : '';
+                    if (!thumbSrc && hasValidYoutube) {
+                        thumbSrc = `https://i.ytimg.com/vi/${youtubeID}/hqdefault.jpg`;
+                    } else if (!thumbSrc) {
+                        thumbSrc = galleryThumb;
+                    }
 
-                const displayDate = project.date ? Utils.formatFullDate(project.date).toUpperCase() : '';
-                const dateHTML = displayDate ? `<p class="card-meta-date">${displayDate}</p>` : '';
-                const badgeHTML = project.badge ? `<span class="type-badge">${project.badge}</span>` : '';
-                
-                const isVideosPage = s.currentRoute === '/videos';
-                const awards = isVideosPage && s.filmFestivalAwards ? s.filmFestivalAwards[project.name] : null;
-                let awardsHTML = '';
-                let awardsSearchData = '';
-                if (awards && awards.length > 0) {
-                    const escAttr = (v) => String(v ?? '')
-                        .replace(/&/g, '&amp;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/</g, '&lt;');
-                    const awardsList = awards.map(a => `${a.award} - ${a.location}`).join('\n');
-                    awardsSearchData = awards.map(a => `${a.award} ${a.location}`).join(' ');
-                    awardsHTML = `<div class="card-awards-stack"><span class="card-awards-row" title="${escAttr(awardsList)}"><span class="card-awards-icon" aria-hidden="true">${Utils.lucideTrophySvg({ size: 18, className: 'lucide lucide-trophy' })}</span><span class="card-awards-label">Won awards</span></span></div>`;
-                } else {
-                    awardsHTML = '';
-                }
-                card.setAttribute('data-awards', awardsSearchData);
-                
-                card.innerHTML = `
-                    <div class="card-thumb">
-                        <img src="${thumbSrc}" alt="${project.name}" loading="lazy">
-                    </div>
-                    <div class="card-content">
-                        <div class="card-info">
-                            ${dateHTML}
-                            <h3>${(project.name || '')}</h3>
-                            ${badgeHTML}
+                    const displayDate = project.date ? Utils.formatFullDate(project.date).toUpperCase() : '';
+                    const dateHTML = displayDate ? `<p class="card-meta-date">${displayDate}</p>` : '';
+                    const badgeHTML = project.badge ? `<span class="type-badge">${project.badge}</span>` : '';
+                    
+                    const isVideosPage = s.currentRoute === '/videos';
+                    const awards = isVideosPage && s.filmFestivalAwards ? s.filmFestivalAwards[project.name] : null;
+                    let awardsHTML = '';
+                    let awardsSearchData = '';
+                    if (awards && awards.length > 0) {
+                        const escAttr = (v) => String(v ?? '')
+                            .replace(/&/g, '&amp;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/</g, '&lt;');
+                        const awardsList = awards.map(a => `${a.award} - ${a.location}`).join('\n');
+                        awardsSearchData = awards.map(a => `${a.award} ${a.location}`).join(' ');
+                        awardsHTML = `<div class="card-awards-stack"><span class="card-awards-row" title="${escAttr(awardsList)}"><span class="card-awards-icon" aria-hidden="true">${Utils.lucideTrophySvg({ size: 18, className: 'lucide lucide-trophy' })}</span><span class="card-awards-label">Won awards</span></span></div>`;
+                    }
+                    card.setAttribute('data-awards', awardsSearchData);
+                    
+                    card.innerHTML = `
+                        <div class="card-thumb">
+                            <img src="${thumbSrc}" alt="${project.name}">
                         </div>
-                        ${awardsHTML ? `<div class="card-awards">${awardsHTML}</div>` : ''}
-                    </div>`;
-                
-                const imgElement = card.querySelector('img');
-                if (imgElement && hasValidYoutube) {
-                    imgElement.onload = function() {
-                        if (this.naturalWidth === 120 && this.naturalHeight === 90) {
-                            this.style.opacity = '0.3';
-                            this.style.filter = 'blur(2px)';
+                        <div class="card-content">
+                            <div class="card-info">
+                                ${dateHTML}
+                                <h3>${(project.name || '')}</h3>
+                                ${badgeHTML}
+                            </div>
+                            ${awardsHTML ? `<div class="card-awards">${awardsHTML}</div>` : ''}
+                        </div>`;
+                    
+                    const preloadImg = new Image();
+                    preloadImg.onload = function() {
+                        if (this.naturalWidth === 120 && this.naturalHeight === 90 && galleryThumb && !this.src.includes(galleryThumb)) {
+                            this.src = galleryThumb;
+                            const cardImg = card.querySelector('img');
+                            if (cardImg) cardImg.src = galleryThumb;
+                            return;
+                        }
+                        resolve(card);
+                    };
+                    preloadImg.onerror = function() {
+                        if (galleryThumb && !this.src.includes(galleryThumb)) {
+                            this.src = galleryThumb;
+                            const cardImg = card.querySelector('img');
+                            if (cardImg) cardImg.src = galleryThumb;
+                        } else {
+                            resolve(card);
                         }
                     };
-                    imgElement.onerror = function() {
-                        this.style.opacity = '0.3';
-                    };
+                    preloadImg.src = thumbSrc;
+                    
+                    card.addEventListener('click', () => s.openModalForItem(card));
+                } catch (e) {
+                    console.error(e);
+                    resolve(null);
                 }
-                
-                card.addEventListener('click', () => s.openModalForItem(card));
-                s.portfolioGrid.appendChild(card);
-            } catch (err) {
-            }
+            });
         });
 
-        const categories = new Map();
-        const toolsMap = new Map();
-        projects.forEach(project => {
-            if (project.badge) categories.set(project.badge, project.badge);
-            if (project.tools) {
-                project.tools.split(',').forEach(tool => {
-                    const trimmed = tool.trim();
-                    if (trimmed) toolsMap.set(trimmed, trimmed);
+        Promise.all(projectPromises).then(cards => {
+            const validCards = cards.filter(Boolean);
+            
+            if (hasInitialSkeletons) {
+                validCards.forEach((card, index) => {
+                    if (skeletons[index] && skeletons[index].parentNode === container) {
+                        skeletons[index].replaceWith(card);
+                    } else if (!container.contains(card)) {
+                        container.appendChild(card);
+                    }
+                    card.style.display = 'flex';
+                });
+                skeletons.slice(validCards.length).forEach(skel => skel.remove());
+            } else {
+                container.innerHTML = '';
+                validCards.forEach(card => {
+                    container.appendChild(card);
+                    card.style.display = 'flex';
                 });
             }
+
+            if (!isSecondary) {
+                const categories = new Map();
+                const toolsMap = new Map();
+                projects.forEach(project => {
+                    if (project.badge) categories.set(project.badge, project.badge);
+                    if (project.tools) {
+                        project.tools.split(',').forEach(tool => {
+                            const trimmed = tool.trim();
+                            if (trimmed) toolsMap.set(trimmed, trimmed);
+                        });
+                    }
+                });
+                s.updateTypeFilter(categories);
+                s.updateToolFilter(toolsMap);
+                s.sortCards();
+                if (s.filterCards) s.filterCards();
+            }
         });
-        s.updateTypeFilter(categories);
-        s.updateToolFilter(toolsMap);
-        s.sortCards();
-        if (s.filterCards) s.filterCards();
     }
 
     renderSkills(skills) {

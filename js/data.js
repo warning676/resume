@@ -69,7 +69,7 @@ class DataService {
     convertGoogleDriveUrl(url) {
         if (!url) return null;
         if (!url.includes('drive.google.com')) return url;
-        
+
         const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
         if (fileIdMatch) {
             const fileId = fileIdMatch[1];
@@ -81,30 +81,30 @@ class DataService {
     normalizePath(path, sheetName) {
         if (!path) return path;
         path = path.replace(/\\/g, '/');
-        
+
         if (sheetName === 'videos') {
             path = path.replace(/Images\/Videos\//i, 'Images/videos/');
         } else if (sheetName === 'games') {
             path = path.replace(/Images\/Games\//i, 'Images/games/');
         }
-        
+
         return path;
     }
 
     parseAwards(awardsString) {
         if (!awardsString) return [];
-        
+
         const awards = [];
         const awardParts = awardsString.split(',');
-        
+
         for (const part of awardParts) {
             const trimmed = part.trim();
             if (!trimmed) continue;
-            
+
             const awardMatch = trimmed.match(/Award:\s*([^|]+)/);
             const locationMatch = trimmed.match(/Location:\s*(.+?)\s*\|\s*Date:/);
             const dateMatch = trimmed.match(/Date:\s*(.+)$/);
-            
+
             if (awardMatch && locationMatch && dateMatch) {
                 awards.push({
                     award: awardMatch[1].trim(),
@@ -113,20 +113,20 @@ class DataService {
                 });
             }
         }
-        
+
         return awards;
     }
 
     buildFilmFestivalAwards(videosData) {
         const awards = {};
         if (!Array.isArray(videosData)) return awards;
-        
+
         videosData.forEach(video => {
             if (video.name && Array.isArray(video.awards) && video.awards.length > 0) {
                 awards[video.name] = video.awards;
             }
         });
-        
+
         return awards;
     }
 
@@ -163,7 +163,7 @@ class DataService {
     updateCurrentTime() {
         const timeElement = document.getElementById('current-time');
         if (!timeElement) return;
-        
+
         const now = new Date();
         const options = {
             month: 'long',
@@ -173,19 +173,27 @@ class DataService {
             minute: '2-digit',
             hour12: true
         };
-        
+
         timeElement.textContent = now.toLocaleString('en-US', options);
     }
 
     startTimeUpdates() {
         this.updateCurrentTime();
-        setInterval(() => this.updateCurrentTime(), 60000);
+        
+        const syncTime = () => {
+            this.updateCurrentTime();
+            setInterval(() => this.updateCurrentTime(), 60000);
+        };
+        
+        const now = new Date();
+        const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+        setTimeout(syncTime, msUntilNextMinute);
     }
 
     async loadSheet(sheetName) {
         const cacheKey = `sheet_${sheetName}`;
         const timestampKey = `sheet_${sheetName}_ts`;
-        
+
         let cachedData = null;
         let cachedTs = null;
         try {
@@ -198,7 +206,7 @@ class DataService {
                 const n = Number(tsRaw);
                 if (Number.isFinite(n)) cachedTs = n;
             }
-        } catch (err) {}
+        } catch (err) { }
 
         if (cachedData && cachedTs !== null && Date.now() - cachedTs < SHEET_CACHE_TTL_MS) {
             this.recordConnectionSample(null, true, false);
@@ -207,7 +215,12 @@ class DataService {
         }
 
         try {
-            const url = `https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}&_=${Date.now()}`;
+            let actualSheetName = sheetName;
+            if (sheetName === 'videos') actualSheetName = 'Video Projects';
+            if (sheetName === 'games') actualSheetName = 'Game Projects';
+            if (sheetName === 'School') actualSheetName = 'Schools';
+
+            const url = `https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(actualSheetName)}&_=${Date.now()}`;
             const fetchStartedAt = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
             const response = await fetch(url, {
                 cache: 'no-cache',
@@ -222,12 +235,12 @@ class DataService {
             const fetchEndedAt = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
             this.recordConnectionSample(fetchEndedAt - fetchStartedAt, false, false);
             this.updateConnectionStatus();
-            
+
             try {
                 localStorage.setItem(cacheKey, JSON.stringify(data));
                 localStorage.setItem(timestampKey, String(Date.now()));
-            } catch (err) {}
-            
+            } catch (err) { }
+
             return { data, fromCache: false };
         } catch (err) {
             if (cachedData) {
@@ -266,8 +279,6 @@ class DataService {
         const headerMap = {
             'Name': 'name',
             'Type': 'type',
-            'School': 'school',
-            'School Abbreviation': 'schoolAbbreviation',
             'Location': 'location',
             'Started': 'started',
             'Status': 'status',
@@ -281,7 +292,8 @@ class DataService {
             'Course ID': 'courseid',
             'ID': 'id',
             'Languages Used': 'languagesUsed',
-            'Tools': 'tools',
+            'Tools Used': 'tools',
+            'Abbreviation': 'schoolAbbreviation',
             'YouTube Link': 'youtube',
             'Gallery': 'gallery',
             'Awards': 'awards',
@@ -328,11 +340,11 @@ class DataService {
                     val = val.split(separator).map(s => {
                         const trimmed = s.trim();
                         if (!trimmed) return null;
-                        
+
                         if (trimmed.startsWith('http')) return trimmed;
-                        
+
                         let processedPath = this.normalizePath(trimmed, sheetName);
-                        
+
                         if (!processedPath.startsWith('http') && !processedPath.startsWith('../') && !processedPath.startsWith('Images/')) {
                             if (sheetName === 'games') {
                                 processedPath = `Images/games/${processedPath}`;
@@ -340,7 +352,7 @@ class DataService {
                                 processedPath = `Images/videos/${processedPath}`;
                             }
                         }
-                        
+
                         return processedPath;
                     }).filter(s => s);
                 } else if (key === 'date' || key === 'lastUsed' || key === 'started' || key === 'startdate' || key === 'enddate' || key === 'ended') {
@@ -366,7 +378,7 @@ class DataService {
                 }
                 item[key] = val;
             });
-            
+
             return item;
         });
     }

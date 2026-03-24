@@ -17,21 +17,27 @@ class ModalManager {
             clearTimeout(modalEl._fadeTimer);
             modalEl._fadeTimer = null;
         }
-        if (modalEl.style.display === 'flex') {
-            modalEl.style.opacity = '1';
+        if (modalEl.style.display === 'flex' && modalEl.style.opacity === '1') {
             return;
         }
         const contentEl = modalEl.querySelector('.modal-content, .external-link-modal-content');
         modalEl.style.transition = `opacity ${this.modalFadeMs}ms ease`;
         modalEl.style.opacity = '0';
         modalEl.style.display = 'flex';
+        
         if (contentEl) {
-            contentEl.style.transition = `transform ${this.modalFadeMs}ms ease`;
-            contentEl.style.transform = 'translateY(8px)';
+            contentEl.style.transition = 'none';
+            contentEl.style.transform = 'translateY(12px)';
         }
+
+        void modalEl.offsetHeight;
+
         requestAnimationFrame(() => {
+            if (contentEl) {
+                contentEl.style.transition = `transform ${this.modalFadeMs}ms ease`;
+                contentEl.style.transform = 'translateY(0)';
+            }
             modalEl.style.opacity = '1';
-            if (contentEl) contentEl.style.transform = 'translateY(0)';
         });
     }
 
@@ -351,7 +357,7 @@ class ModalManager {
         try {
             const c = s.modal ? s.modal.querySelector('.modal-content') : null;
             if (c) c.classList.remove('no-side-padding');
-        } catch (e) {}
+        } catch (e) { }
     }
 
     _finalizeSecModalReset() {
@@ -363,7 +369,7 @@ class ModalManager {
         try {
             const c = s.secModal ? s.secModal.querySelector('.modal-content') : null;
             if (c) c.classList.remove('no-side-padding');
-        } catch (e) {}
+        } catch (e) { }
     }
 
     dismissPortfolioModalsForNavigation() {
@@ -375,7 +381,7 @@ class ModalManager {
         try {
             const c = s.secModal ? s.secModal.querySelector('.modal-content') : null;
             if (c) c.classList.remove('no-side-padding');
-        } catch (e) {}
+        } catch (e) { }
         this._finalizeMainModalReset();
     }
 
@@ -432,7 +438,7 @@ class ModalManager {
     navigateItem(direction) {
         const s = this.s;
         const isSkillModal = s.modal && s.modal.classList.contains('modal-skill');
-        
+
         if (s.isAchievementsPage && !isSkillModal && s.achievementVideos && s.achievementVideos.length > 1) {
             const currentIndex = s.currentAchievementVideoIndex;
             if (currentIndex < 0) return;
@@ -442,7 +448,7 @@ class ModalManager {
             if (nextVideo) this.openModalForItemWithTransition(nextVideo, direction);
             return;
         }
-        
+
         if (!s.currentItemCard) return;
         let container, itemSelector;
         if (s.isSkillsPage || (s.isAchievementsPage && isSkillModal)) {
@@ -450,6 +456,9 @@ class ModalManager {
             itemSelector = '.skill-item';
         } else if (s.isPortfolioPage) {
             container = s.portfolioGrid;
+            itemSelector = '.portfolio-card';
+        } else if (s.currentRoute === '/' || s.currentRoute === '/bio') {
+            container = document.getElementById('recent-work-grid');
             itemSelector = '.portfolio-card';
         } else if (s.isAchievementsPage) {
             return;
@@ -632,7 +641,7 @@ class ModalManager {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'inline-action-button courses-modal-featured-link';
-                btn.textContent = name;
+                btn.innerHTML = `${name} ${Utils.lucideChevronRightSvg({ size: 15 })}`;
                 btn.style.setProperty('--inline-action-color', '#58a6ff');
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -662,7 +671,7 @@ class ModalManager {
                     const courseBtn = document.createElement('button');
                     courseBtn.type = 'button';
                     courseBtn.className = 'inline-action-button courses-modal-featured-link modal-skill-course-project-course-id-below';
-                    courseBtn.textContent = courseId;
+                    courseBtn.innerHTML = `${courseId} ${Utils.lucideChevronRightSvg({ size: 14 })}`;
                     courseBtn.style.setProperty('--inline-action-color', '#58a6ff');
                     courseBtn.setAttribute('aria-label', `Open course ${courseId} on the Courses page`);
                     courseBtn.addEventListener('click', (e) => {
@@ -742,18 +751,29 @@ class ModalManager {
             if (modalBody) modalBody.scrollTop = 0;
             if (modalContent) modalContent.scrollTop = 0;
 
-            const container = s.isSkillsPage ? s.skillsList : s.portfolioGrid;
-            const itemSelector = s.isSkillsPage ? '.skill-item' : '.portfolio-card';
+            let container = null;
+            let itemSelector = '';
+            if (s.isSkillsPage) {
+                container = s.skillsList;
+                itemSelector = '.skill-item';
+            } else if (s.isPortfolioPage) {
+                container = s.portfolioGrid;
+                itemSelector = '.portfolio-card';
+            } else if (s.currentRoute === '/' || s.currentRoute === '/bio') {
+                container = document.getElementById('recent-work-grid');
+                itemSelector = '.portfolio-card';
+            }
+
             s.currentItemCard = (cardOrData instanceof HTMLElement) ? cardOrData : null;
             if (!s.currentItemCard && container && data && data.name) {
                 const cards = Array.from(container.querySelectorAll(itemSelector));
                 s.currentItemCard = cards.find(c => String(c.getAttribute('data-name')).toLowerCase() === String(data.name).toLowerCase()) || null;
             }
-            
+
             const visibleItems = container
                 ? Array.from(container.querySelectorAll(itemSelector)).filter(item => item.style.display !== 'none')
                 : [];
-            
+
             const showAchievementNav = s.isAchievementsPage && s.achievementVideos && s.achievementVideos.length > 1;
             const showRegularNav = s.currentItemCard && visibleItems.length > 1;
             s.showModalNavArrows = showAchievementNav || showRegularNav;
@@ -895,9 +915,9 @@ class ModalManager {
             const rawDate = data.date;
             const toolsStr = data.tools;
             const info = data.info;
-            
+
             const youtubeID = Utils.extractYouTubeID(data.youtube || '');
-            const isVerticalVideo = youtubeID && data.youtube && 
+            const isVerticalVideo = youtubeID && data.youtube &&
                 (data.youtube.includes('/shorts/') || data.youtube.toLowerCase().includes('shorts'));
 
             const modalTitle = document.getElementById("modal-title");
@@ -931,10 +951,10 @@ class ModalManager {
                         const tag = document.createElement('span');
                         tag.className = 'software-tag';
                         const skillMatch = (s.allData && s.allData.skills) ? (
-                                s.allData.skills.find(sk => sk.name.toLowerCase() === tool.toLowerCase())
-                                || s.allData.skills.find(sk => sk.name.toLowerCase().includes(tool.toLowerCase()))
-                                || s.allData.skills.find(sk => tool.toLowerCase().includes(sk.name.toLowerCase()))
-                            ) : null;
+                            s.allData.skills.find(sk => sk.name.toLowerCase() === tool.toLowerCase())
+                            || s.allData.skills.find(sk => sk.name.toLowerCase().includes(tool.toLowerCase()))
+                            || s.allData.skills.find(sk => tool.toLowerCase().includes(sk.name.toLowerCase()))
+                        ) : null;
                         if (skillMatch && skillMatch.icon) {
                             const iconWrap = document.createElement('span');
                             iconWrap.className = 'tool-icon-wrap';
@@ -1219,7 +1239,7 @@ class ModalManager {
                     const allCached = results.every(r => r.cached);
                     const loadTime = Date.now() - startTime;
                     const smoothingDelay = allCached ? 0 : Math.max(0, 120 - loadTime);
-                    
+
                     return Promise.all([results, this.delay(smoothingDelay)]);
                 }).then(([results]) => {
                     if (loadId !== this.galleryLoadId) return;
@@ -1283,12 +1303,10 @@ class ModalManager {
         }
 
         if (targetModal) {
-            this.fadeInModal(targetModal);
             targetModal.style.zIndex = 99999;
             this.syncPageScrollLock(true);
-            const content = targetModal.querySelector('.modal-content');
-            if (content) content.style.display = 'flex';
             this.adjustModalPadding(targetModal);
+            this.fadeInModal(targetModal);
         }
     }
 
@@ -1334,7 +1352,7 @@ class ModalManager {
                     void content.offsetWidth;
                     content.style.transition = hadTransition;
                 }
-            } catch (e) {}
+            } catch (e) { }
         } else {
             if (content) {
                 if (!s.showModalNavArrows) content.classList.add('no-side-padding');
@@ -1430,3 +1448,6 @@ class ModalManager {
         setTimeout(checkCursor, 100);
     }
 }
+
+
+// modal-animation-fix-end-marker

@@ -1273,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     anchor.rel = 'noopener noreferrer';
                     anchor.className = 'inline-action-button';
                     anchor.style.setProperty('--inline-action-color', textColor);
-                    anchor.textContent = item.name;
+                    anchor.innerHTML = `${item.name} ${Utils.lucideChevronRightSvg({ size: 14 })}`;
                     anchor.addEventListener('click', (e) => {
                         e.preventDefault();
                         let modalInfo = '';
@@ -1388,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>`
                 : '';
             const achievementsLinkRow = `<div style="font-size: 0.9rem; margin-top: 10px;">
-                <a href="#" class="education-achievements-link inline-action-button" data-focus-school="${focusSchool}">View Achievements</a>
+                <a href="#" class="education-achievements-link inline-action-button" data-focus-school="${focusSchool}">View Achievements ${Utils.lucideChevronRightSvg({ size: 16 })}</a>
             </div>`;
 
             return `
@@ -1420,6 +1420,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
         });
+    };
+
+    const renderRecentWork = () => {
+        const gridContainer = document.getElementById('recent-work-grid');
+        const listContainer = document.getElementById('recent-course-projects-list');
+        if (!gridContainer || !state.renderer) return;
+
+        const allGamesVideos = [
+            ...(state.allData?.games || []),
+            ...(state.allData?.videos || [])
+        ].filter(item => item && item.name);
+
+        allGamesVideos.sort((a, b) => {
+            const timeA = Utils.parseFlexibleDateStringMs(a.date) || 0;
+            const timeB = Utils.parseFlexibleDateStringMs(b.date) || 0;
+            return timeB - timeA;
+        });
+
+        const recentGamesVideos = allGamesVideos.slice(0, 3);
+        if (!recentGamesVideos.length) {
+            gridContainer.innerHTML = '<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 20px;">No recent work available.</p>';
+        } else {
+            state.renderer.showSkeletons(gridContainer, recentGamesVideos.length);
+            try {
+                state.renderer.renderProjects(recentGamesVideos, gridContainer, true);
+            } catch (e) {
+                gridContainer.innerHTML = '<p style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 20px;">Unable to display recent work. Please refresh the page.</p>';
+            }
+        }
     };
 
     const renderActivities = () => {
@@ -1475,7 +1504,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <p style="font-size: 0.92rem; color: #8b949e; margin: 6px 0 0 0;">${escapeHtml(school || 'Organization not specified')}</p>
                         ${metaLine}
                         <p style="margin-top: 12px; line-height: 1.55; color: #e1e4e8; white-space: pre-line;">${safeDescription}</p>
-                        ${hasLink ? `<a class="activity-external-link inline-action-button" href="${escapeHtml(link)}" data-title="${escapeHtml(name)}" data-category="${escapeHtml(type || 'Activity')}" style="margin-top: 12px;">View Activity</a>` : ''}
+                        ${hasLink ? `<a class="activity-external-link inline-action-button" href="${escapeHtml(link)}" data-title="${escapeHtml(name)}" data-category="${escapeHtml(type || 'Activity')}" style="margin-top: 12px;">View Activity ${Utils.lucideChevronRightSvg({ size: 16 })}</a>` : ''}
                     </div>
                 </div>`;
         }).join('');
@@ -1569,6 +1598,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (deltaY) window.scrollBy({ top: deltaY, behavior: 'auto' });
     };
 
+    const syncColumnVisibilityToggles = (button, menu) => {
+        const scope = getColumnFilterScope(button);
+        if (!scope) return;
+        const table = getTableForScope(scope);
+        if (!table) return;
+        menu.querySelectorAll('.column-filter-item').forEach(item => {
+            const toggle = item.querySelector('.column-visibility-toggle');
+            if (!toggle) return;
+            const key = item.dataset.filterKey || '';
+            if (!key) return;
+            const columnIndex = getColumnIndexForScopeKey(scope, key);
+            if (columnIndex <= 0) return;
+            let isCssHidden = false;
+            const th = table.querySelector(`thead th:nth-child(${columnIndex})`);
+            if (th) {
+                const originalDisplay = th.style.display;
+                th.style.display = '';
+                if (window.getComputedStyle(th).display === 'none') {
+                    isCssHidden = true;
+                }
+                th.style.display = originalDisplay;
+            }
+            const hidden = isCssHidden || isColumnHidden(scope, key);
+            const allowHide = isCssHidden ? false : canHideColumn(scope, key);
+            toggle.classList.toggle('is-hidden', hidden);
+            toggle.classList.toggle('is-locked', !allowHide);
+            toggle.disabled = !allowHide;
+            toggle.setAttribute('aria-label', hidden ? 'Show column' : 'Hide column');
+            toggle.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+        });
+    };
+
     const runColumnFilterMenuOpen = (button, menu, options = {}) => {
         const resetActiveColumn = options.resetActiveColumn !== false;
         document.querySelectorAll('.custom-select-container, .multi-select-container').forEach(container => {
@@ -1576,6 +1637,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         closeAllColumnFilterMenus();
         syncDropdownScrollLock();
+        syncColumnVisibilityToggles(button, menu);
         menu.classList.remove('skip-animation');
         menu.classList.remove('skip-submenu-animation');
         menu.classList.add('open');
@@ -2090,6 +2152,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         menu.classList.toggle('skip-animation', wasOpen);
         menu.classList.toggle('skip-submenu-animation', wasOpen);
 
+        if (!menu._hasResizeListener) {
+            window.addEventListener('resize', () => {
+                if (menu.classList.contains('open') && typeof menu._reRender === 'function') {
+                    menu._reRender();
+                }
+            });
+            menu._hasResizeListener = true;
+        }
+        menu._reRender = () => {
+            renderColumnFilterMenu(button, menu, definitions, selectedMap, onChange, activeKey, discriminationContext);
+        };
+
         const closeMenu = () => {
             closeOpenSelectDropdowns();
             menu.classList.remove('open');
@@ -2195,8 +2269,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const columnIndex = getColumnIndexForScopeKey(scope, definition.key);
             if (columnIndex > 0) {
-                const hidden = isColumnHidden(scope, definition.key);
-                const allowHide = canHideColumn(scope, definition.key);
+                let isCssHidden = false;
+                const table = getTableForScope(scope);
+                if (table) {
+                    const th = table.querySelector(`thead th:nth-child(${columnIndex})`);
+                    if (th) {
+                        const originalDisplay = th.style.display;
+                        th.style.display = '';
+                        if (window.getComputedStyle(th).display === 'none') {
+                            isCssHidden = true;
+                        }
+                        th.style.display = originalDisplay;
+                    }
+                }
+
+                const hidden = isCssHidden || isColumnHidden(scope, definition.key);
+                const allowHide = isCssHidden ? false : canHideColumn(scope, definition.key);
                 const toggleButton = document.createElement('button');
                 toggleButton.type = 'button';
                 toggleButton.className = `column-visibility-toggle${hidden ? ' is-hidden' : ''}`;
@@ -2260,9 +2348,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             allRow.addEventListener('click', (event) => {
                 event.stopPropagation();
                 event.preventDefault();
-                selected[definition.key] = ['all'];
-                onChange();
-                renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key, discriminationContext);
+                setTimeout(() => {
+                    selected[definition.key] = ['all'];
+                    onChange();
+                    renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key, discriminationContext);
+                }, 0);
             });
             subMenu.appendChild(allRow);
 
@@ -2284,24 +2374,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 row.addEventListener('click', (event) => {
                     event.stopPropagation();
                     event.preventDefault();
-                    let currentValues;
-                    if (isAllMode) {
-                        currentValues = [value];
-                    } else {
-                        currentValues = Array.from(Array.isArray(keySelected) ? keySelected : []);
-                        const idx = currentValues.indexOf(value);
-                        if (idx >= 0) currentValues.splice(idx, 1);
-                        else currentValues.push(value);
-                    }
-                    if (currentValues.length === 0) {
-                        selected[definition.key] = ['all'];
-                    } else if (currentValues.length === individualValues.length) {
-                        selected[definition.key] = ['all'];
-                    } else {
-                        selected[definition.key] = currentValues;
-                    }
-                    onChange();
-                    renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key, discriminationContext);
+                    setTimeout(() => {
+                        let currentValues;
+                        if (isAllMode) {
+                            currentValues = [value];
+                        } else {
+                            currentValues = Array.from(Array.isArray(keySelected) ? keySelected : []);
+                            const idx = currentValues.indexOf(value);
+                            if (idx >= 0) currentValues.splice(idx, 1);
+                            else currentValues.push(value);
+                        }
+                        if (currentValues.length === 0) {
+                            selected[definition.key] = ['all'];
+                        } else if (currentValues.length === individualValues.length) {
+                            selected[definition.key] = ['all'];
+                        } else {
+                            selected[definition.key] = currentValues;
+                        }
+                        onChange();
+                        renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, definition.key, discriminationContext);
+                    }, 0);
                 });
 
                 subMenu.appendChild(row);
@@ -2352,10 +2444,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 clearButton.addEventListener('click', (event) => {
                     event.stopPropagation();
                     event.preventDefault();
-                    delete selected[definition.key];
-                    onChange();
-                    renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, undefined, discriminationContext);
-                    closeMenu();
+                    setTimeout(() => {
+                        delete selected[definition.key];
+                        onChange();
+                        renderColumnFilterMenu(button, menu, usableDefinitions, selected, onChange, undefined, discriminationContext);
+                        closeMenu();
+                    }, 0);
                 });
 
                 clearWrap.appendChild(clearButton);
@@ -3027,7 +3121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
                 featuredLink.style.setProperty('--inline-action-color', '#58a6ff');
-                featuredLink.textContent = displayName;
+                featuredLink.innerHTML = `${displayName} ${Utils.lucideChevronRightSvg({ size: 14 })}`;
                 featuredLink.onclick = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -3225,9 +3319,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         state.coursesModal.setAttribute('aria-hidden', 'false');
-        state.coursesModal.classList.add('open');
         syncCoursesModalScrollLock(true);
-        state.modalManager?.fadeInModal(state.coursesModal);
+        if (state.modalManager && typeof state.modalManager.fadeInModal === 'function') {
+            state.modalManager.fadeInModal(state.coursesModal);
+            state.coursesModal.classList.add('open');
+        } else {
+            state.coursesModal.style.display = 'flex';
+            state.coursesModal.classList.add('open');
+        }
     };
 
     const closeCoursesModal = () => {
@@ -3662,15 +3761,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             state.coursesSearchInput.value = state.courseSearchQuery || '';
             if (coursesClearBtn) {
-                    coursesClearBtn.addEventListener('pointerdown', (e) => {
-                        e.preventDefault();
-                    });
+                coursesClearBtn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                });
                 coursesClearBtn.addEventListener('click', () => {
                     state.coursesSearchInput.value = '';
                     state.courseSearchQuery = '';
                     updateClearButton();
                     applyCoursesFilterAndSort();
-                        if (document.activeElement !== state.coursesSearchInput) state.coursesSearchInput.focus();
+                    if (document.activeElement !== state.coursesSearchInput) state.coursesSearchInput.focus();
                 });
             }
             updateClearButton();
@@ -3861,9 +3960,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!state.allData['Course Projects']) sheetsNeeded.push('Course Projects');
             if (!state.allData.skills) sheetsNeeded.push('skills');
         }
-        if ((route === '/' || route === '/bio') && !state.allData.School) sheetsNeeded.push('School');
-        if ((route === '/' || route === '/bio') && !state.allData.Courses) sheetsNeeded.push('Courses');
-        if ((route === '/' || route === '/bio') && !state.allData['Course Projects']) sheetsNeeded.push('Course Projects');
+        if (route === '/' || route === '/bio') {
+            if (!state.allData.School) sheetsNeeded.push('School');
+            if (!state.allData.Courses) sheetsNeeded.push('Courses');
+            if (!state.allData['Course Projects']) sheetsNeeded.push('Course Projects');
+            if (!state.allData.games) sheetsNeeded.push('games');
+            if (!state.allData.videos) sheetsNeeded.push('videos');
+            if (!state.allData.skills) sheetsNeeded.push('skills');
+        }
         if (route === '/achievements') {
             if (!state.allData.videos) sheetsNeeded.push('videos');
             if (!state.allData.skills) sheetsNeeded.push('skills');
@@ -3922,6 +4026,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (state.currentRoute === '/' || state.currentRoute === '/bio') {
                 renderBioEducation();
+                renderRecentWork();
             }
 
             if (state.currentRoute === '/activities') {
@@ -3935,7 +4040,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if ((data.Courses || []).length && (data.skills || []).length && state.modalManager) {
-                preloadProgrammingLanguageIconsForCourses(data.Courses, data['Course Projects']).catch(() => {});
+                preloadProgrammingLanguageIconsForCourses(data.Courses, data['Course Projects']).catch(() => { });
             }
 
             if (state.portfolioGrid) {
@@ -4022,7 +4127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if (state.currentRoute === '/technical' && data['Course Projects']) {
-                preloadProgrammingLanguageIconsForCourses([], data['Course Projects']).catch(() => {});
+                preloadProgrammingLanguageIconsForCourses([], data['Course Projects']).catch(() => { });
             }
         })
             .catch(() => {

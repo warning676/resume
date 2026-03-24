@@ -49,7 +49,7 @@ class Utils {
         if (parts.length >= 2) {
             const m = monthMap[parts[0]];
             const y = Number.parseInt(parts[1], 10);
-            if (Number.isFinite(m) && Number.isFinite(y)) return new Date(y, m, 1).getTime() || 0;
+            if (Number.isFinite(m) && Number.isFinite(y) && y >= 1970) return new Date(y, m, 1).getTime() || 0;
         }
 
         const fallback = Date.parse(normalized);
@@ -128,6 +128,12 @@ class Utils {
         const size = Number(options.size) || 18;
         const cls = String(options.className || 'lucide lucide-trophy').replace(/"/g, '');
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${cls}"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`;
+    }
+
+    static lucideChevronRightSvg(options = {}) {
+        const size = Number(options.size) || 16;
+        const cls = String(options.className || 'lucide lucide-chevron-right').replace(/"/g, '');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${cls}"><path d="m9 18 6-6-6-6"/></svg>`;
     }
 
     static syncPageScrollLock(locked) {
