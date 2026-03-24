@@ -108,8 +108,7 @@ class Renderer {
                     const dateHTML = displayDate ? `<p class="card-meta-date">${displayDate}</p>` : '';
                     const badgeHTML = project.badge ? `<span class="type-badge">${project.badge}</span>` : '';
                     
-                    const isVideosPage = s.currentRoute === '/videos';
-                    const awards = isVideosPage && s.filmFestivalAwards ? s.filmFestivalAwards[project.name] : null;
+                    const awards = s.filmFestivalAwards ? s.filmFestivalAwards[project.name] : null;
                     let awardsHTML = '';
                     let awardsSearchData = '';
                     if (awards && awards.length > 0) {
