@@ -147,7 +147,7 @@ class FilterManager {
             const matchesType = s.selectedCategories.includes('all') || s.selectedCategories.includes(cardType) || s.selectedCategories.includes(normalizedCardType);
             const matchesTool = s.selectedTools.includes('all') || toolsList.some(t => normalizedSelectedTools.includes(t)) || (hasNoTools && normalizedSelectedTools.includes('__none__'));
 
-            const contentRaw = (card.innerText || '') + ' ' + cardTools + ' ' + (card.getAttribute('data-info') || '') + ' ' + cardAwards;
+            const contentRaw = (card.textContent || '') + ' ' + cardTools + ' ' + (card.getAttribute('data-info') || '') + ' ' + cardAwards;
             const content = this.normalizeText(contentRaw);
             const contentTokens = content.split(/\s+/);
             let matchesQuery = true;
@@ -203,7 +203,7 @@ class FilterManager {
         const totalSkills = skillItems.length;
         skillItems.forEach(item => {
             const info = item.getAttribute('data-info') || '';
-            const textRaw = (item.innerText || '') + ' ' + info;
+            const textRaw = (item.textContent || '') + ' ' + info;
             const text = this.normalizeText(textRaw);
             const textTokens = text.split(/\s+/).filter(t => t);
             let matchesQuery = true;
@@ -217,7 +217,7 @@ class FilterManager {
             const matchesType = s.selectedCategories.includes('all') || s.selectedCategories.includes(item.dataset.type);
             const selectedByColumn = s.selectedSkillColumnValues || {};
             const itemType = (item.dataset.type || '').trim();
-            const itemLevel = (item.querySelector('.level')?.innerText || '').trim();
+            const itemLevel = (item.querySelector('.level')?.textContent || '').trim();
             const normalizedType = itemType ? itemType.toLowerCase() : '__none__';
             const normalizedLevel = itemLevel ? itemLevel.toLowerCase() : '__none__';
             const normalizedTypeSelections = (selectedByColumn.type || []).map(value => String(value).toLowerCase());
@@ -291,30 +291,33 @@ class FilterManager {
         if (!sortBy || !order) {
             items.sort((a, b) => Number.parseInt(a.dataset.originalIndex || '0', 10) - Number.parseInt(b.dataset.originalIndex || '0', 10));
             const target = s.skillsList.querySelector('.skills-table-body') || s.skillsList;
-            items.forEach(item => target.appendChild(item));
+            const frag = document.createDocumentFragment();
+            items.forEach(item => frag.appendChild(item));
+            target.appendChild(frag);
             return;
         }
-        items.sort((a, b) => {
-            let valA, valB;
-            const nameA = a.dataset.name.toLowerCase().trim();
-            const nameB = b.dataset.name.toLowerCase().trim();
+        const precomputed = items.map(item => {
+            const nameVal = item.dataset.name.toLowerCase().trim();
+            let sortVal;
             if (sortBy === 'name') {
-                valA = nameA; valB = nameB;
+                sortVal = nameVal;
             } else if (sortBy === 'type') {
-                valA = (a.dataset.type || '').toLowerCase().trim();
-                valB = (b.dataset.type || '').toLowerCase().trim();
+                sortVal = (item.dataset.type || '').toLowerCase().trim();
             } else if (sortBy === 'proficiency') {
-                valA = Utils.getProficiencyValue(a.querySelector('.level').innerText);
-                valB = Utils.getProficiencyValue(b.querySelector('.level').innerText);
+                sortVal = Utils.getProficiencyValue(item.querySelector('.level').textContent);
             } else {
-                valA = Utils.parseMonthYearToTime(a.querySelector('.last-used')?.innerText);
-                valB = Utils.parseMonthYearToTime(b.querySelector('.last-used')?.innerText);
+                sortVal = Utils.parseMonthYearToTime(item.querySelector('.last-used')?.textContent);
             }
-            if (valA === valB) return nameA.localeCompare(nameB);
-            return order === 'desc' ? (valA > valB ? -1 : 1) : (valA < valB ? -1 : 1);
+            return { item, nameVal, sortVal };
+        });
+        precomputed.sort((a, b) => {
+            if (a.sortVal === b.sortVal) return a.nameVal.localeCompare(b.nameVal);
+            return order === 'desc' ? (a.sortVal > b.sortVal ? -1 : 1) : (a.sortVal < b.sortVal ? -1 : 1);
         });
         const target = s.skillsList.querySelector('.skills-table-body') || s.skillsList;
-        items.forEach(item => target.appendChild(item));
+        const frag = document.createDocumentFragment();
+        precomputed.forEach(entry => frag.appendChild(entry.item));
+        target.appendChild(frag);
     }
 
     sortCards() {
@@ -323,20 +326,25 @@ class FilterManager {
         const sortBy = s.selectedSort;
         const order = s.selectedOrder;
         const cards = Array.from(s.portfolioGrid.querySelectorAll('.portfolio-card'));
-        cards.sort((a, b) => {
+        const precomputed = cards.map(card => {
+            const nameVal = (card.getAttribute('data-name') || '').toLowerCase();
+            let sortVal;
             if (sortBy === 'name') {
-                const valA = a.getAttribute('data-name').toLowerCase();
-                const valB = b.getAttribute('data-name').toLowerCase();
-                return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                sortVal = nameVal;
             } else {
-                const nameA = (a.getAttribute('data-name') || '').toLowerCase();
-                const nameB = (b.getAttribute('data-name') || '').toLowerCase();
-                const valA = new Date(a.getAttribute('data-date').replace(/-/g, '\/')).getTime();
-                const valB = new Date(b.getAttribute('data-date').replace(/-/g, '\/')).getTime();
-                if (valA === valB) return nameA.localeCompare(nameB);
-                return order === 'asc' ? (valA - valB) : (valB - valA);
+                sortVal = new Date(card.getAttribute('data-date').replace(/-/g, '/')).getTime();
             }
+            return { card, nameVal, sortVal };
         });
-        cards.forEach(card => s.portfolioGrid.appendChild(card));
+        precomputed.sort((a, b) => {
+            if (sortBy === 'name') {
+                return order === 'asc' ? a.sortVal.localeCompare(b.sortVal) : b.sortVal.localeCompare(a.sortVal);
+            }
+            if (a.sortVal === b.sortVal) return a.nameVal.localeCompare(b.nameVal);
+            return order === 'asc' ? (a.sortVal - b.sortVal) : (b.sortVal - a.sortVal);
+        });
+        const frag = document.createDocumentFragment();
+        precomputed.forEach(entry => frag.appendChild(entry.card));
+        s.portfolioGrid.appendChild(frag);
     }
 }

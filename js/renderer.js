@@ -49,11 +49,8 @@ class Renderer {
             return;
         }
 
-        container.innerHTML = '';
-
-        let skeletonContent = '';
         if (isPortfolioGrid) {
-            skeletonContent = `
+            const skel = `
                 <div class="portfolio-card skeleton-item">
                     <div class="card-thumb"><div class="skeleton-element" style="width: 100%; height: 100%;"></div></div>
                     <div class="card-content">
@@ -64,9 +61,11 @@ class Renderer {
                         </div>
                     </div>
                 </div>`;
-        }
-        for (let i = 0; i < count; i++) {
-            container.insertAdjacentHTML('beforeend', skeletonContent);
+            let html = '';
+            for (let i = 0; i < count; i++) html += skel;
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '';
         }
     }
 
