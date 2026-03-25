@@ -3909,11 +3909,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (courseNavLen > 1) {
                         if (e.key === 'ArrowLeft') {
                             navigateCoursesModal(-1);
-                            simulateClick(state.coursesModalPrev);
+                            animateIconHover(state.coursesModalPrev, 'icon-hover-effect-prev');
                         }
                         if (e.key === 'ArrowRight') {
                             navigateCoursesModal(1);
-                            simulateClick(state.coursesModalNext);
+                            animateIconHover(state.coursesModalNext, 'icon-hover-effect-next');
                         }
                     }
                     if (e.key === 'Escape') closeCoursesModal();
